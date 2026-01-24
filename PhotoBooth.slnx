@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/PhotoBooth.Application/PhotoBooth.Application.csproj" />
+    <Project Path="src/PhotoBooth.Domain/PhotoBooth.Domain.csproj" />
+    <Project Path="src/PhotoBooth.Infrastructure/PhotoBooth.Infrastructure.csproj" />
+    <Project Path="src/PhotoBooth.Server/PhotoBooth.Server.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/PhotoBooth.Application.Tests/PhotoBooth.Application.Tests.csproj" />
+    <Project Path="tests/PhotoBooth.Server.Tests/PhotoBooth.Server.Tests.csproj" />
+  </Folder>
+</Solution>

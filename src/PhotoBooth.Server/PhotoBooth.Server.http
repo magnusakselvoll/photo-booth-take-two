@@ -1,0 +1,6 @@
+@PhotoBooth.Server_HostAddress = http://localhost:5192
+
+GET {{PhotoBooth.Server_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
