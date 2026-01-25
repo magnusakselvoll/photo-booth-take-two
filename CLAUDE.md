@@ -1,31 +1,82 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
-## Project Overview
-
-Photo booth application for non-commercial/event use. Runs unattended with slideshow display, photo capture via timer/button, and web-based photo download using numeric codes or QR codes.
-
-## Tech Stack
-
-- **Language:** C# / .NET 10
-- **Architecture:** Server-client with REST API
-- **Frontend:** Web-based UI
-- **Platform:** Windows (initial target)
+Instructions for Claude Code when working on this repository.
 
 ## Build Commands
 
 ```bash
-dotnet build          # Build the solution
-dotnet test           # Run tests
-dotnet run            # Run the application
+dotnet build                              # Build all projects
+dotnet test                               # Run all tests
+dotnet run --project src/PhotoBooth.Server # Run the server
+
+# Frontend (in src/PhotoBooth.Web)
+pnpm install                              # Install dependencies
+pnpm run dev                              # Dev server with hot reload (port 5173)
+pnpm run build                            # Build to wwwroot
 ```
 
 ## Architecture
 
-Server-client pattern:
-- **Server:** Hardware interfaces (cameras, input buttons), photo storage, REST API
-- **Web client:** Slideshow, countdown timer, user interface
-- **Hardware abstraction:** Multiple camera types (webcam, mobile phone) and input devices (keyboard, mouse, joystick)
+Clean architecture with four layers:
 
-Design priorities: modular, testable, robust error handling for unattended operation.
+- **Domain** (`PhotoBooth.Domain`): Entities, interfaces, exceptions. No dependencies.
+- **Application** (`PhotoBooth.Application`): Services, DTOs, business logic. Depends on Domain.
+- **Infrastructure** (`PhotoBooth.Infrastructure`): Hardware and storage implementations. Depends on Domain.
+- **Server** (`PhotoBooth.Server`): ASP.NET Core minimal API, serves REST endpoints and static web files. Depends on Application and Infrastructure.
+
+### Key Interfaces (in Domain)
+
+- `ICameraProvider`: Capture photos from different camera types
+- `IInputProvider`: Handle trigger button input (keyboard, mouse, joystick)
+- `IPhotoRepository`: Store and retrieve photos
+- `IPhotoCodeGenerator`: Generate download codes for photos
+
+### Key Services (in Application)
+
+- `PhotoCaptureService`: Orchestrates countdown and photo capture
+- `SlideshowService`: Manages slideshow photo selection
+
+## Tech Stack
+
+- **Backend**: C# / .NET 10, ASP.NET Core minimal APIs
+- **Frontend**: React + TypeScript + Vite (source in `src/PhotoBooth.Web/`, builds to `src/PhotoBooth.Server/wwwroot/`)
+- **Package manager**: pnpm (for supply chain security)
+- **Platform**: Windows primary, macOS for development
+
+## Dependency Policy
+
+Minimize external dependencies. Only add well-established, widely-used libraries when genuinely needed. Examples of acceptable dependencies:
+- Polly (resilience)
+- Serilog (logging)
+- OpenCvSharp (camera capture - if needed)
+
+Avoid: niche libraries, multiple libraries solving the same problem, dependencies for trivial functionality.
+
+## Coding Conventions
+
+- Use nullable reference types (`<Nullable>enable</Nullable>`)
+- Prefer records for DTOs
+- Use `CancellationToken` for async operations
+- Throw domain-specific exceptions inheriting from `PhotoBoothException`
+- Tests use MSTest with descriptive method names
+
+## Current Implementation Status
+
+**Done:**
+- Domain layer (entities, interfaces)
+- Application layer (services with tests)
+- Infrastructure layer (mock camera, in-memory and file storage, input providers)
+- Server layer (REST endpoints for photos, slideshow, camera, events)
+- Server-Sent Events for real-time updates
+- Web UI: BoothPage (slideshow + capture), DownloadPage (code entry + download)
+
+**TODO:**
+- Real webcam implementation (WebcamCameraProvider is a stub)
+- Configuration system
+- Android phone camera integration
+- QR code display on photos
+
+## Reference
+
+- **SPEC.md**: Functional specification - describes how the application should work. Consult this for requirements and intended behavior.
+- Previous implementation for Android integration patterns: https://github.com/magnusakselvoll/android-photo-booth-camera

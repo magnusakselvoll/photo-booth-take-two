@@ -11,11 +11,18 @@ public class FileSystemPhotoRepository : IPhotoRepository
     private readonly SemaphoreSlim _lock = new(1, 1);
     private List<Photo>? _photosCache;
 
-    public FileSystemPhotoRepository(string storagePath)
+    public FileSystemPhotoRepository(string basePath, string eventName)
     {
-        _storagePath = storagePath;
+        _storagePath = Path.Combine(basePath, SanitizeEventName(eventName));
         _metadataFile = Path.Combine(_storagePath, "photos.json");
         Directory.CreateDirectory(_storagePath);
+    }
+
+    private static string SanitizeEventName(string eventName)
+    {
+        var invalid = Path.GetInvalidFileNameChars();
+        var sanitized = string.Join("_", eventName.Split(invalid, StringSplitOptions.RemoveEmptyEntries));
+        return string.IsNullOrWhiteSpace(sanitized) ? "default" : sanitized;
     }
 
     public async Task<Photo> SaveAsync(Photo photo, byte[] imageData, CancellationToken cancellationToken = default)
@@ -23,7 +30,8 @@ public class FileSystemPhotoRepository : IPhotoRepository
         await _lock.WaitAsync(cancellationToken);
         try
         {
-            var fileName = $"{photo.Id}.jpg";
+            var paddedCode = photo.Code.PadLeft(5, '0');
+            var fileName = $"{paddedCode}-{photo.Id}.jpg";
             photo.FilePath = Path.Combine(_storagePath, fileName);
 
             await File.WriteAllBytesAsync(photo.FilePath, imageData, cancellationToken);

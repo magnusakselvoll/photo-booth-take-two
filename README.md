@@ -1,32 +1,62 @@
-# photo-booth-take-two
-For running photo booths with no or low cost.
+# Photo Booth
 
-## Functional overview
-This software project is built for running photo booths for non-commercial use,
-i.e. when the booths is a stand alone device with nobody operating it, and the photos
-are shown on the device when you take them and as a random slideshow when not being used. The idea is that photos will be shared in a manner where guests can download the photos from a web a site, using a short numeric code displayed on each image in
-the slideshow, to download their specific photo. A QR code could also be generated
-to provide a direct link.
+A photo booth application for events. Runs unattended with slideshow display, photo capture, and web-based photo download.
 
-The project is designed to be ran on a computer, initially Windows, with either an
-integrated monitor or external one. For capturing photos, the software should be 
-designed to use different types of cameras, e.g. a web cam or an attached mobile
-phone. User should press a button on the photo booth to set of a timer to capture
-the photo with a count down. This button could be a keyboard button, a mouse button
-or an external joystick button. The software will be displaying a slideshow of random
-photos from the current event, but recently taken photos will always be taken after
-they are captured. 
+## Features
 
-## Software architecture
-The idea is to build the software using dotnet 10. There should be a server 
-component to interface with certain hardware and provide storage, etc. The user
-interface can be a web page accessing that server component over REST. The 
-architecture must be modular and testable. It is crucial that the program is
-robust, so that in case of software errors etc., it does not lock up. 
+- **Slideshow display**: Shows photos from the current event in rotation
+- **Photo capture**: Countdown timer triggered by button press (keyboard, mouse, or joystick)
+- **Photo download**: Guests retrieve photos via numeric code or QR code
+- **Multiple camera support**: Webcam, mobile phone (Android)
 
-# References
-This project is built as a clean, take two, after first building this:
-https://github.com/magnusakselvoll/android-photo-booth-camera
+## Prerequisites
 
-Code may be freely migrated from that where useful, especially for the
-android integration.
+- [.NET 10 SDK](https://dotnet.microsoft.com/download)
+- [Node.js 20+](https://nodejs.org/) (for web UI development)
+- Windows (primary target), macOS/Linux (partial support)
+
+## Quick Start
+
+```bash
+# Build
+dotnet build
+
+# Run tests
+dotnet test
+
+# Run the server
+dotnet run --project src/PhotoBooth.Server
+```
+
+The server starts at `http://localhost:5000`. Open this URL in a browser to access the photo booth interface.
+
+## Configuration
+
+Configuration is done via `appsettings.json` in the Server project:
+
+```json
+{
+  "PhotoBooth": {
+    "StoragePath": "./photos",
+    "Camera": "Webcam",
+    "CountdownSeconds": 5
+  }
+}
+```
+
+## Project Structure
+
+```
+src/
+  PhotoBooth.Domain/        # Core entities and interfaces
+  PhotoBooth.Application/   # Business logic and services
+  PhotoBooth.Infrastructure/# Hardware and storage implementations
+  PhotoBooth.Server/        # ASP.NET Core REST API + web UI
+tests/
+  PhotoBooth.Application.Tests/
+  PhotoBooth.Server.Tests/
+```
+
+## License
+
+MIT

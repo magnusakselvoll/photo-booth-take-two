@@ -63,7 +63,7 @@ public sealed class PhotoEndpointsTests
         var result = await response.Content.ReadFromJsonAsync<CaptureResultDto>();
         Assert.IsNotNull(result);
         Assert.IsFalse(string.IsNullOrEmpty(result.Code));
-        Assert.AreEqual(6, result.Code.Length);
+        Assert.IsTrue(int.TryParse(result.Code, out var code) && code > 0, "Code should be a positive integer");
     }
 
     [TestMethod]
