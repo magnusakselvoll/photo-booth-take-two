@@ -36,13 +36,31 @@ Configuration is done via `appsettings.json` in the Server project:
 
 ```json
 {
-  "PhotoBooth": {
-    "StoragePath": "./photos",
-    "Camera": "Webcam",
-    "CountdownSeconds": 5
+  "Camera": {
+    "UseMock": false,
+    "DeviceIndex": 0,
+    "CaptureLatencyMs": 100,
+    "FramesToSkip": 5,
+    "FlipVertical": true,
+    "PixelOrder": "ARGB",
+    "JpegQuality": 90
+  },
+  "Capture": {
+    "CountdownDurationMs": 3000
+  },
+  "PhotoStorage": {
+    "Path": ""
   }
 }
 ```
+
+### Camera Options
+
+- `UseMock`: Use mock camera for testing (no real camera needed)
+- `DeviceIndex`: Webcam device index (0 = first camera)
+- `FramesToSkip`: Number of frames to skip for auto-exposure adjustment
+- `FlipVertical`: Mirror the image vertically
+- `PixelOrder`: Pixel byte order from camera (ARGB, BGRA, etc.)
 
 ## Project Structure
 

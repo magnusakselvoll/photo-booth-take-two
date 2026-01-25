@@ -69,12 +69,35 @@ Avoid: niche libraries, multiple libraries solving the same problem, dependencie
 - Server layer (REST endpoints for photos, slideshow, camera, events)
 - Server-Sent Events for real-time updates
 - Web UI: BoothPage (slideshow + capture), DownloadPage (code entry + download)
+- Webcam capture using FlashCap library (persistent streaming approach)
+- Configuration via appsettings.json
+
+**In Progress:**
+- Webcam capture reliability (see Known Issues below)
 
 **TODO:**
-- Real webcam implementation (WebcamCameraProvider is a stub)
-- Configuration system
 - Android phone camera integration
 - QR code display on photos
+
+## Webcam Implementation Notes
+
+The webcam uses FlashCap library for cross-platform capture. Key implementation details:
+
+- **Persistent streaming**: Camera device stays open continuously (opening/closing per capture causes macOS AVFoundation crashes)
+- **Frame skipping**: Each capture skips first N frames to allow camera auto-exposure to adjust
+- **BMP/DIB format parsing**: FlashCap on macOS returns incorrect BMP header dimensions (reports 1552x1552 for 1920x1080 camera). The code detects actual dimensions from pixel count.
+- **Pixel order**: macOS camera outputs ARGB format; configure via `Camera:PixelOrder` setting
+
+### Known Issues
+
+**Intermittent corruption in server captures**: The integration tests (WebcamCaptureTests) pass reliably 10/10, but the server sometimes produces corrupted photos (horizontal line patterns or black images). The camera sometimes outputs 1920x1080 frames and sometimes 1920x1088. Investigation ongoing - may be timing-related difference between test (1s delay) and server capture patterns.
+
+### Testing Webcam
+
+```bash
+# Run webcam integration tests
+dotnet test tests/PhotoBooth.Infrastructure.Tests --filter "FullyQualifiedName~Webcam"
+```
 
 ## Reference
 

@@ -10,11 +10,20 @@ namespace PhotoBooth.Infrastructure.Camera;
 
 public class WebcamCameraProvider : ICameraProvider, IAsyncDisposable
 {
-    private CaptureDevice? _device;
     private readonly SemaphoreSlim _captureLock = new(1, 1);
-    private byte[]? _lastFrame;
     private readonly ILogger<WebcamCameraProvider> _logger;
     private readonly WebcamOptions _options;
+
+    // Persistent device state
+    private CaptureDevice? _device;
+    private CaptureDeviceDescriptor? _descriptor;
+    private VideoCharacteristics? _characteristics;
+    private bool _isStreaming;
+    private byte[]? _latestFrame;
+    private TaskCompletionSource<byte[]>? _captureRequest;
+    private int _frameCount;
+    private int _framesToSkipForCapture;
+    private bool _isInitialized;
 
     public TimeSpan CaptureLatency { get; }
 
@@ -50,119 +59,157 @@ public class WebcamCameraProvider : ICameraProvider, IAsyncDisposable
         }
     }
 
+    private async Task EnsureInitializedAsync(CancellationToken cancellationToken)
+    {
+        if (_isInitialized && _device is not null && _isStreaming)
+        {
+            return;
+        }
+
+        _logger.LogInformation("Initializing camera device...");
+
+        // Clean up any existing device
+        await CleanupDeviceAsync();
+
+        var devices = new CaptureDevices();
+        var descriptors = devices.EnumerateDescriptors().ToList();
+
+        if (descriptors.Count <= _options.DeviceIndex)
+        {
+            throw new CameraNotAvailableException($"Camera at index {_options.DeviceIndex} not found");
+        }
+
+        _descriptor = descriptors[_options.DeviceIndex];
+        _logger.LogInformation("Using camera: {Name}", _descriptor.Name);
+
+        // Log available characteristics
+        foreach (var c in _descriptor.Characteristics.Take(10))
+        {
+            _logger.LogDebug("Available: {Width}x{Height} at {Fps}fps, format {Format}",
+                c.Width, c.Height, c.FramesPerSecond, c.PixelFormat);
+        }
+
+        // Select best characteristics
+        _characteristics = _descriptor.Characteristics
+            .Where(c => c.PixelFormat.ToString().Contains("JPEG", StringComparison.OrdinalIgnoreCase) ||
+                       c.PixelFormat.ToString().Contains("MJPG", StringComparison.OrdinalIgnoreCase))
+            .Where(c => c.Width >= 640 && c.Height >= 480)
+            .OrderByDescending(c => c.Width * c.Height)
+            .ThenByDescending(c => c.FramesPerSecond)
+            .FirstOrDefault();
+
+        _characteristics ??= _descriptor.Characteristics
+            .Where(c => c.Width >= 640 && c.Height >= 480)
+            .OrderByDescending(c => c.Width * c.Height)
+            .ThenByDescending(c => c.FramesPerSecond)
+            .FirstOrDefault();
+
+        _characteristics ??= _descriptor.Characteristics
+            .OrderByDescending(c => c.Width * c.Height)
+            .FirstOrDefault();
+
+        if (_characteristics is null)
+        {
+            throw new CameraNotAvailableException("No suitable camera characteristics found");
+        }
+
+        _logger.LogInformation("Using resolution {Width}x{Height} at {Fps}fps, format {Format}",
+            _characteristics.Width, _characteristics.Height,
+            _characteristics.FramesPerSecond, _characteristics.PixelFormat);
+
+        _frameCount = 0;
+        _framesToSkipForCapture = 0;
+        _latestFrame = null;
+
+        _device = await _descriptor.OpenAsync(_characteristics, OnFrameReceived);
+        await _device.StartAsync(cancellationToken);
+        _isStreaming = true;
+        _isInitialized = true;
+
+        _logger.LogInformation("Camera device initialized and streaming");
+
+        // Brief pause to let camera start streaming
+        await Task.Delay(100, cancellationToken);
+    }
+
+    private void OnFrameReceived(PixelBufferScope bufferScope)
+    {
+        _frameCount++;
+
+        // If there's a pending capture request, handle it
+        var request = _captureRequest;
+        if (request is not null && !request.Task.IsCompleted)
+        {
+            // Skip frames for this capture to ensure camera has adjusted
+            if (_framesToSkipForCapture > 0)
+            {
+                _framesToSkipForCapture--;
+                _logger.LogDebug("Skipping frame for capture, {Remaining} remaining", _framesToSkipForCapture);
+                return;
+            }
+
+            // Capture this frame
+            try
+            {
+                var imageData = bufferScope.Buffer.ExtractImage();
+                _latestFrame = imageData;
+                request.TrySetResult(imageData);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error extracting frame");
+                request.TrySetException(ex);
+            }
+        }
+    }
+
     public async Task<byte[]> CaptureAsync(CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Starting camera capture from device {DeviceIndex}", _options.DeviceIndex);
-        await _captureLock.WaitAsync(cancellationToken);
+
+        if (!await _captureLock.WaitAsync(TimeSpan.FromSeconds(5), cancellationToken))
+        {
+            throw new CameraNotAvailableException("Camera is busy");
+        }
+
         try
         {
-            var devices = new CaptureDevices();
-            var descriptors = devices.EnumerateDescriptors().ToList();
+            await EnsureInitializedAsync(cancellationToken);
 
-            if (descriptors.Count <= _options.DeviceIndex)
+            // Set up frame skipping for this capture and create request
+            _framesToSkipForCapture = _options.FramesToSkip;
+            _captureRequest = new TaskCompletionSource<byte[]>();
+
+            _logger.LogDebug("Capture request created, will skip {FramesToSkip} frames first", _framesToSkipForCapture);
+
+            // Wait for the frame
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, cts.Token);
+
+            var completedTask = await Task.WhenAny(
+                _captureRequest.Task,
+                Task.Delay(Timeout.Infinite, linkedCts.Token));
+
+            if (completedTask != _captureRequest.Task)
             {
-                _logger.LogError("Camera at index {DeviceIndex} not found, only {Count} devices available", _options.DeviceIndex, descriptors.Count);
-                throw new CameraNotAvailableException($"Camera at index {_options.DeviceIndex} not found");
+                _logger.LogError("Timeout waiting for camera frame");
+                // Try to reinitialize on next capture
+                _isInitialized = false;
+                throw new CameraNotAvailableException("Timeout waiting for camera frame");
             }
 
-            var descriptor = descriptors[_options.DeviceIndex];
-            _logger.LogDebug("Using camera: {Name}", descriptor.Name);
+            var rawData = await _captureRequest.Task;
+            _logger.LogDebug("Received raw frame with {Size} bytes", rawData.Length);
 
-            // Log all available characteristics
-            foreach (var c in descriptor.Characteristics.Take(10))
-            {
-                _logger.LogInformation("Available: {Width}x{Height} at {Fps}fps, format {Format}",
-                    c.Width, c.Height, c.FramesPerSecond, c.PixelFormat);
-            }
+            // Encode to JPEG
+            var jpegData = EncodeToJpeg(rawData, _characteristics!.Width, _characteristics.Height, _characteristics.PixelFormat);
+            _logger.LogInformation("Successfully captured frame with {Size} bytes", jpegData.Length);
 
-            // Prefer MJPEG/JPEG format (gives us compressed frames directly)
-            var characteristics = descriptor.Characteristics
-                .Where(c => c.PixelFormat.ToString().Contains("JPEG", StringComparison.OrdinalIgnoreCase) ||
-                           c.PixelFormat.ToString().Contains("MJPG", StringComparison.OrdinalIgnoreCase))
-                .Where(c => c.Width >= 640 && c.Height >= 480)
-                .OrderByDescending(c => c.Width * c.Height)
-                .ThenByDescending(c => c.FramesPerSecond)
-                .FirstOrDefault();
-
-            // Fall back to any format if no JPEG available
-            characteristics ??= descriptor.Characteristics
-                .Where(c => c.Width >= 640 && c.Height >= 480)
-                .OrderByDescending(c => c.Width * c.Height)
-                .ThenByDescending(c => c.FramesPerSecond)
-                .FirstOrDefault();
-
-            characteristics ??= descriptor.Characteristics
-                .OrderByDescending(c => c.Width * c.Height)
-                .FirstOrDefault();
-
-            if (characteristics is null)
-            {
-                _logger.LogError("No suitable camera characteristics found for {Name}", descriptor.Name);
-                throw new CameraNotAvailableException("No suitable camera characteristics found");
-            }
-
-            _logger.LogInformation("Using resolution {Width}x{Height} at {Fps}fps, format {Format}",
-                characteristics.Width, characteristics.Height,
-                characteristics.FramesPerSecond, characteristics.PixelFormat);
-
-            _lastFrame = null;
-            var frameReceived = new TaskCompletionSource<byte[]>();
-            var frameCount = 0;
-            var framesToSkip = _options.FramesToSkip;
-
-            var pixelFormat = characteristics.PixelFormat;
-            _device = await descriptor.OpenAsync(characteristics, async bufferScope =>
-            {
-                frameCount++;
-                if (frameCount <= framesToSkip)
-                {
-                    _logger.LogDebug("Skipping warm-up frame {FrameNumber}/{FramesToSkip}", frameCount, framesToSkip);
-                    return;
-                }
-
-                if (_lastFrame is null)
-                {
-                    try
-                    {
-                        _logger.LogDebug("Capturing frame {FrameNumber} (after {Skipped} warm-up frames)", frameCount, framesToSkip);
-                        var imageData = bufferScope.Buffer.ExtractImage();
-                        var jpegData = EncodeToJpeg(imageData, characteristics.Width, characteristics.Height, pixelFormat);
-                        _lastFrame = jpegData;
-                        frameReceived.TrySetResult(jpegData);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Failed to encode frame to JPEG");
-                        frameReceived.TrySetException(ex);
-                    }
-                }
-            });
-
-            try
-            {
-                await _device.StartAsync(cancellationToken);
-
-                using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                cts.CancelAfter(TimeSpan.FromSeconds(5));
-
-                var completedTask = await Task.WhenAny(
-                    frameReceived.Task,
-                    Task.Delay(Timeout.Infinite, cts.Token));
-
-                if (completedTask != frameReceived.Task)
-                {
-                    _logger.LogError("Timeout waiting for camera frame");
-                    throw new CameraNotAvailableException("Timeout waiting for camera frame");
-                }
-
-                var result = await frameReceived.Task;
-                _logger.LogInformation("Successfully captured frame with {Size} bytes", result.Length);
-                return result;
-            }
-            finally
-            {
-                await _device.StopAsync(cancellationToken);
-            }
+            return jpegData;
+        }
+        catch (OperationCanceledException)
+        {
+            throw new CameraNotAvailableException("Camera capture was cancelled");
         }
         catch (CameraNotAvailableException)
         {
@@ -171,28 +218,50 @@ public class WebcamCameraProvider : ICameraProvider, IAsyncDisposable
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to capture image");
+            // Try to reinitialize on next capture
+            _isInitialized = false;
             throw new CameraNotAvailableException("Failed to capture image", ex);
         }
         finally
         {
-            if (_device is not null)
-            {
-                await _device.DisposeAsync();
-                _device = null;
-            }
+            _captureRequest = null;
             _captureLock.Release();
         }
     }
 
+    private async Task CleanupDeviceAsync()
+    {
+        if (_device is not null)
+        {
+            _logger.LogDebug("Cleaning up camera device...");
+            try
+            {
+                if (_isStreaming)
+                {
+                    await _device.StopAsync();
+                    _isStreaming = false;
+                }
+                await _device.DisposeAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error cleaning up camera device");
+            }
+            _device = null;
+        }
+        _isInitialized = false;
+    }
+
     private byte[] EncodeToJpeg(byte[] imageData, int width, int height, FlashCap.PixelFormats pixelFormat)
     {
-        _logger.LogDebug("Encoding image: {Width}x{Height}, format: {Format}, data size: {Size} bytes",
-            width, height, pixelFormat, imageData.Length);
+        _logger.LogInformation("Encoding image: {Width}x{Height}, format: {Format}, data size: {Size} bytes, header: {Header}",
+            width, height, pixelFormat, imageData.Length,
+            BitConverter.ToString(imageData, 0, Math.Min(20, imageData.Length)));
 
         // Check for JPEG magic bytes (FFD8FF)
         if (imageData.Length >= 3 && imageData[0] == 0xFF && imageData[1] == 0xD8 && imageData[2] == 0xFF)
         {
-            _logger.LogDebug("Data is already JPEG, returning as-is");
+            _logger.LogInformation("Data is already JPEG, returning as-is");
             return imageData;
         }
 
@@ -201,12 +270,12 @@ public class WebcamCameraProvider : ICameraProvider, IAsyncDisposable
         {
             // Parse BMP header - FlashCap sometimes generates BMPs with incorrect dimensions in header
             var bmpWidth = BitConverter.ToInt32(imageData, 18);
-            var bmpHeight = BitConverter.ToInt32(imageData, 22);
+            var originalBmpHeight = BitConverter.ToInt32(imageData, 22); // Keep original with sign
             var bitsPerPixel = BitConverter.ToInt16(imageData, 28);
             var pixelDataOffset = BitConverter.ToInt32(imageData, 10);
 
-            var isBottomUp = bmpHeight > 0;
-            bmpHeight = Math.Abs(bmpHeight);
+            var isBottomUp = originalBmpHeight > 0;
+            var bmpHeight = Math.Abs(originalBmpHeight);
             var bytesPerPixel = bitsPerPixel / 8;
             var stride = ((bmpWidth * bytesPerPixel + 3) / 4) * 4;
 
@@ -214,26 +283,27 @@ public class WebcamCameraProvider : ICameraProvider, IAsyncDisposable
             var availablePixelData = imageData.Length - pixelDataOffset;
             var actualHeight = availablePixelData / stride;
 
-            _logger.LogDebug("BMP file header: {Width}x{Height}, {Bpp}bpp, offset {Offset}, stride {Stride}",
-                bmpWidth, bmpHeight, bitsPerPixel, pixelDataOffset, stride);
+            _logger.LogInformation("BMP header: {Width}x{OrigHeight} (abs={Height}), {Bpp}bpp, offset {Offset}, stride {Stride}, isBottomUp={IsBottomUp}",
+                bmpWidth, originalBmpHeight, bmpHeight, bitsPerPixel, pixelDataOffset, stride, isBottomUp);
 
             // Check if the data actually fits the header dimensions
             var totalPixels = availablePixelData / bytesPerPixel;
-            var headerPixels = bmpWidth * actualHeight;
 
-            if (totalPixels != headerPixels || actualHeight != bmpHeight)
+            // FlashCap on macOS reports wrong dimensions - calculate actual dimensions from pixel count
+            // MacBook Air camera outputs 1920 width, but height can vary (1080 or 1088 with padding)
+            var commonWidths = new[] { 1920, 1280, 1440, 640 };
+            var found = false;
+
+            foreach (var w in commonWidths)
             {
-                // Header dimensions don't match data - try to find correct dimensions
-                // Check common video resolutions first
-                var commonResolutions = new[] { (1920, 1080), (1280, 720), (1440, 1080), (1440, 960), (640, 480) };
-                var found = false;
-
-                foreach (var (w, h) in commonResolutions)
+                if (totalPixels % w == 0)
                 {
-                    if (w * h == totalPixels)
+                    var h = totalPixels / w;
+                    // Sanity check - height should be reasonable
+                    if (h >= 480 && h <= 1200)
                     {
-                        _logger.LogWarning("BMP header dimensions wrong! Data matches {Width}x{Height} ({TotalPixels} pixels), header claims {HeaderWidth}x{HeaderHeight}",
-                            w, h, totalPixels, bmpWidth, bmpHeight);
+                        _logger.LogInformation("Detected resolution {Width}x{Height} from {TotalPixels} pixels",
+                            w, h, totalPixels);
                         bmpWidth = w;
                         bmpHeight = h;
                         stride = bmpWidth * bytesPerPixel;
@@ -241,26 +311,12 @@ public class WebcamCameraProvider : ICameraProvider, IAsyncDisposable
                         break;
                     }
                 }
+            }
 
-                if (!found)
-                {
-                    // Check if it's a square image
-                    var sqrtPixels = (int)Math.Sqrt(totalPixels);
-                    if (sqrtPixels * sqrtPixels == totalPixels)
-                    {
-                        _logger.LogWarning("BMP header dimensions wrong! Data suggests {Sqrt}x{Sqrt} image ({TotalPixels} pixels), header claims {Width}x{Height}",
-                            sqrtPixels, sqrtPixels, totalPixels, bmpWidth, bmpHeight);
-                        bmpWidth = sqrtPixels;
-                        bmpHeight = sqrtPixels;
-                        stride = bmpWidth * bytesPerPixel;
-                    }
-                    else
-                    {
-                        _logger.LogWarning("BMP header height mismatch! Using calculated height {ActualHeight} instead of {HeaderHeight}",
-                            actualHeight, bmpHeight);
-                        bmpHeight = actualHeight;
-                    }
-                }
+            if (!found)
+            {
+                _logger.LogWarning("Could not detect resolution from {TotalPixels} pixels, using header values {Width}x{Height}",
+                    totalPixels, bmpWidth, bmpHeight);
             }
 
             return EncodeBmpToJpeg(imageData, bmpWidth, bmpHeight, bytesPerPixel, stride, pixelDataOffset, isBottomUp);
@@ -274,16 +330,16 @@ public class WebcamCameraProvider : ICameraProvider, IAsyncDisposable
             if (headerSize == 40 || headerSize == 108 || headerSize == 124) // BITMAPINFOHEADER, BITMAPV4HEADER, BITMAPV5HEADER
             {
                 var dibWidth = BitConverter.ToInt32(imageData, 4);
-                var dibHeight = BitConverter.ToInt32(imageData, 8);
+                var originalDibHeight = BitConverter.ToInt32(imageData, 8); // Keep original with sign
                 var bitsPerPixel = BitConverter.ToInt16(imageData, 14);
                 var compression = BitConverter.ToInt32(imageData, 16);
 
-                _logger.LogInformation("DIB header detected: size={HeaderSize}, {Width}x{Height}, {Bpp}bpp, compression={Compression}",
-                    headerSize, dibWidth, dibHeight, bitsPerPixel, compression);
-
                 // DIB height can be negative (top-down) or positive (bottom-up)
-                var isBottomUp = dibHeight > 0;
-                dibHeight = Math.Abs(dibHeight);
+                var isBottomUp = originalDibHeight > 0;
+                var dibHeight = Math.Abs(originalDibHeight);
+
+                _logger.LogInformation("DIB header: size={HeaderSize}, {Width}x{OrigHeight} (abs={Height}), {Bpp}bpp, compression={Compression}, isBottomUp={IsBottomUp}",
+                    headerSize, dibWidth, originalDibHeight, dibHeight, bitsPerPixel, compression, isBottomUp);
 
                 var bytesPerPixel = bitsPerPixel / 8;
                 var stride = ((dibWidth * bytesPerPixel + 3) / 4) * 4; // Rows are 4-byte aligned
@@ -296,18 +352,36 @@ public class WebcamCameraProvider : ICameraProvider, IAsyncDisposable
                 }
                 else
                 {
-                    // Calculate actual height from available data (header may be wrong)
+                    // Calculate total pixels from available data
                     var availablePixelData = imageData.Length - pixelDataOffset;
-                    var actualHeight = availablePixelData / stride;
+                    var totalPixels = availablePixelData / bytesPerPixel;
 
-                    _logger.LogInformation("DIB stride: {Stride}, pixel offset: {Offset}, bottomUp: {BottomUp}, actual height: {ActualHeight}",
-                        stride, pixelDataOffset, isBottomUp, actualHeight);
+                    // FlashCap on macOS reports wrong dimensions - calculate actual dimensions from pixel count
+                    var commonWidths = new[] { 1920, 1280, 1440, 640 };
+                    var found = false;
 
-                    if (actualHeight != dibHeight)
+                    foreach (var w in commonWidths)
                     {
-                        _logger.LogWarning("DIB header height mismatch! Using calculated height {ActualHeight} instead of {HeaderHeight}",
-                            actualHeight, dibHeight);
-                        dibHeight = actualHeight;
+                        if (totalPixels % w == 0)
+                        {
+                            var h = totalPixels / w;
+                            if (h >= 480 && h <= 1200)
+                            {
+                                _logger.LogInformation("DIB: Detected resolution {Width}x{Height} from {TotalPixels} pixels",
+                                    w, h, totalPixels);
+                                dibWidth = w;
+                                dibHeight = h;
+                                stride = dibWidth * bytesPerPixel;
+                                found = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!found)
+                    {
+                        _logger.LogWarning("DIB: Could not detect resolution from {TotalPixels} pixels, using header {Width}x{Height}",
+                            totalPixels, dibWidth, dibHeight);
                     }
 
                     return EncodeBmpToJpeg(imageData, dibWidth, dibHeight, bytesPerPixel, stride, pixelDataOffset, isBottomUp);
@@ -320,6 +394,9 @@ public class WebcamCameraProvider : ICameraProvider, IAsyncDisposable
 
     private byte[] EncodeBmpToJpeg(byte[] imageData, int dibWidth, int dibHeight, int bytesPerPixel, int stride, int pixelDataOffset, bool isBottomUp)
     {
+        _logger.LogInformation("EncodeBmpToJpeg: {Width}x{Height}, bpp={BytesPerPixel}, stride={Stride}, offset={Offset}, isBottomUp={IsBottomUp}, flipVertical={FlipVertical}",
+            dibWidth, dibHeight, bytesPerPixel, stride, pixelDataOffset, isBottomUp, _options.FlipVertical);
+
         using var outputStream = new MemoryStream();
 
         if (bytesPerPixel == 3)
@@ -419,11 +496,7 @@ public class WebcamCameraProvider : ICameraProvider, IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-        if (_device is not null)
-        {
-            await _device.DisposeAsync();
-            _device = null;
-        }
+        await CleanupDeviceAsync();
         _captureLock.Dispose();
     }
 }

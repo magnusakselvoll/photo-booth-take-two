@@ -7,6 +7,7 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/PhotoBooth.Application.Tests/PhotoBooth.Application.Tests.csproj" />
+    <Project Path="tests/PhotoBooth.Infrastructure.Tests/PhotoBooth.Infrastructure.Tests.csproj" />
     <Project Path="tests/PhotoBooth.Server.Tests/PhotoBooth.Server.Tests.csproj" />
   </Folder>
 </Solution>

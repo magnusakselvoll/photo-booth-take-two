@@ -47,10 +47,19 @@ The input system must be robust - if one input method fails, others continue wor
 
 Multiple camera types supported through abstraction:
 
-1. **Webcam**: USB webcam or built-in laptop camera
-2. **Mobile phone (Android)**: Phone connected via USB or network, using the phone's camera for higher quality photos
+1. **Webcam**: USB webcam or built-in laptop camera (implemented using FlashCap library)
+2. **Mobile phone (Android)**: Phone connected via USB or network, using the phone's camera for higher quality photos (not yet implemented)
 
 Camera selection is configurable. The system should handle camera disconnection gracefully and attempt reconnection.
+
+#### Webcam Implementation Details
+
+The webcam implementation uses FlashCap for cross-platform capture:
+
+- Camera device stays open continuously (persistent streaming) for reliability
+- Each capture skips configurable number of frames to allow auto-exposure adjustment
+- Raw frames are converted to JPEG with configurable quality
+- Handles BMP/DIB format parsing with dimension auto-detection
 
 ### Countdown
 

@@ -11,7 +11,7 @@ public class CaptureWorkflowService : ICaptureWorkflowService
     private readonly ICameraProvider _cameraProvider;
     private readonly IEventBroadcaster _eventBroadcaster;
     private readonly ILogger<CaptureWorkflowService> _logger;
-    private readonly SemaphoreSlim _captureLock = new(1, 1);
+    private readonly object _lock = new();
 
     private volatile bool _isCaptureInProgress;
 
@@ -34,22 +34,69 @@ public class CaptureWorkflowService : ICaptureWorkflowService
 
     public async Task<bool> TriggerCaptureAsync(string triggerSource, CancellationToken cancellationToken = default)
     {
-        if (!await _captureLock.WaitAsync(0, cancellationToken))
+        // Quick check and set flag atomically
+        lock (_lock)
         {
-            _logger.LogWarning("Capture already in progress, ignoring trigger from {Source}", triggerSource);
-            return false;
+            if (_isCaptureInProgress)
+            {
+                _logger.LogWarning("Capture already in progress, ignoring trigger from {Source}", triggerSource);
+                return false;
+            }
+            _isCaptureInProgress = true;
         }
 
+        _logger.LogInformation("Capture workflow started from {Source}", triggerSource);
+
+        // Broadcast countdown started immediately
+        await _eventBroadcaster.BroadcastAsync(
+            new CountdownStartedEvent(CountdownDurationMs, triggerSource),
+            CancellationToken.None);
+
+        // Run the capture workflow in the background (fire and forget)
+        // This allows the HTTP request to return immediately
+        _ = RunCaptureWorkflowAsync(triggerSource);
+
+        return true;
+    }
+
+    private async Task RunCaptureWorkflowAsync(string triggerSource)
+    {
+        // Use a hard timeout that will forcefully complete this task
+        // even if the camera hangs on synchronous operations
+        const int maxWorkflowTimeoutMs = 12000; // 12 seconds max for entire workflow
+
+        var workflowTask = RunCaptureWorkflowCoreAsync(triggerSource);
+        var timeoutTask = Task.Delay(maxWorkflowTimeoutMs);
+
+        var completedTask = await Task.WhenAny(workflowTask, timeoutTask);
+
+        if (completedTask == timeoutTask)
+        {
+            _logger.LogError("Capture workflow hard timeout after {TimeoutMs}ms - forcefully resetting state", maxWorkflowTimeoutMs);
+            try
+            {
+                await _eventBroadcaster.BroadcastAsync(
+                    new CaptureFailedEvent("Capture timed out"),
+                    CancellationToken.None);
+            }
+            catch
+            {
+                // Ignore broadcast errors
+            }
+        }
+
+        // Always reset the flag, even if the camera is still hanging in the background
+        lock (_lock)
+        {
+            _isCaptureInProgress = false;
+        }
+        _logger.LogInformation("Capture workflow completed, ready for next capture");
+    }
+
+    private async Task RunCaptureWorkflowCoreAsync(string triggerSource)
+    {
         try
         {
-            _isCaptureInProgress = true;
-            _logger.LogInformation("Capture workflow started from {Source}", triggerSource);
-
-            // Broadcast countdown started
-            await _eventBroadcaster.BroadcastAsync(
-                new CountdownStartedEvent(CountdownDurationMs, triggerSource),
-                cancellationToken);
-
             // Calculate when to actually trigger the capture
             // We subtract the camera latency so the photo is taken when countdown hits 0
             var captureLatencyMs = (int)_cameraProvider.CaptureLatency.TotalMilliseconds;
@@ -59,37 +106,24 @@ public class CaptureWorkflowService : ICaptureWorkflowService
                 "Waiting {DelayMs}ms before capture (countdown: {CountdownMs}ms, camera latency: {LatencyMs}ms)",
                 delayMs, CountdownDurationMs, captureLatencyMs);
 
-            await Task.Delay(delayMs, cancellationToken);
+            await Task.Delay(delayMs);
 
             // Perform the actual capture
-            try
-            {
-                var result = await _captureService.CaptureAsync(cancellationToken);
+            var result = await _captureService.CaptureAsync(CancellationToken.None);
 
-                _logger.LogInformation("Photo captured: {Code}", result.Code);
+            _logger.LogInformation("Photo captured: {Code}", result.Code);
 
-                // Broadcast photo captured
-                await _eventBroadcaster.BroadcastAsync(
-                    new PhotoCapturedEvent(result.Id, result.Code, $"/api/photos/{result.Id}/image"),
-                    cancellationToken);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Capture failed");
-
-                await _eventBroadcaster.BroadcastAsync(
-                    new CaptureFailedEvent(ex.Message),
-                    cancellationToken);
-
-                throw;
-            }
-
-            return true;
+            // Broadcast photo captured
+            await _eventBroadcaster.BroadcastAsync(
+                new PhotoCapturedEvent(result.Id, result.Code, $"/api/photos/{result.Id}/image"),
+                CancellationToken.None);
         }
-        finally
+        catch (Exception ex)
         {
-            _isCaptureInProgress = false;
-            _captureLock.Release();
+            _logger.LogError(ex, "Capture failed");
+            await _eventBroadcaster.BroadcastAsync(
+                new CaptureFailedEvent(ex.Message),
+                CancellationToken.None);
         }
     }
 }
