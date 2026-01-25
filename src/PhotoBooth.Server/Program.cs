@@ -7,8 +7,15 @@ using PhotoBooth.Infrastructure.Events;
 using PhotoBooth.Infrastructure.Input;
 using PhotoBooth.Infrastructure.Storage;
 using PhotoBooth.Server.Endpoints;
+using Serilog;
+
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .WriteTo.File("logs/photobooth.log", rollingInterval: RollingInterval.Day)
+    .CreateLogger();
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Host.UseSerilog();
 
 // Add services to the container.
 builder.Services.AddEndpointsApiExplorer();
@@ -27,23 +34,31 @@ builder.Services.AddSingleton<IEventBroadcaster, EventBroadcaster>();
 
 // Register camera provider
 var useMockCamera = builder.Configuration.GetValue<bool>("Camera:UseMock");
-var captureLatencyMs = builder.Configuration.GetValue<int?>("Camera:CaptureLatencyMs");
-var captureLatency = captureLatencyMs.HasValue
-    ? TimeSpan.FromMilliseconds(captureLatencyMs.Value)
-    : (TimeSpan?)null;
 
 if (useMockCamera)
 {
+    var captureLatencyMs = builder.Configuration.GetValue<int?>("Camera:CaptureLatencyMs");
+    var captureLatency = captureLatencyMs.HasValue
+        ? TimeSpan.FromMilliseconds(captureLatencyMs.Value)
+        : (TimeSpan?)null;
     builder.Services.AddSingleton<ICameraProvider>(sp =>
         new MockCameraProvider(isAvailable: true, captureLatency: captureLatency));
 }
 else
 {
-    var cameraIndex = builder.Configuration.GetValue<int>("Camera:DeviceIndex");
+    var webcamOptions = new WebcamOptions
+    {
+        DeviceIndex = builder.Configuration.GetValue<int>("Camera:DeviceIndex"),
+        CaptureLatencyMs = builder.Configuration.GetValue<int?>("Camera:CaptureLatencyMs") ?? 100,
+        FramesToSkip = builder.Configuration.GetValue<int?>("Camera:FramesToSkip") ?? 5,
+        FlipVertical = builder.Configuration.GetValue<bool?>("Camera:FlipVertical") ?? true,
+        PixelOrder = builder.Configuration.GetValue<string>("Camera:PixelOrder") ?? "ARGB",
+        JpegQuality = builder.Configuration.GetValue<int?>("Camera:JpegQuality") ?? 90
+    };
     builder.Services.AddSingleton<ICameraProvider>(sp =>
     {
         var logger = sp.GetRequiredService<ILogger<WebcamCameraProvider>>();
-        return new WebcamCameraProvider(logger, cameraIndex, captureLatency);
+        return new WebcamCameraProvider(logger, webcamOptions);
     });
 }
 
