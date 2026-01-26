@@ -2,6 +2,23 @@
 
 Instructions for Claude Code when working on this repository.
 
+## Git Workflow (GitHub Flow)
+
+Always use GitHub Flow when working on issues:
+
+1. **Create a feature branch** from `main` before starting work:
+   - Branch name format: `<issue-number>-<short-description>` (e.g., `6-enhance-look-and-feel`)
+   - Example: `git checkout -b 6-enhance-look-and-feel`
+
+2. **Commit** changes with descriptive messages
+
+3. **Push** the branch and **create a PR**:
+   - PR title should be descriptive of the change
+   - Reference the issue in the PR body with `Closes #<issue-number>` to auto-close on merge
+   - Use `gh pr create` for convenience
+
+4. **Merge** after review (squash merge preferred for clean history)
+
 ## Build Commands
 
 ```bash
@@ -11,6 +28,7 @@ dotnet run --project src/PhotoBooth.Server # Run the server
 
 # Frontend (in src/PhotoBooth.Web)
 pnpm install                              # Install dependencies
+pnpm run build                            # Build to wwwroot (required before running server)
 pnpm run dev                              # Dev server with hot reload (port 5173)
 pnpm run build                            # Build to wwwroot
 ```
