@@ -26,12 +26,7 @@ public static class PhotoEndpoints
         ICaptureWorkflowService workflowService,
         CancellationToken cancellationToken)
     {
-        var started = await workflowService.TriggerCaptureAsync("web-ui", cancellationToken);
-
-        if (!started)
-        {
-            return Results.Conflict(new { error = "Capture already in progress" });
-        }
+        await workflowService.TriggerCaptureAsync("web-ui", cancellationToken);
 
         return Results.Accepted(value: new
         {
