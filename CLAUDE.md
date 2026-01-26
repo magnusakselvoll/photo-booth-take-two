@@ -69,11 +69,11 @@ Avoid: niche libraries, multiple libraries solving the same problem, dependencie
 - Server layer (REST endpoints for photos, slideshow, camera, events)
 - Server-Sent Events for real-time updates
 - Web UI: BoothPage (slideshow + capture), DownloadPage (code entry + download)
-- Webcam capture using FlashCap library (persistent streaming approach)
+- Webcam capture with two provider options: FlashCap and OpenCV
 - Configuration via appsettings.json
 
 **In Progress:**
-- Webcam capture reliability (see Known Issues below)
+- Testing OpenCV provider as alternative to FlashCap (added to address stability issues)
 
 **TODO:**
 - Migrate features and bugs from this file to github issues
@@ -81,9 +81,33 @@ Avoid: niche libraries, multiple libraries solving the same problem, dependencie
 - QR code display on photos
 - Only allow trigger endpoint from localhost (configurable)
 
-## Webcam Implementation Notes
+## Camera Provider Configuration
 
-The webcam uses FlashCap library for cross-platform capture. Key implementation details:
+The application supports multiple camera providers, configured via `Camera:Provider` in appsettings.json:
+
+| Provider | Value | Description |
+|----------|-------|-------------|
+| FlashCap | `"FlashCap"` | Default. Uses FlashCap library with persistent streaming. |
+| OpenCV | `"OpenCv"` | Alternative using OpenCvSharp4. Simpler implementation. |
+| Mock | `"Mock"` | For testing without a camera. |
+
+Example configuration:
+```json
+{
+  "Camera": {
+    "Provider": "OpenCv",
+    "DeviceIndex": 0,
+    "FramesToSkip": 5,
+    "JpegQuality": 90,
+    "PreferredWidth": 1920,
+    "PreferredHeight": 1080
+  }
+}
+```
+
+### FlashCap Provider Notes
+
+The FlashCap provider has specific implementation details:
 
 - **Persistent streaming**: Camera device stays open continuously (opening/closing per capture causes macOS AVFoundation crashes)
 - **Frame skipping**: Each capture skips first N frames to allow camera auto-exposure to adjust
@@ -94,11 +118,14 @@ The webcam uses FlashCap library for cross-platform capture. Key implementation 
 
 **Intermittent corruption in server captures**: The integration tests (WebcamCaptureTests) pass reliably 10/10, but the server sometimes produces corrupted photos (horizontal line patterns or black images). The camera sometimes outputs 1920x1080 frames and sometimes 1920x1088. Investigation ongoing - may be timing-related difference between test (1s delay) and server capture patterns.
 
-### Testing Webcam
+### Testing Camera Providers
 
 ```bash
-# Run webcam integration tests
+# Run FlashCap webcam integration tests
 dotnet test tests/PhotoBooth.Infrastructure.Tests --filter "FullyQualifiedName~Webcam"
+
+# Run OpenCV integration tests
+dotnet test tests/PhotoBooth.Infrastructure.Tests --filter "FullyQualifiedName~OpenCv"
 ```
 
 ## Reference

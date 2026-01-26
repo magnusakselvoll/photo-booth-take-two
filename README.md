@@ -24,11 +24,17 @@ dotnet build
 # Run tests
 dotnet test
 
-# Run the server
-dotnet run --project src/PhotoBooth.Server
+# Development (runs both backend and frontend with hot reload)
+./run-dev.sh
 ```
 
-The server starts at `http://localhost:5000`. Open this URL in a browser to access the photo booth interface.
+Open `http://localhost:5173` in a browser to access the photo booth interface.
+
+For production, build the frontend and run only the backend:
+```bash
+cd src/PhotoBooth.Web && pnpm run build
+dotnet run --project src/PhotoBooth.Server
+```
 
 ## Configuration
 
@@ -37,13 +43,14 @@ Configuration is done via `appsettings.json` in the Server project:
 ```json
 {
   "Camera": {
-    "UseMock": false,
+    "Provider": "OpenCv",
     "DeviceIndex": 0,
     "CaptureLatencyMs": 100,
     "FramesToSkip": 5,
-    "FlipVertical": true,
-    "PixelOrder": "ARGB",
-    "JpegQuality": 90
+    "FlipVertical": false,
+    "JpegQuality": 90,
+    "PreferredWidth": 1920,
+    "PreferredHeight": 1080
   },
   "Capture": {
     "CountdownDurationMs": 3000
@@ -56,11 +63,12 @@ Configuration is done via `appsettings.json` in the Server project:
 
 ### Camera Options
 
-- `UseMock`: Use mock camera for testing (no real camera needed)
+- `Provider`: Camera provider to use (`"OpenCv"`, `"FlashCap"`, or `"Mock"`)
 - `DeviceIndex`: Webcam device index (0 = first camera)
 - `FramesToSkip`: Number of frames to skip for auto-exposure adjustment
 - `FlipVertical`: Mirror the image vertically
-- `PixelOrder`: Pixel byte order from camera (ARGB, BGRA, etc.)
+- `PixelOrder`: Pixel byte order from camera - FlashCap only (ARGB, BGRA, etc.)
+- `PreferredWidth`/`PreferredHeight`: Requested camera resolution
 
 ## Project Structure
 

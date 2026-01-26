@@ -9,6 +9,9 @@
     <PackageReference Include="FlashCap" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="OpenCvSharp4" />
+    <PackageReference Include="OpenCvSharp4.runtime.osx_arm64" />
+    <PackageReference Include="OpenCvSharp4.runtime.win" />
     <PackageReference Include="SixLabors.ImageSharp" />
   </ItemGroup>
 

@@ -33,33 +33,54 @@ var eventName = builder.Configuration.GetValue<string>("Event:Name") ?? DateTime
 builder.Services.AddSingleton<IEventBroadcaster, EventBroadcaster>();
 
 // Register camera provider
-var useMockCamera = builder.Configuration.GetValue<bool>("Camera:UseMock");
+var cameraProvider = builder.Configuration.GetValue<string>("Camera:Provider") ?? "FlashCap";
 
-if (useMockCamera)
+switch (cameraProvider.ToLowerInvariant())
 {
-    var captureLatencyMs = builder.Configuration.GetValue<int?>("Camera:CaptureLatencyMs");
-    var captureLatency = captureLatencyMs.HasValue
-        ? TimeSpan.FromMilliseconds(captureLatencyMs.Value)
-        : (TimeSpan?)null;
-    builder.Services.AddSingleton<ICameraProvider>(sp =>
-        new MockCameraProvider(isAvailable: true, captureLatency: captureLatency));
-}
-else
-{
-    var webcamOptions = new WebcamOptions
-    {
-        DeviceIndex = builder.Configuration.GetValue<int>("Camera:DeviceIndex"),
-        CaptureLatencyMs = builder.Configuration.GetValue<int?>("Camera:CaptureLatencyMs") ?? 100,
-        FramesToSkip = builder.Configuration.GetValue<int?>("Camera:FramesToSkip") ?? 5,
-        FlipVertical = builder.Configuration.GetValue<bool?>("Camera:FlipVertical") ?? true,
-        PixelOrder = builder.Configuration.GetValue<string>("Camera:PixelOrder") ?? "ARGB",
-        JpegQuality = builder.Configuration.GetValue<int?>("Camera:JpegQuality") ?? 90
-    };
-    builder.Services.AddSingleton<ICameraProvider>(sp =>
-    {
-        var logger = sp.GetRequiredService<ILogger<WebcamCameraProvider>>();
-        return new WebcamCameraProvider(logger, webcamOptions);
-    });
+    case "mock":
+        var captureLatencyMs = builder.Configuration.GetValue<int?>("Camera:CaptureLatencyMs");
+        var captureLatency = captureLatencyMs.HasValue
+            ? TimeSpan.FromMilliseconds(captureLatencyMs.Value)
+            : (TimeSpan?)null;
+        builder.Services.AddSingleton<ICameraProvider>(sp =>
+            new MockCameraProvider(isAvailable: true, captureLatency: captureLatency));
+        break;
+
+    case "opencv":
+        var openCvOptions = new OpenCvCameraOptions
+        {
+            DeviceIndex = builder.Configuration.GetValue<int>("Camera:DeviceIndex"),
+            CaptureLatencyMs = builder.Configuration.GetValue<int?>("Camera:CaptureLatencyMs") ?? 100,
+            FramesToSkip = builder.Configuration.GetValue<int?>("Camera:FramesToSkip") ?? 5,
+            FlipVertical = builder.Configuration.GetValue<bool?>("Camera:FlipVertical") ?? false,
+            JpegQuality = builder.Configuration.GetValue<int?>("Camera:JpegQuality") ?? 90,
+            PreferredWidth = builder.Configuration.GetValue<int?>("Camera:PreferredWidth") ?? 1920,
+            PreferredHeight = builder.Configuration.GetValue<int?>("Camera:PreferredHeight") ?? 1080
+        };
+        builder.Services.AddSingleton<ICameraProvider>(sp =>
+        {
+            var logger = sp.GetRequiredService<ILogger<OpenCvCameraProvider>>();
+            return new OpenCvCameraProvider(logger, openCvOptions);
+        });
+        break;
+
+    case "flashcap":
+    default:
+        var webcamOptions = new WebcamOptions
+        {
+            DeviceIndex = builder.Configuration.GetValue<int>("Camera:DeviceIndex"),
+            CaptureLatencyMs = builder.Configuration.GetValue<int?>("Camera:CaptureLatencyMs") ?? 100,
+            FramesToSkip = builder.Configuration.GetValue<int?>("Camera:FramesToSkip") ?? 5,
+            FlipVertical = builder.Configuration.GetValue<bool?>("Camera:FlipVertical") ?? true,
+            PixelOrder = builder.Configuration.GetValue<string>("Camera:PixelOrder") ?? "ARGB",
+            JpegQuality = builder.Configuration.GetValue<int?>("Camera:JpegQuality") ?? 90
+        };
+        builder.Services.AddSingleton<ICameraProvider>(sp =>
+        {
+            var logger = sp.GetRequiredService<ILogger<WebcamCameraProvider>>();
+            return new WebcamCameraProvider(logger, webcamOptions);
+        });
+        break;
 }
 
 builder.Services.AddSingleton<IPhotoRepository>(sp => new FileSystemPhotoRepository(basePath, eventName));

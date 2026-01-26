@@ -6,8 +6,23 @@
 cleanup() {
     echo ""
     echo "Stopping servers..."
-    kill $BACKEND_PID $FRONTEND_PID 2>/dev/null
-    wait $BACKEND_PID $FRONTEND_PID 2>/dev/null
+
+    # Stop frontend first
+    if [ -n "$FRONTEND_PID" ] && kill -0 $FRONTEND_PID 2>/dev/null; then
+        echo "Stopping frontend (PID $FRONTEND_PID)..."
+        kill $FRONTEND_PID 2>/dev/null
+        wait $FRONTEND_PID 2>/dev/null
+        echo "Frontend stopped."
+    fi
+
+    # Then stop backend
+    if [ -n "$BACKEND_PID" ] && kill -0 $BACKEND_PID 2>/dev/null; then
+        echo "Stopping backend (PID $BACKEND_PID)..."
+        kill $BACKEND_PID 2>/dev/null
+        wait $BACKEND_PID 2>/dev/null
+        echo "Backend stopped."
+    fi
+
     echo "Done."
     exit 0
 }
@@ -31,6 +46,7 @@ echo ""
 echo "Backend PID: $BACKEND_PID"
 echo "Frontend PID: $FRONTEND_PID"
 echo ""
+echo "Open http://localhost:5173 in your browser."
 echo "Press Ctrl+C to stop both servers."
 echo ""
 
