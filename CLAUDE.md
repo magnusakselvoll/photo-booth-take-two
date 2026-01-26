@@ -76,8 +76,10 @@ Avoid: niche libraries, multiple libraries solving the same problem, dependencie
 - Webcam capture reliability (see Known Issues below)
 
 **TODO:**
+- Migrate features and bugs from this file to github issues
 - Android phone camera integration
 - QR code display on photos
+- Only allow trigger endpoint from localhost (configurable)
 
 ## Webcam Implementation Notes
 
