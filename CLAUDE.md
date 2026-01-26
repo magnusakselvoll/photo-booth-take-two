@@ -75,11 +75,7 @@ Avoid: niche libraries, multiple libraries solving the same problem, dependencie
 **In Progress:**
 - Testing OpenCV provider as alternative to FlashCap (added to address stability issues)
 
-**TODO:**
-- Migrate features and bugs from this file to github issues
-- Android phone camera integration
-- QR code display on photos
-- Only allow trigger endpoint from localhost (configurable)
+**Current Focus:** None - see [GitHub Issues](https://github.com/magnusakselvoll/photo-booth-take-two/issues) for backlog
 
 ## Camera Provider Configuration
 
