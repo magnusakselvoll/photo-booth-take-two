@@ -49,3 +49,10 @@ export interface CaptureFailedEvent {
 }
 
 export type PhotoBoothEvent = CountdownStartedEvent | PhotoCapturedEvent | CaptureFailedEvent;
+
+export interface QueuedPhoto {
+  photoId: string;
+  code: string;
+  imageUrl: string;
+  timestamp: string;
+}

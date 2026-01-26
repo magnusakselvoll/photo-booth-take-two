@@ -7,10 +7,6 @@ export async function triggerCapture(): Promise<TriggerResponse> {
     method: 'POST',
   });
 
-  if (response.status === 409) {
-    throw new Error('Capture already in progress');
-  }
-
   if (!response.ok) {
     throw new Error(`Failed to trigger capture: ${response.statusText}`);
   }

@@ -11,11 +11,7 @@ public class CaptureWorkflowService : ICaptureWorkflowService
     private readonly ICameraProvider _cameraProvider;
     private readonly IEventBroadcaster _eventBroadcaster;
     private readonly ILogger<CaptureWorkflowService> _logger;
-    private readonly object _lock = new();
 
-    private volatile bool _isCaptureInProgress;
-
-    public bool IsCaptureInProgress => _isCaptureInProgress;
     public int CountdownDurationMs { get; }
 
     public CaptureWorkflowService(
@@ -32,19 +28,8 @@ public class CaptureWorkflowService : ICaptureWorkflowService
         CountdownDurationMs = countdownDurationMs;
     }
 
-    public async Task<bool> TriggerCaptureAsync(string triggerSource, CancellationToken cancellationToken = default)
+    public async Task TriggerCaptureAsync(string triggerSource, CancellationToken cancellationToken = default)
     {
-        // Quick check and set flag atomically
-        lock (_lock)
-        {
-            if (_isCaptureInProgress)
-            {
-                _logger.LogWarning("Capture already in progress, ignoring trigger from {Source}", triggerSource);
-                return false;
-            }
-            _isCaptureInProgress = true;
-        }
-
         _logger.LogInformation("Capture workflow started from {Source}", triggerSource);
 
         // Broadcast countdown started immediately
@@ -54,9 +39,8 @@ public class CaptureWorkflowService : ICaptureWorkflowService
 
         // Run the capture workflow in the background (fire and forget)
         // This allows the HTTP request to return immediately
+        // Multiple workflows can run in parallel
         _ = RunCaptureWorkflowAsync(triggerSource);
-
-        return true;
     }
 
     private async Task RunCaptureWorkflowAsync(string triggerSource)
@@ -72,7 +56,7 @@ public class CaptureWorkflowService : ICaptureWorkflowService
 
         if (completedTask == timeoutTask)
         {
-            _logger.LogError("Capture workflow hard timeout after {TimeoutMs}ms - forcefully resetting state", maxWorkflowTimeoutMs);
+            _logger.LogError("Capture workflow hard timeout after {TimeoutMs}ms", maxWorkflowTimeoutMs);
             try
             {
                 await _eventBroadcaster.BroadcastAsync(
@@ -85,12 +69,7 @@ public class CaptureWorkflowService : ICaptureWorkflowService
             }
         }
 
-        // Always reset the flag, even if the camera is still hanging in the background
-        lock (_lock)
-        {
-            _isCaptureInProgress = false;
-        }
-        _logger.LogInformation("Capture workflow completed, ready for next capture");
+        _logger.LogInformation("Capture workflow completed for trigger from {Source}", triggerSource);
     }
 
     private async Task RunCaptureWorkflowCoreAsync(string triggerSource)
