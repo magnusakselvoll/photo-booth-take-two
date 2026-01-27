@@ -5,6 +5,7 @@ using PhotoBooth.Infrastructure.Camera;
 using PhotoBooth.Infrastructure.CodeGeneration;
 using PhotoBooth.Infrastructure.Events;
 using PhotoBooth.Infrastructure.Input;
+using PhotoBooth.Infrastructure.Network;
 using PhotoBooth.Infrastructure.Storage;
 using PhotoBooth.Server.Endpoints;
 using PhotoBooth.Server.Filters;
@@ -21,6 +22,9 @@ builder.Host.UseSerilog();
 // Add services to the container.
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+// Add network security (blocks outbound HTTP requests by default)
+builder.Services.AddNetworkSecurity(builder.Configuration);
 
 // Configure photo storage path and event name
 var configuredPath = builder.Configuration.GetValue<string>("PhotoStorage:Path");
