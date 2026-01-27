@@ -4,10 +4,10 @@ A photo booth application for events. Runs unattended with slideshow display, ph
 
 ## Features
 
-- **Slideshow display**: Shows photos from the current event in rotation
-- **Photo capture**: Countdown timer triggered by button press (keyboard, mouse, or joystick)
+- **Slideshow display**: Shows photos with Ken Burns effect (pan/zoom animations) and crossfade transitions
+- **Photo capture**: Countdown timer triggered by button press, supports multiple rapid captures with queuing
 - **Photo download**: Guests retrieve photos via numeric code or QR code
-- **Multiple camera support**: Webcam, mobile phone (Android)
+- **Multiple camera support**: Webcam (via OpenCV or FlashCap), mobile phone (Android - planned)
 
 ## Prerequisites
 
