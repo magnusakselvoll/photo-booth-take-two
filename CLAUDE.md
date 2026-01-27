@@ -13,6 +13,7 @@ Always use GitHub Flow when working on issues:
 2. **Commit** changes with descriptive messages
 
 3. **Push** the branch and **create a PR**:
+   - **Ask before creating the PR** - the user may have feedback based on the console output or code
    - PR title should be descriptive of the change
    - Reference the issue in the PR body with `Closes #<issue-number>` to auto-close on merge
    - Use `gh pr create` for convenience
