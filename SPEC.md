@@ -50,27 +50,14 @@ The input system must be robust - if one input method fails, others continue wor
 
 Multiple camera types supported through abstraction:
 
-1. **Webcam**: USB webcam or built-in laptop camera, with two provider options:
-   - **OpenCV** (recommended): Uses OpenCvSharp4, simpler and more stable
-   - **FlashCap**: Alternative using FlashCap library with persistent streaming
+1. **Webcam**: USB webcam or built-in laptop camera using OpenCvSharp4 for cross-platform capture
 2. **Mobile phone (Android)**: Phone connected via USB or network, using the phone's camera for higher quality photos (not yet implemented)
 
 Camera selection is configurable. The system should handle camera disconnection gracefully and attempt reconnection.
 
 #### Webcam Implementation Details
 
-Two webcam providers are available, configured via `Camera:Provider` setting:
-
-**OpenCV Provider** (recommended):
-- Uses OpenCvSharp4 for cross-platform capture
-- Simpler implementation with good stability
-
-**FlashCap Provider**:
-- Camera device stays open continuously (persistent streaming) for reliability
-- Each capture skips configurable number of frames to allow auto-exposure adjustment
-- Handles BMP/DIB format parsing with dimension auto-detection
-
-Both providers convert raw frames to JPEG with configurable quality.
+The OpenCV provider uses OpenCvSharp4 for cross-platform capture with configurable resolution, frame skipping for auto-exposure adjustment, and JPEG quality settings.
 
 ### Countdown
 

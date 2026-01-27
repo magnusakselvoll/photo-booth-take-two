@@ -88,12 +88,11 @@ Avoid: niche libraries, multiple libraries solving the same problem, dependencie
 
 ## Camera Provider Configuration
 
-The application supports multiple camera providers, configured via `Camera:Provider` in appsettings.json:
+The application supports camera providers configured via `Camera:Provider` in appsettings.json:
 
 | Provider | Value | Description |
 |----------|-------|-------------|
-| FlashCap | `"FlashCap"` | Default. Uses FlashCap library with persistent streaming. |
-| OpenCV | `"OpenCv"` | Alternative using OpenCvSharp4. Simpler implementation. |
+| OpenCV | `"OpenCv"` | Default. Uses OpenCvSharp4 for cross-platform capture. |
 | Mock | `"Mock"` | For testing without a camera. |
 
 Example configuration:

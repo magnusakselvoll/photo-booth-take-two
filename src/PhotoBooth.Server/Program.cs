@@ -37,8 +37,8 @@ var eventName = builder.Configuration.GetValue<string>("Event:Name") ?? DateTime
 // Register event broadcasting
 builder.Services.AddSingleton<IEventBroadcaster, EventBroadcaster>();
 
-// Register camera provider
-var cameraProvider = builder.Configuration.GetValue<string>("Camera:Provider") ?? "FlashCap";
+// Register camera provider (OpenCV or Mock)
+var cameraProvider = builder.Configuration.GetValue<string>("Camera:Provider") ?? "OpenCv";
 
 switch (cameraProvider.ToLowerInvariant())
 {
@@ -52,6 +52,7 @@ switch (cameraProvider.ToLowerInvariant())
         break;
 
     case "opencv":
+    default:
         var openCvOptions = new OpenCvCameraOptions
         {
             DeviceIndex = builder.Configuration.GetValue<int>("Camera:DeviceIndex"),
@@ -66,24 +67,6 @@ switch (cameraProvider.ToLowerInvariant())
         {
             var logger = sp.GetRequiredService<ILogger<OpenCvCameraProvider>>();
             return new OpenCvCameraProvider(logger, openCvOptions);
-        });
-        break;
-
-    case "flashcap":
-    default:
-        var webcamOptions = new WebcamOptions
-        {
-            DeviceIndex = builder.Configuration.GetValue<int>("Camera:DeviceIndex"),
-            CaptureLatencyMs = builder.Configuration.GetValue<int?>("Camera:CaptureLatencyMs") ?? 100,
-            FramesToSkip = builder.Configuration.GetValue<int?>("Camera:FramesToSkip") ?? 5,
-            FlipVertical = builder.Configuration.GetValue<bool?>("Camera:FlipVertical") ?? true,
-            PixelOrder = builder.Configuration.GetValue<string>("Camera:PixelOrder") ?? "ARGB",
-            JpegQuality = builder.Configuration.GetValue<int?>("Camera:JpegQuality") ?? 90
-        };
-        builder.Services.AddSingleton<ICameraProvider>(sp =>
-        {
-            var logger = sp.GetRequiredService<ILogger<WebcamCameraProvider>>();
-            return new WebcamCameraProvider(logger, webcamOptions);
         });
         break;
 }
