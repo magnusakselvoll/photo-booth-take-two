@@ -1,34 +1,31 @@
-using Microsoft.Extensions.Logging;
-using Moq;
+using Microsoft.Extensions.Logging.Abstractions;
 using PhotoBooth.Application.Services;
+using PhotoBooth.Application.Tests.TestDoubles;
 using PhotoBooth.Domain.Entities;
 using PhotoBooth.Domain.Exceptions;
-using PhotoBooth.Domain.Interfaces;
 
 namespace PhotoBooth.Application.Tests;
 
 [TestClass]
 public sealed class PhotoCaptureServiceTests
 {
-    private Mock<ICameraProvider> _cameraProviderMock = null!;
-    private Mock<IPhotoRepository> _photoRepositoryMock = null!;
-    private Mock<IPhotoCodeGenerator> _codeGeneratorMock = null!;
-    private Mock<ILogger<PhotoCaptureService>> _loggerMock = null!;
+    private StubCameraProvider _cameraProvider = null!;
+    private StubPhotoRepository _photoRepository = null!;
+    private StubPhotoCodeGenerator _codeGenerator = null!;
     private PhotoCaptureService _service = null!;
 
     [TestInitialize]
     public void Setup()
     {
-        _cameraProviderMock = new Mock<ICameraProvider>();
-        _photoRepositoryMock = new Mock<IPhotoRepository>();
-        _codeGeneratorMock = new Mock<IPhotoCodeGenerator>();
-        _loggerMock = new Mock<ILogger<PhotoCaptureService>>();
+        _cameraProvider = new StubCameraProvider();
+        _photoRepository = new StubPhotoRepository();
+        _codeGenerator = new StubPhotoCodeGenerator();
 
         _service = new PhotoCaptureService(
-            _cameraProviderMock.Object,
-            _photoRepositoryMock.Object,
-            _codeGeneratorMock.Object,
-            _loggerMock.Object);
+            _cameraProvider,
+            _photoRepository,
+            _codeGenerator,
+            NullLogger<PhotoCaptureService>.Instance);
     }
 
     [TestMethod]
@@ -38,14 +35,9 @@ public sealed class PhotoCaptureServiceTests
         var imageData = new byte[] { 1, 2, 3 };
         var code = "123456";
 
-        _cameraProviderMock.Setup(x => x.IsAvailableAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(true);
-        _cameraProviderMock.Setup(x => x.CaptureAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(imageData);
-        _codeGeneratorMock.Setup(x => x.GenerateUniqueCodeAsync(It.IsAny<Func<string, Task<bool>>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(code);
-        _photoRepositoryMock.Setup(x => x.SaveAsync(It.IsAny<Photo>(), imageData, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Photo p, byte[] _, CancellationToken _) => p);
+        _cameraProvider.IsAvailable = true;
+        _cameraProvider.ImageData = imageData;
+        _codeGenerator.CodeToReturn = code;
 
         // Act
         var result = await _service.CaptureAsync();
@@ -53,15 +45,14 @@ public sealed class PhotoCaptureServiceTests
         // Assert
         Assert.IsNotNull(result);
         Assert.AreEqual(code, result.Code);
-        _photoRepositoryMock.Verify(x => x.SaveAsync(It.IsAny<Photo>(), imageData, It.IsAny<CancellationToken>()), Times.Once);
+        Assert.HasCount(1, _photoRepository.SavedPhotos);
     }
 
     [TestMethod]
     public async Task CaptureAsync_WhenCameraNotAvailable_ThrowsException()
     {
         // Arrange
-        _cameraProviderMock.Setup(x => x.IsAvailableAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(false);
+        _cameraProvider.IsAvailable = false;
 
         // Act & Assert
         await Assert.ThrowsExactlyAsync<CameraNotAvailableException>(
@@ -80,8 +71,7 @@ public sealed class PhotoCaptureServiceTests
             CapturedAt = DateTime.UtcNow
         };
 
-        _photoRepositoryMock.Setup(x => x.GetByCodeAsync(code, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(photo);
+        _photoRepository.PhotoToReturnByCode = photo;
 
         // Act
         var result = await _service.GetByCodeAsync(code);
@@ -96,8 +86,7 @@ public sealed class PhotoCaptureServiceTests
     public async Task GetByCodeAsync_WhenPhotoNotFound_ReturnsNull()
     {
         // Arrange
-        _photoRepositoryMock.Setup(x => x.GetByCodeAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Photo?)null);
+        _photoRepository.PhotoToReturnByCode = null;
 
         // Act
         var result = await _service.GetByCodeAsync("999999");
@@ -113,8 +102,7 @@ public sealed class PhotoCaptureServiceTests
         var id = Guid.NewGuid();
         var imageData = new byte[] { 1, 2, 3 };
 
-        _photoRepositoryMock.Setup(x => x.GetImageDataAsync(id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(imageData);
+        _photoRepository.ImageDataToReturn = imageData;
 
         // Act
         var result = await _service.GetImageDataAsync(id);

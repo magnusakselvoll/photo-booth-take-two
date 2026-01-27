@@ -7,6 +7,7 @@ Instructions for Claude Code when working on this repository.
 Always use GitHub Flow when working on issues:
 
 1. **Create a feature branch** from `main` before starting work:
+   - First fetch and checkout latest main: `git fetch origin && git checkout main && git pull`
    - Branch name format: `<issue-number>-<short-description>` (e.g., `6-enhance-look-and-feel`)
    - Example: `git checkout -b 6-enhance-look-and-feel`
 

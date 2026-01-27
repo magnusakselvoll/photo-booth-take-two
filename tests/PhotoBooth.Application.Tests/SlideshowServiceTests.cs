@@ -1,24 +1,24 @@
-using Microsoft.Extensions.Logging;
-using Moq;
+using Microsoft.Extensions.Logging.Abstractions;
 using PhotoBooth.Application.Services;
+using PhotoBooth.Application.Tests.TestDoubles;
 using PhotoBooth.Domain.Entities;
-using PhotoBooth.Domain.Interfaces;
 
 namespace PhotoBooth.Application.Tests;
 
 [TestClass]
 public sealed class SlideshowServiceTests
 {
-    private Mock<IPhotoRepository> _photoRepositoryMock = null!;
-    private Mock<ILogger<SlideshowService>> _loggerMock = null!;
+    private StubPhotoRepository _photoRepository = null!;
     private SlideshowService _service = null!;
 
     [TestInitialize]
     public void Setup()
     {
-        _photoRepositoryMock = new Mock<IPhotoRepository>();
-        _loggerMock = new Mock<ILogger<SlideshowService>>();
-        _service = new SlideshowService(_photoRepositoryMock.Object, _loggerMock.Object, "/api/photos");
+        _photoRepository = new StubPhotoRepository();
+        _service = new SlideshowService(
+            _photoRepository,
+            NullLogger<SlideshowService>.Instance,
+            "/api/photos");
     }
 
     [TestMethod]
@@ -32,8 +32,7 @@ public sealed class SlideshowServiceTests
             CapturedAt = DateTime.UtcNow
         };
 
-        _photoRepositoryMock.Setup(x => x.GetRandomAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(photo);
+        _photoRepository.PhotoToReturnRandom = photo;
 
         // Act
         var result = await _service.GetNextAsync();
@@ -49,8 +48,7 @@ public sealed class SlideshowServiceTests
     public async Task GetNextAsync_WhenNoPhotos_ReturnsNull()
     {
         // Arrange
-        _photoRepositoryMock.Setup(x => x.GetRandomAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Photo?)null);
+        _photoRepository.PhotoToReturnRandom = null;
 
         // Act
         var result = await _service.GetNextAsync();
@@ -69,8 +67,7 @@ public sealed class SlideshowServiceTests
             new() { Id = Guid.NewGuid(), Code = "222222", CapturedAt = DateTime.UtcNow.AddMinutes(-1) }
         };
 
-        _photoRepositoryMock.Setup(x => x.GetRecentAsync(2, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(photos);
+        _photoRepository.PhotosToReturnRecent = photos;
 
         // Act
         var result = await _service.GetRecentAsync(2);
