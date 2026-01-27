@@ -22,6 +22,8 @@ When no photo is being taken, the screen shows a slideshow of photos from the cu
 - Selection is random, but recently taken photos are prioritized
 - Each photo displays its download code (and optionally QR code)
 - Fullscreen display optimized for the booth monitor
+- **Ken Burns effect**: Photos display with subtle pan/zoom animations for visual interest
+- **Crossfade transitions**: Smooth 0.5-second fade between photos
 
 ### 2. Capture Mode (Active)
 
@@ -31,6 +33,7 @@ Triggered when a guest presses the capture button.
 - **Capture phase**: Take the photo
 - **Preview phase**: Display the captured photo for a few seconds
 - **Return to slideshow**: The new photo is added to rotation with high priority
+- **Multiple captures**: Guests can trigger additional captures during countdown or preview; photos queue and display in order
 
 ## Photo Capture
 
@@ -47,19 +50,27 @@ The input system must be robust - if one input method fails, others continue wor
 
 Multiple camera types supported through abstraction:
 
-1. **Webcam**: USB webcam or built-in laptop camera (implemented using FlashCap library)
+1. **Webcam**: USB webcam or built-in laptop camera, with two provider options:
+   - **OpenCV** (recommended): Uses OpenCvSharp4, simpler and more stable
+   - **FlashCap**: Alternative using FlashCap library with persistent streaming
 2. **Mobile phone (Android)**: Phone connected via USB or network, using the phone's camera for higher quality photos (not yet implemented)
 
 Camera selection is configurable. The system should handle camera disconnection gracefully and attempt reconnection.
 
 #### Webcam Implementation Details
 
-The webcam implementation uses FlashCap for cross-platform capture:
+Two webcam providers are available, configured via `Camera:Provider` setting:
 
+**OpenCV Provider** (recommended):
+- Uses OpenCvSharp4 for cross-platform capture
+- Simpler implementation with good stability
+
+**FlashCap Provider**:
 - Camera device stays open continuously (persistent streaming) for reliability
 - Each capture skips configurable number of frames to allow auto-exposure adjustment
-- Raw frames are converted to JPEG with configurable quality
 - Handles BMP/DIB format parsing with dimension auto-detection
+
+Both providers convert raw frames to JPEG with configurable quality.
 
 ### Countdown
 
