@@ -35,14 +35,6 @@ public class SlideshowService : ISlideshowService
         return ToDto(photo);
     }
 
-    public async Task<IReadOnlyList<SlideshowPhotoDto>> GetRecentAsync(int count, CancellationToken cancellationToken = default)
-    {
-        _logger.LogDebug("Getting {Count} recent photos for slideshow", count);
-        var photos = await _photoRepository.GetRecentAsync(count, cancellationToken);
-        _logger.LogDebug("Retrieved {ActualCount} recent photos", photos.Count);
-        return photos.Select(ToDto).ToList();
-    }
-
     private SlideshowPhotoDto ToDto(Photo photo)
     {
         return new SlideshowPhotoDto(
