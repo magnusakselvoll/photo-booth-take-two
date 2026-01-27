@@ -5,12 +5,17 @@ namespace PhotoBooth.Server.Endpoints;
 
 public static class PhotoEndpoints
 {
-    public static void MapPhotoEndpoints(this IEndpointRouteBuilder app)
+    public static void MapPhotoEndpoints(this IEndpointRouteBuilder app, IEndpointFilter? triggerFilter = null)
     {
         var group = app.MapGroup("/api/photos");
 
-        group.MapPost("/trigger", TriggerCapture)
+        var triggerEndpoint = group.MapPost("/trigger", TriggerCapture)
             .WithName("TriggerCapture");
+
+        if (triggerFilter is not null)
+        {
+            triggerEndpoint.AddEndpointFilter(triggerFilter);
+        }
 
         group.MapPost("/capture", CapturePhoto)
             .WithName("CapturePhoto");
