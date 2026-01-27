@@ -19,6 +19,13 @@ Always use GitHub Flow when working on issues:
 
 4. **Merge** after review (squash merge preferred for clean history)
 
+## Documentation Updates
+
+When closing issues via PR, consider updating:
+- **SPEC.md** - Functional requirements, use cases, expected behavior
+- **README.md** - Setup instructions, configuration, user-facing changes
+- **CLAUDE.md** - Technical implementation details, architecture, known issues, build commands
+
 ## Build Commands
 
 ```bash
