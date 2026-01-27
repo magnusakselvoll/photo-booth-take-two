@@ -7,6 +7,7 @@ using PhotoBooth.Infrastructure.Events;
 using PhotoBooth.Infrastructure.Input;
 using PhotoBooth.Infrastructure.Storage;
 using PhotoBooth.Server.Endpoints;
+using PhotoBooth.Server.Filters;
 using Serilog;
 
 Log.Logger = new LoggerConfiguration()
@@ -147,8 +148,14 @@ else
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
+// Create localhost-only filter for trigger endpoint
+var restrictTriggerToLocalhost = builder.Configuration.GetValue<bool?>("Trigger:RestrictToLocalhost") ?? true;
+var localhostFilter = new LocalhostOnlyFilter(
+    restrictTriggerToLocalhost,
+    app.Services.GetRequiredService<ILogger<LocalhostOnlyFilter>>());
+
 // Map endpoints
-app.MapPhotoEndpoints();
+app.MapPhotoEndpoints(localhostFilter);
 app.MapSlideshowEndpoints();
 app.MapCameraEndpoints();
 app.MapEventsEndpoints();
