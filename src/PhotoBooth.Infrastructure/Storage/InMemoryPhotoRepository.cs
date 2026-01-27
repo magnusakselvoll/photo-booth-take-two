@@ -43,18 +43,6 @@ public class InMemoryPhotoRepository : IPhotoRepository
         }
     }
 
-    public Task<IReadOnlyList<Photo>> GetRecentAsync(int count, CancellationToken cancellationToken = default)
-    {
-        lock (_lock)
-        {
-            var recent = _photos
-                .OrderByDescending(p => p.CapturedAt)
-                .Take(count)
-                .ToList();
-            return Task.FromResult<IReadOnlyList<Photo>>(recent);
-        }
-    }
-
     public Task<Photo?> GetRandomAsync(CancellationToken cancellationToken = default)
     {
         lock (_lock)

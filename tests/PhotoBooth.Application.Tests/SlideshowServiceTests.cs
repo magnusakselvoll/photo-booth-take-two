@@ -56,25 +56,4 @@ public sealed class SlideshowServiceTests
         // Assert
         Assert.IsNull(result);
     }
-
-    [TestMethod]
-    public async Task GetRecentAsync_ReturnsPhotosWithImageUrls()
-    {
-        // Arrange
-        var photos = new List<Photo>
-        {
-            new() { Id = Guid.NewGuid(), Code = "111111", CapturedAt = DateTime.UtcNow },
-            new() { Id = Guid.NewGuid(), Code = "222222", CapturedAt = DateTime.UtcNow.AddMinutes(-1) }
-        };
-
-        _photoRepository.PhotosToReturnRecent = photos;
-
-        // Act
-        var result = await _service.GetRecentAsync(2);
-
-        // Assert
-        Assert.HasCount(2, result);
-        Assert.AreEqual($"/api/photos/{photos[0].Id}/image", result[0].ImageUrl);
-        Assert.AreEqual($"/api/photos/{photos[1].Id}/image", result[1].ImageUrl);
-    }
 }

@@ -19,7 +19,7 @@ The application has two display modes:
 When no photo is being taken, the screen shows a slideshow of photos from the current event.
 
 - Photos rotate automatically at a configurable interval
-- Selection is random, but recently taken photos are prioritized
+- Selection is uniformly random from all event photos
 - Each photo displays its download code (and optionally QR code)
 - Fullscreen display optimized for the booth monitor
 - **Ken Burns effect**: Photos display with subtle pan/zoom animations for visual interest
@@ -32,7 +32,7 @@ Triggered when a guest presses the capture button.
 - **Countdown phase**: Display countdown timer (e.g., 5, 4, 3, 2, 1) so guests can prepare
 - **Capture phase**: Take the photo
 - **Preview phase**: Display the captured photo for a few seconds
-- **Return to slideshow**: The new photo is added to rotation with high priority
+- **Return to slideshow**: The new photo is added to the random rotation
 - **Multiple captures**: Guests can trigger additional captures during countdown or preview; photos queue and display in order
 
 ## Photo Capture

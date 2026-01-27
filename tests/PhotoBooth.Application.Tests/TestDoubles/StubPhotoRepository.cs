@@ -9,7 +9,6 @@ public sealed class StubPhotoRepository : IPhotoRepository
 
     public Photo? PhotoToReturnByCode { get; set; }
     public Photo? PhotoToReturnRandom { get; set; }
-    public IReadOnlyList<Photo>? PhotosToReturnRecent { get; set; }
     public byte[]? ImageDataToReturn { get; set; }
 
     public List<Photo> SavedPhotos { get; } = [];
@@ -29,9 +28,6 @@ public sealed class StubPhotoRepository : IPhotoRepository
 
     public Task<byte[]?> GetImageDataAsync(Guid id, CancellationToken cancellationToken = default)
         => Task.FromResult(ImageDataToReturn);
-
-    public Task<IReadOnlyList<Photo>> GetRecentAsync(int count, CancellationToken cancellationToken = default)
-        => Task.FromResult(PhotosToReturnRecent ?? (IReadOnlyList<Photo>)[]);
 
     public Task<Photo?> GetRandomAsync(CancellationToken cancellationToken = default)
         => Task.FromResult(PhotoToReturnRandom);

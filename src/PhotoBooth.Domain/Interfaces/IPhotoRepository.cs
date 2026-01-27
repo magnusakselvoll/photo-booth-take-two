@@ -8,7 +8,6 @@ public interface IPhotoRepository
     Task<Photo?> GetByCodeAsync(string code, CancellationToken cancellationToken = default);
     Task<Photo?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task<byte[]?> GetImageDataAsync(Guid id, CancellationToken cancellationToken = default);
-    Task<IReadOnlyList<Photo>> GetRecentAsync(int count, CancellationToken cancellationToken = default);
     Task<Photo?> GetRandomAsync(CancellationToken cancellationToken = default);
     Task<int> GetCountAsync(CancellationToken cancellationToken = default);
 }

@@ -77,35 +77,4 @@ public sealed class SlideshowEndpointsTests
         Assert.IsNotNull(photo);
         Assert.IsNotNull(photo.ImageUrl);
     }
-
-    [TestMethod]
-    public async Task GetRecentPhotos_ReturnsEmptyListWhenNoPhotos()
-    {
-        // Act
-        var response = await _client.GetAsync("/api/slideshow/recent?count=5");
-
-        // Assert
-        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
-        var photos = await response.Content.ReadFromJsonAsync<List<SlideshowPhotoDto>>();
-        Assert.IsNotNull(photos);
-        Assert.IsEmpty(photos);
-    }
-
-    [TestMethod]
-    public async Task GetRecentPhotos_ReturnsPhotosInOrder()
-    {
-        // Arrange - capture some photos
-        await _client.PostAsync("/api/photos/capture", null);
-        await _client.PostAsync("/api/photos/capture", null);
-        await _client.PostAsync("/api/photos/capture", null);
-
-        // Act
-        var response = await _client.GetAsync("/api/slideshow/recent?count=2");
-
-        // Assert
-        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
-        var photos = await response.Content.ReadFromJsonAsync<List<SlideshowPhotoDto>>();
-        Assert.IsNotNull(photos);
-        Assert.HasCount(2, photos);
-    }
 }

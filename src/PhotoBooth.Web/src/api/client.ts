@@ -45,13 +45,3 @@ export async function getNextSlideshowPhoto(): Promise<SlideshowPhotoDto | null>
 
   return response.json();
 }
-
-export async function getRecentPhotos(count = 10): Promise<SlideshowPhotoDto[]> {
-  const response = await fetch(`${API_BASE}/slideshow/recent?count=${count}`);
-
-  if (!response.ok) {
-    throw new Error(`Failed to get recent photos: ${response.statusText}`);
-  }
-
-  return response.json();
-}
