@@ -61,7 +61,8 @@ switch (cameraProvider.ToLowerInvariant())
             FlipVertical = builder.Configuration.GetValue<bool?>("Camera:FlipVertical") ?? false,
             JpegQuality = builder.Configuration.GetValue<int?>("Camera:JpegQuality") ?? 90,
             PreferredWidth = builder.Configuration.GetValue<int?>("Camera:PreferredWidth") ?? 1920,
-            PreferredHeight = builder.Configuration.GetValue<int?>("Camera:PreferredHeight") ?? 1080
+            PreferredHeight = builder.Configuration.GetValue<int?>("Camera:PreferredHeight") ?? 1080,
+            InitializationWarmupMs = builder.Configuration.GetValue<int?>("Camera:InitializationWarmupMs") ?? 500
         };
         builder.Services.AddSingleton<ICameraProvider>(sp =>
         {

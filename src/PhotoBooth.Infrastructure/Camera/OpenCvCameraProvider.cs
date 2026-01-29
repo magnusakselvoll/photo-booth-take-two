@@ -85,6 +85,24 @@ public class OpenCvCameraProvider : ICameraProvider, IDisposable
         _logger.LogInformation("OpenCV camera opened: requested {ReqWidth}x{ReqHeight}, actual {ActWidth}x{ActHeight}",
             _options.PreferredWidth, _options.PreferredHeight, actualWidth, actualHeight);
 
+        // Warmup: read frames to allow auto-exposure to settle
+        if (_options.InitializationWarmupMs > 0)
+        {
+            var warmupStart = DateTime.UtcNow;
+            var warmupDuration = TimeSpan.FromMilliseconds(_options.InitializationWarmupMs);
+            using var warmupFrame = new Mat();
+            var warmupFrameCount = 0;
+
+            while (DateTime.UtcNow - warmupStart < warmupDuration)
+            {
+                _capture.Read(warmupFrame);
+                warmupFrameCount++;
+            }
+
+            _logger.LogInformation("Camera warmup complete: {FrameCount} frames in {WarmupMs}ms",
+                warmupFrameCount, _options.InitializationWarmupMs);
+        }
+
         _isInitialized = true;
     }
 

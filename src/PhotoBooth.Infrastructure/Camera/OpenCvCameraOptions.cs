@@ -42,4 +42,11 @@ public class OpenCvCameraOptions
     /// Preferred capture height. Set to 0 to use camera default.
     /// </summary>
     public int PreferredHeight { get; set; } = 1080;
+
+    /// <summary>
+    /// Time in milliseconds to warm up the camera after initialization.
+    /// During warmup, frames are read and discarded to allow auto-exposure to settle.
+    /// Set to 0 to disable warmup. Default is 500ms.
+    /// </summary>
+    public int InitializationWarmupMs { get; set; } = 500;
 }
