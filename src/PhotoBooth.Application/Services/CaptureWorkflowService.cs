@@ -63,9 +63,9 @@ public class CaptureWorkflowService : ICaptureWorkflowService
                     new CaptureFailedEvent("Capture timed out"),
                     CancellationToken.None);
             }
-            catch
+            catch (Exception ex)
             {
-                // Ignore broadcast errors
+                _logger.LogDebug(ex, "Failed to broadcast timeout event");
             }
         }
 

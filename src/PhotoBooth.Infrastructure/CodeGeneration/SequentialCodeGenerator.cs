@@ -11,6 +11,12 @@ public class SequentialCodeGenerator : IPhotoCodeGenerator
         _getCountAsync = getCountAsync;
     }
 
+    /// <summary>
+    /// Generates a sequential code based on the current photo count.
+    /// </summary>
+    /// <param name="isCodeTaken">Not used - sequential codes are inherently unique since each
+    /// code is derived from the current count which only increases.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     public async Task<string> GenerateUniqueCodeAsync(
         Func<string, Task<bool>> isCodeTaken,
         CancellationToken cancellationToken = default)

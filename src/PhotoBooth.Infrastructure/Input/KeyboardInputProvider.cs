@@ -112,6 +112,9 @@ public class KeyboardInputProvider : IInputProvider, IDisposable
         }
         catch
         {
+            // Console.KeyAvailable throws various exceptions when console input is
+            // unavailable (e.g., InvalidOperationException when redirected, IOException
+            // in certain environments). All indicate console input is not available.
             return false;
         }
     }
