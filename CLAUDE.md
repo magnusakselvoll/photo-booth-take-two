@@ -53,7 +53,7 @@ Clean architecture with four layers:
 ### Key Interfaces (in Domain)
 
 - `ICameraProvider`: Capture photos from different camera types
-- `IInputProvider`: Handle trigger button input (keyboard, mouse, joystick)
+- `IInputProvider`: Handle trigger button input (keyboard)
 - `IPhotoRepository`: Store and retrieve photos
 - `IPhotoCodeGenerator`: Generate download codes for photos
 
@@ -101,10 +101,13 @@ Example configuration:
   "Camera": {
     "Provider": "OpenCv",
     "DeviceIndex": 0,
+    "CaptureLatencyMs": 100,
     "FramesToSkip": 5,
+    "FlipVertical": false,
     "JpegQuality": 90,
     "PreferredWidth": 1920,
-    "PreferredHeight": 1080
+    "PreferredHeight": 1080,
+    "InitializationWarmupMs": 500
   }
 }
 ```

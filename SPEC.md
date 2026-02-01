@@ -39,12 +39,9 @@ Triggered when a guest presses the capture button.
 
 ### Trigger Input
 
-Multiple input methods supported:
-- **Keyboard**: Configurable key (default: spacebar)
-- **Mouse**: Click anywhere or specific button
-- **Joystick/Gamepad**: External arcade-style button connected via USB
-
-The input system must be robust - if one input method fails, others continue working.
+Input methods:
+- **Keyboard**: Configurable key (default: spacebar), must be explicitly enabled via configuration
+- **HTTP API**: POST to `/api/trigger` endpoint (restricted to localhost by default)
 
 ### Camera Support
 
@@ -95,6 +92,7 @@ Optional QR code overlay on slideshow photos:
 Separate web page (or section) for photo retrieval:
 - Guest enters their download code
 - Photo displayed with download button
+- **Photo grid view**: Shows all photos matching the code with download options
 - Option to download original quality
 - Works on mobile browsers
 
@@ -134,6 +132,14 @@ Key configurable parameters:
 | `SlideshowInterval` | Seconds between photos | `8` |
 | `CodeLength` | Download code digits | `4` |
 | `ShowQrCode` | Display QR codes on slideshow | `true` |
+
+## Internationalization (i18n)
+
+The application supports multiple languages:
+- **English** (default) and **Spanish** currently supported
+- **Automatic detection**: Uses browser's `Accept-Language` header
+- **URL override**: Append `?lang=es` or `?lang=en` to force a specific language
+- **Footer selector**: Language can be changed via footer dropdown on download page
 
 ## Robustness Requirements
 

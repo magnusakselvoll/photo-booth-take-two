@@ -7,7 +7,8 @@ A photo booth application for events. Runs unattended with slideshow display, ph
 - **Slideshow display**: Shows photos with Ken Burns effect (pan/zoom animations) and crossfade transitions
 - **Photo capture**: Countdown timer triggered by button press, supports multiple rapid captures with queuing
 - **Photo download**: Guests retrieve photos via numeric code or QR code
-- **Multiple camera support**: Webcam (via OpenCV or FlashCap), mobile phone (Android - planned)
+- **Multiple camera support**: Webcam (via OpenCV), mobile phone (Android - planned)
+- **Internationalization**: English and Spanish language support with automatic detection and URL override (`?lang=es`)
 
 ## Prerequisites
 
@@ -50,25 +51,50 @@ Configuration is done via `appsettings.json` in the Server project:
     "FlipVertical": false,
     "JpegQuality": 90,
     "PreferredWidth": 1920,
-    "PreferredHeight": 1080
+    "PreferredHeight": 1080,
+    "InitializationWarmupMs": 500
   },
   "Capture": {
     "CountdownDurationMs": 3000
   },
+  "Input": {
+    "EnableKeyboard": false
+  },
   "PhotoStorage": {
     "Path": ""
+  },
+  "Trigger": {
+    "RestrictToLocalhost": true
+  },
+  "NetworkSecurity": {
+    "BlockOutboundRequests": true
+  },
+  "QrCode": {
+    "BaseUrl": ""
+  },
+  "Event": {
+    "Name": ""
   }
 }
 ```
 
 ### Camera Options
 
-- `Provider`: Camera provider to use (`"OpenCv"`, `"FlashCap"`, or `"Mock"`)
+- `Provider`: Camera provider to use (`"OpenCv"` or `"Mock"`)
 - `DeviceIndex`: Webcam device index (0 = first camera)
+- `CaptureLatencyMs`: Delay before capture to sync with countdown
 - `FramesToSkip`: Number of frames to skip for auto-exposure adjustment
 - `FlipVertical`: Mirror the image vertically
-- `PixelOrder`: Pixel byte order from camera - FlashCap only (ARGB, BGRA, etc.)
+- `InitializationWarmupMs`: Camera warmup time on startup
 - `PreferredWidth`/`PreferredHeight`: Requested camera resolution
+
+### Other Options
+
+- `Input.EnableKeyboard`: Enable spacebar key to trigger capture (default: false)
+- `Trigger.RestrictToLocalhost`: Only allow trigger API from localhost (default: true)
+- `NetworkSecurity.BlockOutboundRequests`: Block outbound network requests (default: true)
+- `QrCode.BaseUrl`: Base URL for QR codes (defaults to request origin)
+- `Event.Name`: Event name displayed in the UI
 
 ## Project Structure
 
