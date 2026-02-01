@@ -70,7 +70,7 @@ public class InMemoryPhotoRepository : IPhotoRepository
         lock (_lock)
         {
             return Task.FromResult<IReadOnlyList<Photo>>(
-                _photos.OrderByDescending(p => p.CapturedAt).ToList());
+                _photos.OrderBy(p => int.TryParse(p.Code, out var code) ? code : int.MaxValue).ToList());
         }
     }
 }

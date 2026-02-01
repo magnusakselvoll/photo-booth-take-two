@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { getPhotoByCode, getPhotoImageUrl } from '../api/client';
 import type { PhotoDto } from '../api/types';
 import { PhotoGrid } from '../components/PhotoGrid';
+import { useTranslation } from '../i18n/useTranslation';
 
 function getCodeFromHash(): string | null {
   const hash = window.location.hash;
@@ -14,6 +15,7 @@ function getCodeFromHash(): string | null {
 }
 
 export function DownloadPage() {
+  const { t } = useTranslation();
   const [code, setCode] = useState('');
   const [photo, setPhoto] = useState<PhotoDto | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -30,16 +32,16 @@ export function DownloadPage() {
       if (result) {
         setPhoto(result);
       } else {
-        setError('Photo not found. Please check your code.');
+        setError(t('photoNotFound'));
         setPhoto(null);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to find photo');
+      setError(err instanceof Error ? err.message : t('photoNotFound'));
       setPhoto(null);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     const codeFromUrl = getCodeFromHash();
@@ -77,20 +79,20 @@ export function DownloadPage() {
 
   return (
     <div className="download-page">
-      <h1>Download Your Photo</h1>
+      <h1>{t('downloadYourPhoto')}</h1>
 
       <form onSubmit={handleSubmit} className="code-form">
         <input
           type="text"
           value={code}
           onChange={(e) => setCode(e.target.value)}
-          placeholder="Enter your photo code"
+          placeholder={t('enterPhotoCode')}
           className="code-input"
           maxLength={10}
           autoFocus
         />
         <button type="submit" disabled={loading || !code.trim()} className="submit-button">
-          {loading ? 'Searching...' : 'Find Photo'}
+          {loading ? t('searching') : t('findPhoto')}
         </button>
       </form>
 
@@ -101,10 +103,10 @@ export function DownloadPage() {
           <img src={getPhotoImageUrl(photo.id)} alt={`Photo ${photo.code}`} className="photo-preview" />
           <div className="photo-result-actions">
             <button onClick={handleDownload} className="download-button">
-              Download Photo
+              {t('downloadPhoto')}
             </button>
             <button onClick={handleBackToSearch} className="back-button">
-              Back to Search
+              {t('backToSearch')}
             </button>
           </div>
         </div>
@@ -113,7 +115,7 @@ export function DownloadPage() {
       {!photo && (
         <>
           <div className="divider">
-            <span>or browse all photos</span>
+            <span>{t('orBrowseAllPhotos')}</span>
           </div>
           <PhotoGrid onPhotoClick={handlePhotoClick} />
         </>

@@ -122,15 +122,13 @@ public sealed class PhotoEndpointsTests
     }
 
     [TestMethod]
-    public async Task GetAllPhotos_WhenMultiplePhotos_ReturnsAllOrderedByDateDescending()
+    public async Task GetAllPhotos_WhenMultiplePhotos_ReturnsAllOrderedByCodeAscending()
     {
         // Arrange - capture multiple photos
+        var firstCaptureResponse = await _client.PostAsync("/api/photos/capture", null);
+        var firstCaptureResult = await firstCaptureResponse.Content.ReadFromJsonAsync<CaptureResultDto>();
         await _client.PostAsync("/api/photos/capture", null);
-        await Task.Delay(10); // Small delay to ensure different timestamps
         await _client.PostAsync("/api/photos/capture", null);
-        await Task.Delay(10);
-        var lastCaptureResponse = await _client.PostAsync("/api/photos/capture", null);
-        var lastCaptureResult = await lastCaptureResponse.Content.ReadFromJsonAsync<CaptureResultDto>();
 
         // Act
         var response = await _client.GetAsync("/api/photos");
@@ -140,7 +138,7 @@ public sealed class PhotoEndpointsTests
         var photos = await response.Content.ReadFromJsonAsync<List<PhotoDto>>();
         Assert.IsNotNull(photos);
         Assert.HasCount(3, photos);
-        // Most recent photo should be first
-        Assert.AreEqual(lastCaptureResult!.Code, photos[0].Code);
+        // Lowest code number should be first (oldest photo)
+        Assert.AreEqual(firstCaptureResult!.Code, photos[0].Code);
     }
 }

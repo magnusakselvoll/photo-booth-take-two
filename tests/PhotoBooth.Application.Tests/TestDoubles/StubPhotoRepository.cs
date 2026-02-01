@@ -36,5 +36,5 @@ public sealed class StubPhotoRepository : IPhotoRepository
         => Task.FromResult(_photos.Count);
 
     public Task<IReadOnlyList<Photo>> GetAllAsync(CancellationToken cancellationToken = default)
-        => Task.FromResult<IReadOnlyList<Photo>>(_photos.Values.Select(p => p.Photo).OrderByDescending(p => p.CapturedAt).ToList());
+        => Task.FromResult<IReadOnlyList<Photo>>(_photos.Values.Select(p => p.Photo).OrderBy(p => int.TryParse(p.Code, out var code) ? code : int.MaxValue).ToList());
 }

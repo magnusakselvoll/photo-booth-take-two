@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { getPhotoByCode, getPhotoImageUrl } from '../api/client';
 import type { PhotoDto } from '../api/types';
+import { useTranslation } from '../i18n/useTranslation';
 
 interface PhotoDetailPageProps {
   code: string;
 }
 
 export function PhotoDetailPage({ code }: PhotoDetailPageProps) {
+  const { t } = useTranslation();
   const [photo, setPhoto] = useState<PhotoDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -17,12 +19,12 @@ export function PhotoDetailPage({ code }: PhotoDetailPageProps) {
         if (result) {
           setPhoto(result);
         } else {
-          setError('Photo not found');
+          setError(t('photoNotFoundError'));
         }
       })
-      .catch(err => setError(err instanceof Error ? err.message : 'Failed to load photo'))
+      .catch(err => setError(err instanceof Error ? err.message : t('photoNotFoundError')))
       .finally(() => setLoading(false));
-  }, [code]);
+  }, [code, t]);
 
   const handleDownload = () => {
     if (!photo) return;
@@ -42,7 +44,7 @@ export function PhotoDetailPage({ code }: PhotoDetailPageProps) {
   if (loading) {
     return (
       <div className="photo-detail-page">
-        <div className="photo-detail-loading">Loading...</div>
+        <div className="photo-detail-loading">{t('loading')}</div>
       </div>
     );
   }
@@ -50,9 +52,9 @@ export function PhotoDetailPage({ code }: PhotoDetailPageProps) {
   if (error || !photo) {
     return (
       <div className="photo-detail-page">
-        <div className="error-message">{error || 'Photo not found'}</div>
+        <div className="error-message">{error || t('photoNotFoundError')}</div>
         <button onClick={handleBack} className="back-button">
-          Back to Gallery
+          {t('backToGallery')}
         </button>
       </div>
     );
@@ -62,9 +64,9 @@ export function PhotoDetailPage({ code }: PhotoDetailPageProps) {
     <div className="photo-detail-page">
       <div className="photo-detail-header">
         <button onClick={handleBack} className="back-button">
-          Back to Gallery
+          {t('backToGallery')}
         </button>
-        <span className="photo-detail-code">Code: {photo.code}</span>
+        <span className="photo-detail-code">{t('code')}: {photo.code}</span>
       </div>
       <div className="photo-detail-content">
         <img
@@ -73,7 +75,7 @@ export function PhotoDetailPage({ code }: PhotoDetailPageProps) {
           className="photo-detail-image"
         />
         <button onClick={handleDownload} className="download-button">
-          Download Photo
+          {t('downloadPhoto')}
         </button>
       </div>
     </div>
