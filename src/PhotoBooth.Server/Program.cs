@@ -147,6 +147,7 @@ app.MapPhotoEndpoints(localhostFilter);
 app.MapSlideshowEndpoints();
 app.MapCameraEndpoints();
 app.MapEventsEndpoints();
+app.MapConfigEndpoints(builder.Configuration);
 
 app.Run();
 

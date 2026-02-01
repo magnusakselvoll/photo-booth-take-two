@@ -56,3 +56,7 @@ export interface QueuedPhoto {
   imageUrl: string;
   timestamp: string;
 }
+
+export interface ClientConfigDto {
+  qrCodeBaseUrl: string | null;
+}

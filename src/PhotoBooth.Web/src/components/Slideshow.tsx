@@ -7,6 +7,7 @@ import type { KenBurnsConfig } from './PhotoDisplay';
 interface SlideshowProps {
   intervalMs?: number;
   paused?: boolean;
+  qrCodeBaseUrl?: string;
 }
 
 function randomInRange(min: number, max: number): number {
@@ -69,7 +70,7 @@ interface PhotoState {
 
 const FADE_DURATION_MS = 500;
 
-export function Slideshow({ intervalMs = 8000, paused = false }: SlideshowProps) {
+export function Slideshow({ intervalMs = 8000, paused = false, qrCodeBaseUrl }: SlideshowProps) {
   const [currentState, setCurrentState] = useState<PhotoState | null>(null);
   const [previousState, setPreviousState] = useState<PhotoState | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -127,6 +128,7 @@ export function Slideshow({ intervalMs = 8000, paused = false }: SlideshowProps)
           photoId={previousState.photo.id}
           code={previousState.photo.code}
           kenBurns={previousState.kenBurns}
+          qrCodeBaseUrl={qrCodeBaseUrl}
           fadingOut
         />
       )}
@@ -135,6 +137,7 @@ export function Slideshow({ intervalMs = 8000, paused = false }: SlideshowProps)
         photoId={currentState.photo.id}
         code={currentState.photo.code}
         kenBurns={currentState.kenBurns}
+        qrCodeBaseUrl={qrCodeBaseUrl}
       />
     </div>
   );

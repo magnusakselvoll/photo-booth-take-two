@@ -88,21 +88,36 @@ body {
   animation: ken-burns var(--kb-duration) linear forwards;
 }
 
-.photo-code {
+.photo-code-overlay {
   position: fixed;
   bottom: 1.5rem;
   left: 50%;
   transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
   background: rgba(0, 0, 0, 0.7);
+  padding: 0.75rem 2rem;
+  border-radius: 0.5rem;
+  z-index: 10;
+}
+
+.photo-code {
   color: #fff;
   font-size: 3.75rem;
   font-weight: 600;
-  padding: 0.75rem 2.5rem;
-  border-radius: 0.5rem;
   font-family: 'Inter', system-ui, sans-serif;
   letter-spacing: 0.15em;
   text-transform: uppercase;
-  z-index: 10;
+}
+
+.qr-code-container {
+  background: #fff;
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Capture Overlay */
