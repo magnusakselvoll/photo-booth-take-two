@@ -107,4 +107,40 @@ public sealed class PhotoEndpointsTests
         Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
         Assert.AreEqual("image/jpeg", response.Content.Headers.ContentType?.MediaType);
     }
+
+    [TestMethod]
+    public async Task GetAllPhotos_WhenEmpty_ReturnsEmptyList()
+    {
+        // Act
+        var response = await _client.GetAsync("/api/photos");
+
+        // Assert
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        var photos = await response.Content.ReadFromJsonAsync<List<PhotoDto>>();
+        Assert.IsNotNull(photos);
+        Assert.IsEmpty(photos);
+    }
+
+    [TestMethod]
+    public async Task GetAllPhotos_WhenMultiplePhotos_ReturnsAllOrderedByDateDescending()
+    {
+        // Arrange - capture multiple photos
+        await _client.PostAsync("/api/photos/capture", null);
+        await Task.Delay(10); // Small delay to ensure different timestamps
+        await _client.PostAsync("/api/photos/capture", null);
+        await Task.Delay(10);
+        var lastCaptureResponse = await _client.PostAsync("/api/photos/capture", null);
+        var lastCaptureResult = await lastCaptureResponse.Content.ReadFromJsonAsync<CaptureResultDto>();
+
+        // Act
+        var response = await _client.GetAsync("/api/photos");
+
+        // Assert
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        var photos = await response.Content.ReadFromJsonAsync<List<PhotoDto>>();
+        Assert.IsNotNull(photos);
+        Assert.HasCount(3, photos);
+        // Most recent photo should be first
+        Assert.AreEqual(lastCaptureResult!.Code, photos[0].Code);
+    }
 }

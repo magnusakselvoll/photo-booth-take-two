@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getPhotoByCode, getPhotoImageUrl } from '../api/client';
 import type { PhotoDto } from '../api/types';
+import { PhotoGrid } from '../components/PhotoGrid';
 
 function getCodeFromHash(): string | null {
   const hash = window.location.hash;
@@ -64,6 +65,16 @@ export function DownloadPage() {
     document.body.removeChild(link);
   };
 
+  const handlePhotoClick = (photoCode: string) => {
+    window.location.hash = `#photo/${photoCode}`;
+  };
+
+  const handleBackToSearch = () => {
+    setPhoto(null);
+    setCode('');
+    setError(null);
+  };
+
   return (
     <div className="download-page">
       <h1>Download Your Photo</h1>
@@ -88,10 +99,24 @@ export function DownloadPage() {
       {photo && (
         <div className="photo-result">
           <img src={getPhotoImageUrl(photo.id)} alt={`Photo ${photo.code}`} className="photo-preview" />
-          <button onClick={handleDownload} className="download-button">
-            Download Photo
-          </button>
+          <div className="photo-result-actions">
+            <button onClick={handleDownload} className="download-button">
+              Download Photo
+            </button>
+            <button onClick={handleBackToSearch} className="back-button">
+              Back to Search
+            </button>
+          </div>
         </div>
+      )}
+
+      {!photo && (
+        <>
+          <div className="divider">
+            <span>or browse all photos</span>
+          </div>
+          <PhotoGrid onPhotoClick={handlePhotoClick} />
+        </>
       )}
     </div>
   );

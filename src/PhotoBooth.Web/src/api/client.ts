@@ -55,3 +55,13 @@ export async function getClientConfig(): Promise<ClientConfigDto> {
 
   return response.json();
 }
+
+export async function getAllPhotos(): Promise<PhotoDto[]> {
+  const response = await fetch(`${API_BASE}/photos`);
+
+  if (!response.ok) {
+    throw new Error(`Failed to get photos: ${response.statusText}`);
+  }
+
+  return response.json();
+}

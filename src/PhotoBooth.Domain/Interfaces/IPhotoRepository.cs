@@ -10,4 +10,5 @@ public interface IPhotoRepository
     Task<byte[]?> GetImageDataAsync(Guid id, CancellationToken cancellationToken = default);
     Task<Photo?> GetRandomAsync(CancellationToken cancellationToken = default);
     Task<int> GetCountAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<Photo>> GetAllAsync(CancellationToken cancellationToken = default);
 }

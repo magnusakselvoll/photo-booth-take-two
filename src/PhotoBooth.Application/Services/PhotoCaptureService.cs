@@ -74,4 +74,11 @@ public class PhotoCaptureService : IPhotoCaptureService
         _logger.LogDebug("Retrieving image data for photo {PhotoId}", id);
         return await _photoRepository.GetImageDataAsync(id, cancellationToken);
     }
+
+    public async Task<IReadOnlyList<PhotoDto>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        _logger.LogDebug("Retrieving all photos");
+        var photos = await _photoRepository.GetAllAsync(cancellationToken);
+        return photos.Select(p => new PhotoDto(p.Id, p.Code, p.CapturedAt)).ToList();
+    }
 }
