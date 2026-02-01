@@ -3,6 +3,7 @@ import { getNextSlideshowPhoto } from '../api/client';
 import type { SlideshowPhotoDto } from '../api/types';
 import { PhotoDisplay } from './PhotoDisplay';
 import type { KenBurnsConfig } from './PhotoDisplay';
+import { useTranslation } from '../i18n/useTranslation';
 
 interface SlideshowProps {
   intervalMs?: number;
@@ -71,6 +72,7 @@ interface PhotoState {
 const FADE_DURATION_MS = 500;
 
 export function Slideshow({ intervalMs = 8000, paused = false, qrCodeBaseUrl }: SlideshowProps) {
+  const { t } = useTranslation();
   const [currentState, setCurrentState] = useState<PhotoState | null>(null);
   const [previousState, setPreviousState] = useState<PhotoState | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -117,7 +119,7 @@ export function Slideshow({ intervalMs = 8000, paused = false, qrCodeBaseUrl }: 
   }
 
   if (!currentState) {
-    return <div className="slideshow-empty">No photos yet</div>;
+    return <div className="slideshow-empty">{t('noPhotosToShow')}</div>;
   }
 
   return (

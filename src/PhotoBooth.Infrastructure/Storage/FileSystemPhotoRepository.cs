@@ -90,6 +90,12 @@ public class FileSystemPhotoRepository : IPhotoRepository
         return photos.Count;
     }
 
+    public async Task<IReadOnlyList<Photo>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        var photos = await GetPhotosAsync(cancellationToken);
+        return photos.OrderBy(p => int.TryParse(p.Code, out var code) ? code : int.MaxValue).ToList();
+    }
+
     private async Task<List<Photo>> GetPhotosAsync(CancellationToken cancellationToken)
     {
         if (_photosCache is not null)

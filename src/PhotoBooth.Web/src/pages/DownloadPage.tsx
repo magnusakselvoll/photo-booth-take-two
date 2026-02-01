@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getPhotoByCode, getPhotoImageUrl } from '../api/client';
 import type { PhotoDto } from '../api/types';
+import { PhotoGrid } from '../components/PhotoGrid';
+import { useTranslation } from '../i18n/useTranslation';
 
 function getCodeFromHash(): string | null {
   const hash = window.location.hash;
@@ -13,6 +15,7 @@ function getCodeFromHash(): string | null {
 }
 
 export function DownloadPage() {
+  const { t, language, setLanguage } = useTranslation();
   const [code, setCode] = useState('');
   const [photo, setPhoto] = useState<PhotoDto | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -29,16 +32,16 @@ export function DownloadPage() {
       if (result) {
         setPhoto(result);
       } else {
-        setError('Photo not found. Please check your code.');
+        setError(t('photoNotFound'));
         setPhoto(null);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to find photo');
+      setError(err instanceof Error ? err.message : t('photoNotFound'));
       setPhoto(null);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     const codeFromUrl = getCodeFromHash();
@@ -64,22 +67,32 @@ export function DownloadPage() {
     document.body.removeChild(link);
   };
 
+  const handlePhotoClick = (photoCode: string) => {
+    window.location.hash = `#photo/${photoCode}`;
+  };
+
+  const handleBackToSearch = () => {
+    setPhoto(null);
+    setCode('');
+    setError(null);
+  };
+
   return (
     <div className="download-page">
-      <h1>Download Your Photo</h1>
+      <h1>{t('downloadYourPhoto')}</h1>
 
       <form onSubmit={handleSubmit} className="code-form">
         <input
           type="text"
           value={code}
           onChange={(e) => setCode(e.target.value)}
-          placeholder="Enter your photo code"
+          placeholder={t('enterPhotoCode')}
           className="code-input"
           maxLength={10}
           autoFocus
         />
         <button type="submit" disabled={loading || !code.trim()} className="submit-button">
-          {loading ? 'Searching...' : 'Find Photo'}
+          {loading ? t('searching') : t('findPhoto')}
         </button>
       </form>
 
@@ -88,11 +101,41 @@ export function DownloadPage() {
       {photo && (
         <div className="photo-result">
           <img src={getPhotoImageUrl(photo.id)} alt={`Photo ${photo.code}`} className="photo-preview" />
-          <button onClick={handleDownload} className="download-button">
-            Download Photo
-          </button>
+          <div className="photo-result-actions">
+            <button onClick={handleDownload} className="download-button">
+              {t('downloadPhoto')}
+            </button>
+            <button onClick={handleBackToSearch} className="back-button">
+              {t('backToSearch')}
+            </button>
+          </div>
         </div>
       )}
+
+      {!photo && (
+        <>
+          <div className="divider">
+            <span>{t('orBrowseAllPhotos')}</span>
+          </div>
+          <PhotoGrid onPhotoClick={handlePhotoClick} />
+        </>
+      )}
+
+      <footer className="language-footer">
+        <button
+          onClick={() => setLanguage('en')}
+          className={`language-button ${language === 'en' ? 'active' : ''}`}
+        >
+          English
+        </button>
+        <span className="language-separator">|</span>
+        <button
+          onClick={() => setLanguage('es')}
+          className={`language-button ${language === 'es' ? 'active' : ''}`}
+        >
+          Espa&ntilde;ol
+        </button>
+      </footer>
     </div>
   );
 }

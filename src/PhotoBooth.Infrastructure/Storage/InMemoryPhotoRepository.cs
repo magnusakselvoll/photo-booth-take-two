@@ -64,4 +64,13 @@ public class InMemoryPhotoRepository : IPhotoRepository
             return Task.FromResult(_photos.Count);
         }
     }
+
+    public Task<IReadOnlyList<Photo>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        lock (_lock)
+        {
+            return Task.FromResult<IReadOnlyList<Photo>>(
+                _photos.OrderBy(p => int.TryParse(p.Code, out var code) ? code : int.MaxValue).ToList());
+        }
+    }
 }

@@ -1,15 +1,20 @@
 import { useState, useEffect } from 'react';
 import { BoothPage } from './pages/BoothPage';
 import { DownloadPage } from './pages/DownloadPage';
+import { PhotoDetailPage } from './pages/PhotoDetailPage';
 import { getClientConfig } from './api/client';
 import './App.css';
 
-type Route = 'booth' | 'download';
+type Route = { type: 'booth' } | { type: 'download' } | { type: 'photo'; code: string };
 
 function getRouteFromHash(): Route {
   const hash = window.location.hash.slice(1);
-  if (hash.startsWith('download')) return 'download';
-  return 'booth';
+  if (hash.startsWith('download')) return { type: 'download' };
+  if (hash.startsWith('photo/')) {
+    const code = hash.slice('photo/'.length);
+    return { type: 'photo', code };
+  }
+  return { type: 'booth' };
 }
 
 function App() {
@@ -39,8 +44,9 @@ function App() {
 
   return (
     <div className="app">
-      {route === 'booth' && <BoothPage qrCodeBaseUrl={qrCodeBaseUrl} />}
-      {route === 'download' && <DownloadPage />}
+      {route.type === 'booth' && <BoothPage qrCodeBaseUrl={qrCodeBaseUrl} />}
+      {route.type === 'download' && <DownloadPage />}
+      {route.type === 'photo' && <PhotoDetailPage code={route.code} />}
     </div>
   );
 }

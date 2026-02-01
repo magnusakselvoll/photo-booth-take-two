@@ -20,6 +20,9 @@ public static class PhotoEndpoints
         group.MapPost("/capture", CapturePhoto)
             .WithName("CapturePhoto");
 
+        group.MapGet("/", GetAllPhotos)
+            .WithName("GetAllPhotos");
+
         group.MapGet("/{code}", GetPhotoByCode)
             .WithName("GetPhotoByCode");
 
@@ -76,5 +79,13 @@ public static class PhotoEndpoints
         return imageData is null
             ? Results.NotFound()
             : Results.File(imageData, "image/jpeg");
+    }
+
+    private static async Task<IResult> GetAllPhotos(
+        IPhotoCaptureService captureService,
+        CancellationToken cancellationToken)
+    {
+        var photos = await captureService.GetAllAsync(cancellationToken);
+        return Results.Ok(photos);
     }
 }
