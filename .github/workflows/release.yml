@@ -1,15 +1,8 @@
 name: Release
 
 on:
-  push:
-    tags:
-      - "v*"
-  workflow_dispatch:
-    inputs:
-      version:
-        description: "Version number (e.g., 1.0.0)"
-        required: true
-        type: string
+  release:
+    types: [published]
 
 permissions:
   contents: write
@@ -50,11 +43,9 @@ jobs:
       - name: Determine version
         id: version
         run: |
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            echo "version=${{ inputs.version }}" >> $GITHUB_OUTPUT
-          else
-            echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
-          fi
+          VERSION="${{ github.event.release.tag_name }}"
+          # Strip leading 'v' if present
+          echo "version=${VERSION#v}" >> $GITHUB_OUTPUT
 
       - name: Publish for Windows x64
         run: |
@@ -71,12 +62,9 @@ jobs:
           cd publish/win-x64
           zip -r ../../PhotoBooth-${{ steps.version.outputs.version }}-win-x64.zip .
 
-      - name: Create GitHub Release
+      - name: Upload release assets
         uses: softprops/action-gh-release@v2
         with:
-          name: Photo Booth v${{ steps.version.outputs.version }}
-          tag_name: ${{ github.event_name == 'workflow_dispatch' && format('v{0}', inputs.version) || github.ref_name }}
-          draft: ${{ github.event_name == 'workflow_dispatch' }}
-          generate_release_notes: true
+          tag_name: ${{ github.event.release.tag_name }}
           files: |
             PhotoBooth-${{ steps.version.outputs.version }}-win-x64.zip
