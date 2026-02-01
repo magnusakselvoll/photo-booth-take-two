@@ -109,6 +109,20 @@ Example configuration:
 }
 ```
 
+## CI/CD
+
+GitHub Actions workflows in `.github/workflows/`:
+
+- **ci.yml**: Runs on PRs and pushes to main. Builds .NET and frontend, runs tests, and lints.
+- **release.yml**: Creates releases. Triggered by version tags (`v*`) or manual dispatch. Publishes self-contained Windows x64 executable.
+
+### Creating a Release
+
+1. Tag a version: `git tag v1.0.0 && git push origin v1.0.0`
+2. The release workflow will automatically build and create a GitHub release with the Windows executable.
+
+Or trigger manually from the Actions tab with a version number.
+
 ## Reference
 
 - **SPEC.md**: Functional specification - describes how the application should work. Consult this for requirements and intended behavior.
