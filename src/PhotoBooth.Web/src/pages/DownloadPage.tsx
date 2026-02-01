@@ -15,7 +15,7 @@ function getCodeFromHash(): string | null {
 }
 
 export function DownloadPage() {
-  const { t } = useTranslation();
+  const { t, language, setLanguage } = useTranslation();
   const [code, setCode] = useState('');
   const [photo, setPhoto] = useState<PhotoDto | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -120,6 +120,22 @@ export function DownloadPage() {
           <PhotoGrid onPhotoClick={handlePhotoClick} />
         </>
       )}
+
+      <footer className="language-footer">
+        <button
+          onClick={() => setLanguage('en')}
+          className={`language-button ${language === 'en' ? 'active' : ''}`}
+        >
+          English
+        </button>
+        <span className="language-separator">|</span>
+        <button
+          onClick={() => setLanguage('es')}
+          className={`language-button ${language === 'es' ? 'active' : ''}`}
+        >
+          Espa&ntilde;ol
+        </button>
+      </footer>
     </div>
   );
 }

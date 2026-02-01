@@ -397,3 +397,35 @@ body {
   color: #666;
   font-size: 1.25rem;
 }
+
+/* Language Footer */
+.language-footer {
+  margin-top: auto;
+  padding-top: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.language-button {
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  transition: color 0.2s;
+}
+
+.language-button:hover {
+  color: #fff;
+}
+
+.language-button.active {
+  color: #3b82f6;
+  font-weight: 600;
+}
+
+.language-separator {
+  color: #444;
+}
