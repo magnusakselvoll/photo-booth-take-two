@@ -117,14 +117,13 @@ Example configuration:
 GitHub Actions workflows in `.github/workflows/`:
 
 - **ci.yml**: Runs on PRs and pushes to main. Builds .NET and frontend, runs tests, and lints.
-- **release.yml**: Creates releases. Triggered by version tags (`v*`) or manual dispatch. Publishes self-contained Windows x64 executable.
+- **release.yml**: Triggered when a release is published via the GitHub UI. Builds and uploads the Windows x64 executable to the release.
 
 ### Creating a Release
 
-1. Tag a version: `git tag v1.0.0 && git push origin v1.0.0`
-2. The release workflow will automatically build and create a GitHub release with the Windows executable.
-
-Or trigger manually from the Actions tab with a version number.
+1. Create a release in the GitHub UI (with tag like `v1.0.0`)
+2. The release workflow automatically triggers on publish
+3. The Windows executable is built and uploaded to the release as an asset
 
 ## Reference
 
