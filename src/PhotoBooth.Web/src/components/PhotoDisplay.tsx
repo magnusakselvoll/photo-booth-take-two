@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react';
 import { getPhotoImageUrl } from '../api/client';
+import { QRCodeOverlay } from './QRCodeOverlay';
 
 export interface KenBurnsConfig {
   scaleFrom: number;
@@ -15,12 +16,15 @@ interface PhotoDisplayProps {
   photoId: string;
   code: string;
   showCode?: boolean;
+  showQrCode?: boolean;
+  qrCodeBaseUrl?: string;
   kenBurns?: KenBurnsConfig;
   fadingOut?: boolean;
 }
 
-export function PhotoDisplay({ photoId, code, showCode = true, kenBurns, fadingOut = false }: PhotoDisplayProps) {
+export function PhotoDisplay({ photoId, code, showCode = true, showQrCode = true, qrCodeBaseUrl, kenBurns, fadingOut = false }: PhotoDisplayProps) {
   const imageUrl = getPhotoImageUrl(photoId);
+  const baseUrl = qrCodeBaseUrl || window.location.origin;
 
   const imageStyle: CSSProperties | undefined = kenBurns ? {
     '--kb-scale-from': kenBurns.scaleFrom,
@@ -42,7 +46,12 @@ export function PhotoDisplay({ photoId, code, showCode = true, kenBurns, fadingO
         className={kenBurns ? 'photo-image ken-burns' : 'photo-image'}
         style={imageStyle}
       />
-      {showCode && !fadingOut && <div className="photo-code">{code}</div>}
+      {showCode && !fadingOut && (
+        <div className="photo-code-overlay">
+          <div className="photo-code">{code}</div>
+          {showQrCode && <QRCodeOverlay code={code} baseUrl={baseUrl} />}
+        </div>
+      )}
     </div>
   );
 }

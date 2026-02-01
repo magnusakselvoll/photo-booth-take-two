@@ -1,6 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getPhotoByCode, getPhotoImageUrl } from '../api/client';
 import type { PhotoDto } from '../api/types';
+
+function getCodeFromHash(): string | null {
+  const hash = window.location.hash;
+  const queryStart = hash.indexOf('?');
+  if (queryStart === -1) return null;
+
+  const queryString = hash.slice(queryStart + 1);
+  const params = new URLSearchParams(queryString);
+  return params.get('code');
+}
 
 export function DownloadPage() {
   const [code, setCode] = useState('');
@@ -8,16 +18,14 @@ export function DownloadPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!code.trim()) return;
+  const fetchPhoto = useCallback(async (photoCode: string) => {
+    if (!photoCode.trim()) return;
 
     setLoading(true);
     setError(null);
 
     try {
-      const result = await getPhotoByCode(code.trim());
+      const result = await getPhotoByCode(photoCode.trim());
       if (result) {
         setPhoto(result);
       } else {
@@ -30,6 +38,19 @@ export function DownloadPage() {
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    const codeFromUrl = getCodeFromHash();
+    if (codeFromUrl) {
+      setCode(codeFromUrl);
+      fetchPhoto(codeFromUrl);
+    }
+  }, [fetchPhoto]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await fetchPhoto(code);
   };
 
   const handleDownload = () => {

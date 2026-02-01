@@ -11,6 +11,10 @@ const ERROR_DISPLAY_MS = 3000;
 const FADE_DURATION_MS = 500;
 const WATCHDOG_RELOAD_MS = 5 * 60 * 1000;
 
+interface BoothPageProps {
+  qrCodeBaseUrl?: string;
+}
+
 function randomInRange(min: number, max: number): number {
   return min + Math.random() * (max - min);
 }
@@ -63,7 +67,7 @@ interface DisplayPhoto {
   fromQueue: boolean; // true if from queue, false if newly captured
 }
 
-export function BoothPage() {
+export function BoothPage({ qrCodeBaseUrl }: BoothPageProps) {
   // Queue of interrupted photos waiting to be displayed (FIFO)
   const [photoQueue, setPhotoQueue] = useState<QueuedPhoto[]>([]);
   // Currently displaying photo
@@ -266,7 +270,7 @@ export function BoothPage() {
   return (
     <div className="booth-page" onClick={handleTrigger}>
       {/* Show slideshow when not showing captured photos */}
-      {showSlideshow && <Slideshow paused={showCountdown} />}
+      {showSlideshow && <Slideshow paused={showCountdown} qrCodeBaseUrl={qrCodeBaseUrl} />}
 
       {/* Show captured photo with same Ken Burns effect as slideshow */}
       {showCapturedPhoto && (
@@ -277,6 +281,7 @@ export function BoothPage() {
               photoId={previousDisplay.photo.photoId}
               code={previousDisplay.photo.code}
               kenBurns={previousDisplay.kenBurns}
+              qrCodeBaseUrl={qrCodeBaseUrl}
               fadingOut
             />
           )}
@@ -285,6 +290,7 @@ export function BoothPage() {
             photoId={currentDisplay.photo.photoId}
             code={currentDisplay.photo.code}
             kenBurns={currentDisplay.kenBurns}
+            qrCodeBaseUrl={qrCodeBaseUrl}
           />
         </div>
       )}
