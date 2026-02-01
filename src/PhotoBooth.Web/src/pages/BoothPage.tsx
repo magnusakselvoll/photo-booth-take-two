@@ -169,7 +169,9 @@ export function BoothPage({ qrCodeBaseUrl }: BoothPageProps) {
   useEffect(() => {
     // Start showing queue when no countdowns and nothing currently displayed
     if (activeCountdowns === 0 && currentDisplay === null && photoQueue.length > 0) {
-      showNextFromQueue();
+      // Defer to avoid synchronous setState within effect
+      const timeoutId = setTimeout(showNextFromQueue, 0);
+      return () => clearTimeout(timeoutId);
     }
   }, [activeCountdowns, currentDisplay, photoQueue.length, showNextFromQueue]);
 
