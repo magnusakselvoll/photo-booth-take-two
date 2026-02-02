@@ -13,6 +13,7 @@ const WATCHDOG_RELOAD_MS = 5 * 60 * 1000;
 
 interface BoothPageProps {
   qrCodeBaseUrl?: string;
+  swirlEffect?: boolean;
 }
 
 function randomInRange(min: number, max: number): number {
@@ -67,7 +68,7 @@ interface DisplayPhoto {
   fromQueue: boolean; // true if from queue, false if newly captured
 }
 
-export function BoothPage({ qrCodeBaseUrl }: BoothPageProps) {
+export function BoothPage({ qrCodeBaseUrl, swirlEffect = true }: BoothPageProps) {
   // Queue of interrupted photos waiting to be displayed (FIFO)
   const [photoQueue, setPhotoQueue] = useState<QueuedPhoto[]>([]);
   // Currently displaying photo
@@ -272,7 +273,7 @@ export function BoothPage({ qrCodeBaseUrl }: BoothPageProps) {
   return (
     <div className="booth-page" onClick={handleTrigger}>
       {/* Show slideshow when not showing captured photos */}
-      {showSlideshow && <Slideshow paused={showCountdown} qrCodeBaseUrl={qrCodeBaseUrl} />}
+      {showSlideshow && <Slideshow paused={showCountdown} qrCodeBaseUrl={qrCodeBaseUrl} swirlEffect={swirlEffect} />}
 
       {/* Show captured photo with same Ken Burns effect as slideshow */}
       {showCapturedPhoto && (
@@ -284,6 +285,7 @@ export function BoothPage({ qrCodeBaseUrl }: BoothPageProps) {
               code={previousDisplay.photo.code}
               kenBurns={previousDisplay.kenBurns}
               qrCodeBaseUrl={qrCodeBaseUrl}
+              swirlEffect={swirlEffect}
               fadingOut
             />
           )}
@@ -293,6 +295,7 @@ export function BoothPage({ qrCodeBaseUrl }: BoothPageProps) {
             code={currentDisplay.photo.code}
             kenBurns={currentDisplay.kenBurns}
             qrCodeBaseUrl={qrCodeBaseUrl}
+            swirlEffect={swirlEffect}
           />
         </div>
       )}

@@ -59,4 +59,5 @@ export interface QueuedPhoto {
 
 export interface ClientConfigDto {
   qrCodeBaseUrl: string | null;
+  swirlEffect: boolean;
 }

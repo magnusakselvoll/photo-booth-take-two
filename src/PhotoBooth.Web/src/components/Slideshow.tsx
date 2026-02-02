@@ -9,6 +9,7 @@ interface SlideshowProps {
   intervalMs?: number;
   paused?: boolean;
   qrCodeBaseUrl?: string;
+  swirlEffect?: boolean;
 }
 
 function randomInRange(min: number, max: number): number {
@@ -69,9 +70,9 @@ interface PhotoState {
   key: number;
 }
 
-const FADE_DURATION_MS = 800;
+const FADE_DURATION_MS = 500;
 
-export function Slideshow({ intervalMs = 8000, paused = false, qrCodeBaseUrl }: SlideshowProps) {
+export function Slideshow({ intervalMs = 8000, paused = false, qrCodeBaseUrl, swirlEffect = true }: SlideshowProps) {
   const { t } = useTranslation();
   const [currentState, setCurrentState] = useState<PhotoState | null>(null);
   const [previousState, setPreviousState] = useState<PhotoState | null>(null);
@@ -131,6 +132,7 @@ export function Slideshow({ intervalMs = 8000, paused = false, qrCodeBaseUrl }: 
           code={previousState.photo.code}
           kenBurns={previousState.kenBurns}
           qrCodeBaseUrl={qrCodeBaseUrl}
+          swirlEffect={swirlEffect}
           fadingOut
         />
       )}
@@ -140,6 +142,7 @@ export function Slideshow({ intervalMs = 8000, paused = false, qrCodeBaseUrl }: 
         code={currentState.photo.code}
         kenBurns={currentState.kenBurns}
         qrCodeBaseUrl={qrCodeBaseUrl}
+        swirlEffect={swirlEffect}
       />
     </div>
   );

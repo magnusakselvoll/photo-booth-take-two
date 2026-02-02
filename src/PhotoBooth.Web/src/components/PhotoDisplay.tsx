@@ -19,10 +19,11 @@ interface PhotoDisplayProps {
   showQrCode?: boolean;
   qrCodeBaseUrl?: string;
   kenBurns?: KenBurnsConfig;
+  swirlEffect?: boolean;
   fadingOut?: boolean;
 }
 
-export function PhotoDisplay({ photoId, code, showCode = true, showQrCode = true, qrCodeBaseUrl, kenBurns, fadingOut = false }: PhotoDisplayProps) {
+export function PhotoDisplay({ photoId, code, showCode = true, showQrCode = true, qrCodeBaseUrl, kenBurns, swirlEffect = true, fadingOut = false }: PhotoDisplayProps) {
   const imageUrl = getPhotoImageUrl(photoId);
   const baseUrl = qrCodeBaseUrl || window.location.origin;
 
@@ -36,7 +37,11 @@ export function PhotoDisplay({ photoId, code, showCode = true, showQrCode = true
     '--kb-duration': kenBurns.duration,
   } as CSSProperties : undefined;
 
-  const displayClassName = fadingOut ? 'photo-display fading-out' : 'photo-display';
+  const displayClassName = [
+    'photo-display',
+    swirlEffect ? 'swirl' : 'fade',
+    fadingOut ? 'fading-out' : '',
+  ].filter(Boolean).join(' ');
 
   return (
     <div className={displayClassName}>
