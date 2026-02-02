@@ -69,7 +69,7 @@ interface PhotoState {
   key: number;
 }
 
-const FADE_DURATION_MS = 500;
+const FADE_DURATION_MS = 800;
 
 export function Slideshow({ intervalMs = 8000, paused = false, qrCodeBaseUrl }: SlideshowProps) {
   const { t } = useTranslation();
