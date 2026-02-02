@@ -1,3 +1,3 @@
 namespace PhotoBooth.Application.DTOs;
 
-public record ClientConfigDto(string? QrCodeBaseUrl);
+public record ClientConfigDto(string? QrCodeBaseUrl, bool SwirlEffect);

@@ -13,7 +13,8 @@ public static class ConfigEndpoints
     private static IResult GetConfig(IConfiguration configuration)
     {
         var qrCodeBaseUrl = configuration.GetValue<string>("QrCode:BaseUrl");
-        var config = new ClientConfigDto(qrCodeBaseUrl);
+        var swirlEffect = configuration.GetValue<bool>("Slideshow:SwirlEffect", true);
+        var config = new ClientConfigDto(qrCodeBaseUrl, swirlEffect);
         return Results.Ok(config);
     }
 }

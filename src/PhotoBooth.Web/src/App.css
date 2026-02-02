@@ -51,10 +51,45 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* Swirl effect animations */
+.photo-display.swirl {
+  animation: swirl-in 0.8s ease-out forwards;
+}
+
+.photo-display.swirl.fading-out {
+  animation: swirl-out 0.5s ease-in forwards;
+}
+
+@keyframes swirl-in {
+  from {
+    opacity: 0;
+    transform: scale(0.3) rotate(-180deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes swirl-out {
+  from {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.3) rotate(180deg);
+  }
+}
+
+/* Fade effect animations */
+.photo-display.fade {
   animation: fade-in 0.5s ease-out forwards;
 }
 
-.photo-display.fading-out {
+.photo-display.fade.fading-out {
   animation: fade-out 0.5s ease-out forwards;
 }
 

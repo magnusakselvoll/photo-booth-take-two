@@ -20,6 +20,7 @@ function getRouteFromHash(): Route {
 function App() {
   const [route, setRoute] = useState<Route>(getRouteFromHash);
   const [qrCodeBaseUrl, setQrCodeBaseUrl] = useState<string | undefined>(undefined);
+  const [swirlEffect, setSwirlEffect] = useState(true);
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -36,6 +37,7 @@ function App() {
         if (config.qrCodeBaseUrl) {
           setQrCodeBaseUrl(config.qrCodeBaseUrl);
         }
+        setSwirlEffect(config.swirlEffect);
       })
       .catch(err => {
         console.error('Failed to load client config:', err);
@@ -44,7 +46,7 @@ function App() {
 
   return (
     <div className="app">
-      {route.type === 'booth' && <BoothPage qrCodeBaseUrl={qrCodeBaseUrl} />}
+      {route.type === 'booth' && <BoothPage qrCodeBaseUrl={qrCodeBaseUrl} swirlEffect={swirlEffect} />}
       {route.type === 'download' && <DownloadPage />}
       {route.type === 'photo' && <PhotoDetailPage code={route.code} />}
     </div>
