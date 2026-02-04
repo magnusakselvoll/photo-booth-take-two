@@ -1,19 +1,20 @@
 import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { getPhotoByCode, getPhotoImageUrl } from '../api/client';
 import type { PhotoDto } from '../api/types';
 import { useTranslation } from '../i18n/useTranslation';
 
-interface PhotoDetailPageProps {
-  code: string;
-}
-
-export function PhotoDetailPage({ code }: PhotoDetailPageProps) {
+export function PhotoDetailPage() {
+  const { code } = useParams<{ code: string }>();
+  const navigate = useNavigate();
   const { t } = useTranslation();
   const [photo, setPhoto] = useState<PhotoDto | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(!!code);
+  const [error, setError] = useState<string | null>(code ? null : t('photoNotFoundError'));
 
   useEffect(() => {
+    if (!code) return;
+
     getPhotoByCode(code)
       .then(result => {
         if (result) {
@@ -38,7 +39,7 @@ export function PhotoDetailPage({ code }: PhotoDetailPageProps) {
   };
 
   const handleBack = () => {
-    window.location.hash = '#download';
+    navigate('/download');
   };
 
   if (loading) {
