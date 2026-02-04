@@ -1,13 +1,11 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { getNextSlideshowPhoto } from '../api/client';
-import type { SlideshowPhotoDto } from '../api/types';
+import { useState, useEffect, useRef } from 'react';
 import { PhotoDisplay } from './PhotoDisplay';
 import type { KenBurnsConfig } from './PhotoDisplay';
 import { useTranslation } from '../i18n/useTranslation';
+import type { SlideshowPhoto } from '../hooks/useSlideshowNavigation';
 
 interface SlideshowProps {
-  intervalMs?: number;
-  paused?: boolean;
+  photo: SlideshowPhoto | null;
   qrCodeBaseUrl?: string;
   swirlEffect?: boolean;
 }
@@ -65,59 +63,49 @@ function generateKenBurnsConfig(): KenBurnsConfig {
 }
 
 interface PhotoState {
-  photo: SlideshowPhotoDto;
+  photo: SlideshowPhoto;
   kenBurns: KenBurnsConfig;
   key: number;
 }
 
 const FADE_DURATION_MS = 500;
 
-export function Slideshow({ intervalMs = 8000, paused = false, qrCodeBaseUrl, swirlEffect = true }: SlideshowProps) {
+export function Slideshow({ photo, qrCodeBaseUrl, swirlEffect = true }: SlideshowProps) {
   const { t } = useTranslation();
   const [currentState, setCurrentState] = useState<PhotoState | null>(null);
   const [previousState, setPreviousState] = useState<PhotoState | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const photoKeyRef = useRef(0);
+  const lastPhotoIdRef = useRef<string | null>(null);
 
-  const loadNextPhoto = useCallback(async () => {
-    try {
-      const photo = await getNextSlideshowPhoto();
-      if (photo) {
-        setCurrentState((prev) => {
-          // Move current to previous for crossfade
-          if (prev) {
-            setPreviousState(prev);
-            // Clear previous after fade completes
-            setTimeout(() => setPreviousState(null), FADE_DURATION_MS);
-          }
-          photoKeyRef.current += 1;
-          return {
-            photo,
-            kenBurns: generateKenBurnsConfig(),
-            key: photoKeyRef.current,
-          };
-        });
-        setError(null);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load photo');
+  // Update display when photo changes
+  useEffect(() => {
+    if (!photo) {
+      setCurrentState(null);
+      lastPhotoIdRef.current = null;
+      return;
     }
-  }, []);
 
-  useEffect(() => {
-    loadNextPhoto();
-  }, [loadNextPhoto]);
+    // Only update if photo ID changed
+    if (photo.id === lastPhotoIdRef.current) {
+      return;
+    }
 
-  useEffect(() => {
-    if (paused) return;
+    lastPhotoIdRef.current = photo.id;
 
-    const interval = setInterval(loadNextPhoto, intervalMs);
-    return () => clearInterval(interval);
-  }, [intervalMs, paused, loadNextPhoto]);
-
-  if (error) {
-    return <div className="slideshow-error">{error}</div>;
-  }
+    setCurrentState((prev) => {
+      // Move current to previous for crossfade
+      if (prev) {
+        setPreviousState(prev);
+        setTimeout(() => setPreviousState(null), FADE_DURATION_MS);
+      }
+      photoKeyRef.current += 1;
+      return {
+        photo,
+        kenBurns: generateKenBurnsConfig(),
+        key: photoKeyRef.current,
+      };
+    });
+  }, [photo]);
 
   if (!currentState) {
     return <div className="slideshow-empty">{t('noPhotosToShow')}</div>;

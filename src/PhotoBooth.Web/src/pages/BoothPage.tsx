@@ -4,6 +4,8 @@ import { CaptureOverlay } from '../components/CaptureOverlay';
 import { PhotoDisplay, type KenBurnsConfig } from '../components/PhotoDisplay';
 import { useEventStream } from '../api/events';
 import { triggerCapture } from '../api/client';
+import { useSlideshowNavigation } from '../hooks/useSlideshowNavigation';
+import { useKeyboardNavigation } from '../hooks/useKeyboardNavigation';
 import type { PhotoBoothEvent, QueuedPhoto } from '../api/types';
 
 const PREVIEW_DURATION_MS = 8000; // Same as slideshow interval
@@ -89,6 +91,23 @@ export function BoothPage({ qrCodeBaseUrl, swirlEffect = true }: BoothPageProps)
   // Track the current display for use in callbacks (avoid stale closure)
   const currentDisplayRef = useRef<DisplayPhoto | null>(null);
 
+  // Slideshow navigation
+  const showSlideshow = currentDisplay === null;
+  const showCountdown = activeCountdowns > 0;
+  const slideshowPaused = showCountdown || !showSlideshow;
+
+  const {
+    currentPhoto: slideshowPhoto,
+    goNext,
+    goPrevious,
+    skip,
+    toggleMode,
+    refresh: refreshSlideshow,
+  } = useSlideshowNavigation({
+    intervalMs: PREVIEW_DURATION_MS,
+    paused: slideshowPaused,
+  });
+
   const resetWatchdog = useCallback(() => {
     if (watchdogTimeoutRef.current !== null) {
       clearTimeout(watchdogTimeoutRef.current);
@@ -149,8 +168,11 @@ export function BoothPage({ qrCodeBaseUrl, swirlEffect = true }: BoothPageProps)
 
       // Clear display to trigger showing next from queue or slideshow
       setCurrentDisplay(null);
+
+      // Refresh slideshow to include the newly captured photo
+      refreshSlideshow();
     }, PREVIEW_DURATION_MS);
-  }, []);
+  }, [refreshSlideshow]);
 
   // Show next photo from queue
   const showNextFromQueue = useCallback(() => {
@@ -242,12 +264,12 @@ export function BoothPage({ qrCodeBaseUrl, swirlEffect = true }: BoothPageProps)
 
   useEventStream(handleEvent);
 
-  const handleTrigger = async () => {
+  const handleTrigger = useCallback(async (durationMs?: number) => {
     resetWatchdog();
-    console.log('Click detected, triggering capture...');
+    console.log('Triggering capture...', durationMs ? `duration: ${durationMs}ms` : '(default duration)');
 
     try {
-      await triggerCapture();
+      await triggerCapture(durationMs);
     } catch (err) {
       console.error('Trigger error:', err);
       setErrorMessage(err instanceof Error ? err.message : 'Failed to trigger capture');
@@ -258,6 +280,21 @@ export function BoothPage({ qrCodeBaseUrl, swirlEffect = true }: BoothPageProps)
         setErrorMessage(null);
       }, ERROR_DISPLAY_MS);
     }
+  }, [resetWatchdog]);
+
+  // Keyboard navigation - disabled during countdown
+  useKeyboardNavigation({
+    onNext: goNext,
+    onPrevious: goPrevious,
+    onSkipForward: () => skip(10),
+    onSkipBackward: () => skip(-10),
+    onToggleMode: toggleMode,
+    onTriggerCapture: handleTrigger,
+    enabled: !showCountdown,
+  });
+
+  const handleClick = () => {
+    handleTrigger();
   };
 
   const handleCountdownComplete = () => {
@@ -266,14 +303,12 @@ export function BoothPage({ qrCodeBaseUrl, swirlEffect = true }: BoothPageProps)
 
   // Determine what to show
   const showCapturedPhoto = currentDisplay !== null;
-  const showSlideshow = !showCapturedPhoto;
-  const showCountdown = activeCountdowns > 0;
   const showError = errorMessage !== null;
 
   return (
-    <div className="booth-page" onClick={handleTrigger}>
+    <div className="booth-page" onClick={handleClick}>
       {/* Show slideshow when not showing captured photos */}
-      {showSlideshow && <Slideshow paused={showCountdown} qrCodeBaseUrl={qrCodeBaseUrl} swirlEffect={swirlEffect} />}
+      {showSlideshow && <Slideshow photo={slideshowPhoto} qrCodeBaseUrl={qrCodeBaseUrl} swirlEffect={swirlEffect} />}
 
       {/* Show captured photo with same Ken Burns effect as slideshow */}
       {showCapturedPhoto && (
