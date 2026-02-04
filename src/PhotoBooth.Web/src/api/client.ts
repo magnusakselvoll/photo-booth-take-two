@@ -2,8 +2,12 @@ import type { ClientConfigDto, PhotoDto, SlideshowPhotoDto, TriggerResponse } fr
 
 const API_BASE = '/api';
 
-export async function triggerCapture(): Promise<TriggerResponse> {
-  const response = await fetch(`${API_BASE}/photos/trigger`, {
+export async function triggerCapture(durationMs?: number): Promise<TriggerResponse> {
+  const url = durationMs
+    ? `${API_BASE}/photos/trigger?durationMs=${durationMs}`
+    : `${API_BASE}/photos/trigger`;
+
+  const response = await fetch(url, {
     method: 'POST',
   });
 

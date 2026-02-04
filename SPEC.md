@@ -19,11 +19,12 @@ The application has two display modes:
 When no photo is being taken, the screen shows a slideshow of photos from the current event.
 
 - Photos rotate automatically at a configurable interval
-- Selection is uniformly random from all event photos
+- Selection is uniformly random from all event photos (can be toggled to sorted order)
 - Each photo displays its download code (and optionally QR code)
 - Fullscreen display optimized for the booth monitor
 - **Ken Burns effect**: Photos display with subtle pan/zoom animations for visual interest
 - **Crossfade transitions**: Smooth 0.5-second fade between photos
+- **Keyboard navigation**: Arrow keys to navigate photos manually, R to toggle random/sorted order
 
 ### 2. Capture Mode (Active)
 
@@ -40,8 +41,10 @@ Triggered when a guest presses the capture button.
 ### Trigger Input
 
 Input methods:
-- **Keyboard**: Configurable key (default: spacebar), must be explicitly enabled via configuration
-- **HTTP API**: POST to `/api/trigger` endpoint (restricted to localhost by default)
+- **Keyboard (backend)**: Configurable key (default: spacebar), must be explicitly enabled via configuration
+- **Keyboard (web UI)**: Space/Enter to trigger capture, or 1/3/5 keys for custom countdown durations
+- **Click/touch**: Click anywhere on the booth screen to trigger capture
+- **HTTP API**: POST to `/api/photos/trigger` endpoint (restricted to localhost by default), accepts optional `durationMs` query parameter
 
 ### Camera Support
 
@@ -55,6 +58,22 @@ Camera selection is configurable. The system should handle camera disconnection 
 #### Webcam Implementation Details
 
 The OpenCV provider uses OpenCvSharp4 for cross-platform capture with configurable resolution, frame skipping for auto-exposure adjustment, and JPEG quality settings.
+
+### Keyboard Shortcuts (Web UI)
+
+The booth display supports keyboard shortcuts for navigation and capture:
+
+| Key | Action |
+|-----|--------|
+| `←` / `→` | Previous / next photo |
+| `↑` / `↓` | Skip 10 photos backward / forward |
+| `R` | Toggle random / sorted order |
+| `Space` / `Enter` | Trigger capture (default countdown) |
+| `1` | Trigger capture with 1 second countdown |
+| `3` | Trigger capture with 3 second countdown |
+| `5` | Trigger capture with 5 second countdown |
+
+Keyboard shortcuts are disabled during the countdown overlay to prevent accidental input.
 
 ### Countdown
 

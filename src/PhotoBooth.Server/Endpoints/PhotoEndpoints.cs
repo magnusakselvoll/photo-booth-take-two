@@ -32,14 +32,16 @@ public static class PhotoEndpoints
 
     private static async Task<IResult> TriggerCapture(
         ICaptureWorkflowService workflowService,
+        int? durationMs,
         CancellationToken cancellationToken)
     {
-        await workflowService.TriggerCaptureAsync("web-ui", cancellationToken);
+        var effectiveDuration = durationMs ?? workflowService.CountdownDurationMs;
+        await workflowService.TriggerCaptureAsync("web-ui", durationMs, cancellationToken);
 
         return Results.Accepted(value: new
         {
             message = "Capture workflow started",
-            countdownDurationMs = workflowService.CountdownDurationMs
+            countdownDurationMs = effectiveDuration
         });
     }
 
