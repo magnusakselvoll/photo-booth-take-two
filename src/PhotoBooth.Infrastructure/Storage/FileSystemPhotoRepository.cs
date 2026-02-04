@@ -1,4 +1,4 @@
-using System.Text.Json;
+using Microsoft.Extensions.Logging;
 using PhotoBooth.Domain.Entities;
 using PhotoBooth.Domain.Interfaces;
 
@@ -7,14 +7,14 @@ namespace PhotoBooth.Infrastructure.Storage;
 public class FileSystemPhotoRepository : IPhotoRepository
 {
     private readonly string _storagePath;
-    private readonly string _metadataFile;
+    private readonly ILogger<FileSystemPhotoRepository>? _logger;
     private readonly SemaphoreSlim _lock = new(1, 1);
     private List<Photo>? _photosCache;
 
-    public FileSystemPhotoRepository(string basePath, string eventName)
+    public FileSystemPhotoRepository(string basePath, string eventName, ILogger<FileSystemPhotoRepository>? logger = null)
     {
         _storagePath = Path.Combine(basePath, SanitizeEventName(eventName));
-        _metadataFile = Path.Combine(_storagePath, "photos.json");
+        _logger = logger;
         Directory.CreateDirectory(_storagePath);
     }
 
@@ -36,11 +36,9 @@ public class FileSystemPhotoRepository : IPhotoRepository
 
             await File.WriteAllBytesAsync(photo.FilePath, imageData, cancellationToken);
 
-            var photos = await LoadPhotosAsync(cancellationToken);
-            photos.Add(photo);
-            await SavePhotosAsync(photos, cancellationToken);
+            // Add to cache if it exists
+            _photosCache?.Add(photo);
 
-            _photosCache = photos;
             return photo;
         }
         finally
@@ -115,20 +113,62 @@ public class FileSystemPhotoRepository : IPhotoRepository
         }
     }
 
-    private async Task<List<Photo>> LoadPhotosAsync(CancellationToken cancellationToken)
+    private Task<List<Photo>> LoadPhotosAsync(CancellationToken cancellationToken)
     {
-        if (!File.Exists(_metadataFile))
+        var photos = new List<Photo>();
+
+        if (!Directory.Exists(_storagePath))
         {
-            return new List<Photo>();
+            return Task.FromResult(photos);
         }
 
-        var json = await File.ReadAllTextAsync(_metadataFile, cancellationToken);
-        return JsonSerializer.Deserialize<List<Photo>>(json) ?? new List<Photo>();
+        foreach (var filePath in Directory.EnumerateFiles(_storagePath, "*.jpg"))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var photo = TryParsePhotoFromFile(filePath);
+            if (photo is not null)
+            {
+                photos.Add(photo);
+            }
+            else
+            {
+                _logger?.LogWarning("Skipping malformed photo filename: {FileName}", Path.GetFileName(filePath));
+            }
+        }
+
+        return Task.FromResult(photos);
     }
 
-    private async Task SavePhotosAsync(List<Photo> photos, CancellationToken cancellationToken)
+    private static Photo? TryParsePhotoFromFile(string filePath)
     {
-        var json = JsonSerializer.Serialize(photos, new JsonSerializerOptions { WriteIndented = true });
-        await File.WriteAllTextAsync(_metadataFile, json, cancellationToken);
+        var fileName = Path.GetFileNameWithoutExtension(filePath);
+
+        // Expected format: {paddedCode}-{guid}
+        // Example: 00001-550e8400-e29b-41d4-a716-446655440000
+        var dashIndex = fileName.IndexOf('-');
+        if (dashIndex < 1)
+        {
+            return null;
+        }
+
+        var codeStr = fileName[..dashIndex].TrimStart('0');
+        if (string.IsNullOrEmpty(codeStr))
+        {
+            codeStr = "0";
+        }
+
+        var guidStr = fileName[(dashIndex + 1)..];
+        if (!Guid.TryParse(guidStr, out var id))
+        {
+            return null;
+        }
+
+        return new Photo
+        {
+            Id = id,
+            Code = codeStr,
+            FilePath = filePath,
+            CapturedAt = File.GetCreationTimeUtc(filePath)
+        };
     }
 }
