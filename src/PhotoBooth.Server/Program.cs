@@ -72,7 +72,11 @@ switch (cameraProvider.ToLowerInvariant())
         break;
 }
 
-builder.Services.AddSingleton<IPhotoRepository>(sp => new FileSystemPhotoRepository(basePath, eventName));
+builder.Services.AddSingleton<IPhotoRepository>(sp =>
+{
+    var logger = sp.GetRequiredService<ILogger<FileSystemPhotoRepository>>();
+    return new FileSystemPhotoRepository(basePath, eventName, logger);
+});
 builder.Services.AddSingleton<IPhotoCodeGenerator>(sp =>
 {
     var repository = sp.GetRequiredService<IPhotoRepository>();
