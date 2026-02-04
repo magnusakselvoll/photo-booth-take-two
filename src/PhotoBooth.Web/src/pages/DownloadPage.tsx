@@ -1,20 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getPhotoByCode, getPhotoImageUrl } from '../api/client';
 import type { PhotoDto } from '../api/types';
 import { PhotoGrid } from '../components/PhotoGrid';
 import { useTranslation } from '../i18n/useTranslation';
 
-function getCodeFromHash(): string | null {
-  const hash = window.location.hash;
-  const queryStart = hash.indexOf('?');
-  if (queryStart === -1) return null;
-
-  const queryString = hash.slice(queryStart + 1);
-  const params = new URLSearchParams(queryString);
-  return params.get('code');
-}
-
 export function DownloadPage() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { t, language, setLanguage } = useTranslation();
   const [code, setCode] = useState('');
   const [photo, setPhoto] = useState<PhotoDto | null>(null);
@@ -44,12 +37,12 @@ export function DownloadPage() {
   }, [t]);
 
   useEffect(() => {
-    const codeFromUrl = getCodeFromHash();
+    const codeFromUrl = searchParams.get('code');
     if (codeFromUrl) {
       setCode(codeFromUrl);
       fetchPhoto(codeFromUrl);
     }
-  }, [fetchPhoto]);
+  }, [searchParams, fetchPhoto]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,7 +61,7 @@ export function DownloadPage() {
   };
 
   const handlePhotoClick = (photoCode: string) => {
-    window.location.hash = `#photo/${photoCode}`;
+    navigate(`/photo/${photoCode}`);
   };
 
   const handleBackToSearch = () => {

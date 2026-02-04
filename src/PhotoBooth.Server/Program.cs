@@ -153,6 +153,9 @@ app.MapCameraEndpoints();
 app.MapEventsEndpoints();
 app.MapConfigEndpoints(builder.Configuration);
 
+// SPA fallback for client-side routing
+app.MapFallbackToFile("index.html");
+
 app.Run();
 
 // Make the implicit Program class public for testing
