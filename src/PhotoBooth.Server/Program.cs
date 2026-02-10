@@ -1,3 +1,5 @@
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
 using PhotoBooth.Application.Events;
 using PhotoBooth.Application.Services;
 using PhotoBooth.Domain.Interfaces;
@@ -9,6 +11,7 @@ using PhotoBooth.Infrastructure.Network;
 using PhotoBooth.Infrastructure.Storage;
 using PhotoBooth.Server.Endpoints;
 using PhotoBooth.Server.Filters;
+using PhotoBooth.Server.Middleware;
 using Serilog;
 
 Log.Logger = new LoggerConfiguration()
@@ -122,6 +125,18 @@ builder.Services.AddCors(options =>
     });
 });
 
+// Add rate limiting for capture endpoints
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddFixedWindowLimiter("capture", limiter =>
+    {
+        limiter.PermitLimit = 5;
+        limiter.Window = TimeSpan.FromSeconds(10);
+        limiter.QueueLimit = 0;
+    });
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -135,6 +150,12 @@ else
 {
     app.UseHttpsRedirection();
 }
+
+// Security headers (before static files so headers apply to all responses)
+app.UseSecurityHeaders();
+
+// Rate limiting
+app.UseRateLimiter();
 
 // Serve static files (for web UI)
 app.UseDefaultFiles();

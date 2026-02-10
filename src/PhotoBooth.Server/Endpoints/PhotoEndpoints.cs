@@ -10,7 +10,8 @@ public static class PhotoEndpoints
         var group = app.MapGroup("/api/photos");
 
         var triggerEndpoint = group.MapPost("/trigger", TriggerCapture)
-            .WithName("TriggerCapture");
+            .WithName("TriggerCapture")
+            .RequireRateLimiting("capture");
 
         if (triggerFilter is not null)
         {
@@ -18,7 +19,8 @@ public static class PhotoEndpoints
         }
 
         group.MapPost("/capture", CapturePhoto)
-            .WithName("CapturePhoto");
+            .WithName("CapturePhoto")
+            .RequireRateLimiting("capture");
 
         group.MapGet("/", GetAllPhotos)
             .WithName("GetAllPhotos");
