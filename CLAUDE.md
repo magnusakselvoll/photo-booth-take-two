@@ -116,6 +116,24 @@ Example configuration:
 }
 ```
 
+## Security
+
+### HTTP Security Headers
+
+All responses (including static files) include security headers added by `SecurityHeadersMiddleware`:
+
+- **X-Content-Type-Options**: `nosniff` — prevents MIME-type sniffing
+- **X-Frame-Options**: `DENY` — prevents clickjacking
+- **Referrer-Policy**: `strict-origin-when-cross-origin` — limits referrer leakage
+- **Permissions-Policy**: Disables camera, microphone, geolocation, payment browser APIs
+- **Content-Security-Policy**: Restricts resource loading to `'self'` with exceptions for Google Fonts and inline styles (required by React)
+
+No HSTS header — inappropriate for a local-network app with dynamic IPs.
+
+### Rate Limiting
+
+The `/api/photos/capture` and `/api/photos/trigger` endpoints are rate-limited using ASP.NET Core's built-in rate limiter: 5 requests per 10-second fixed window. Returns HTTP 429 when exceeded.
+
 ## CI/CD
 
 GitHub Actions workflows in `.github/workflows/`:
