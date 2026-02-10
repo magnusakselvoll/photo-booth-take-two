@@ -2,6 +2,10 @@
 
 Instructions for Claude Code when working on this repository.
 
+## Issue Tracking
+
+Issues are tracked in GitHub. Use `gh issue list` to see open issues and `gh issue view <number>` for details.
+
 ## Git Workflow (GitHub Flow)
 
 Always use GitHub Flow when working on issues:
