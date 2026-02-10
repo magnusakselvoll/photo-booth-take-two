@@ -80,7 +80,6 @@ export function Slideshow({ photo, qrCodeBaseUrl, swirlEffect = true }: Slidesho
   // Update display when photo changes
   useEffect(() => {
     if (!photo) {
-      setCurrentState(null);
       lastPhotoIdRef.current = null;
       return;
     }
@@ -107,7 +106,7 @@ export function Slideshow({ photo, qrCodeBaseUrl, swirlEffect = true }: Slidesho
     });
   }, [photo]);
 
-  if (!currentState) {
+  if (!photo || !currentState) {
     return <div className="slideshow-empty">{t('noPhotosToShow')}</div>;
   }
 

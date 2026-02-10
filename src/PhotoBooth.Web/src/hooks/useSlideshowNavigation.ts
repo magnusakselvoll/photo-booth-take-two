@@ -50,23 +50,25 @@ export function useSlideshowNavigation({
     return shuffleArray(indices);
   }, []);
 
-  const loadPhotos = useCallback(async () => {
-    try {
-      const allPhotos = await getAllPhotos();
-      setPhotos(allPhotos);
-      if (allPhotos.length > 0) {
-        const newShuffled = generateShuffledIndices(allPhotos.length);
-        setShuffledIndices(newShuffled);
-        setCurrentIndex(0);
-      }
-    } catch (err) {
-      console.error('Failed to load photos:', err);
-    }
-  }, [generateShuffledIndices]);
-
   useEffect(() => {
-    loadPhotos();
-  }, [loadPhotos]);
+    let cancelled = false;
+
+    getAllPhotos()
+      .then(allPhotos => {
+        if (cancelled) return;
+        setPhotos(allPhotos);
+        if (allPhotos.length > 0) {
+          const newShuffled = generateShuffledIndices(allPhotos.length);
+          setShuffledIndices(newShuffled);
+          setCurrentIndex(0);
+        }
+      })
+      .catch(err => {
+        console.error('Failed to load photos:', err);
+      });
+
+    return () => { cancelled = true; };
+  }, [generateShuffledIndices]);
 
   const getEffectiveIndex = useCallback((index: number): number => {
     if (photos.length === 0) return 0;
