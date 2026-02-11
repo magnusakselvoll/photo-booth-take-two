@@ -75,6 +75,9 @@ Configuration is done via `appsettings.json` in the Server project:
   },
   "Event": {
     "Name": ""
+  },
+  "Slideshow": {
+    "SwirlEffect": true
   }
 }
 ```
@@ -86,6 +89,7 @@ Configuration is done via `appsettings.json` in the Server project:
 - `CaptureLatencyMs`: Delay before capture to sync with countdown
 - `FramesToSkip`: Number of frames to skip for auto-exposure adjustment
 - `FlipVertical`: Mirror the image vertically
+- `JpegQuality`: JPEG encoding quality, 1-100 (default: 90)
 - `InitializationWarmupMs`: Camera warmup time on startup
 - `PreferredWidth`/`PreferredHeight`: Requested camera resolution
 
@@ -96,6 +100,7 @@ Configuration is done via `appsettings.json` in the Server project:
 - `NetworkSecurity.BlockOutboundRequests`: Block outbound network requests (default: true)
 - `QrCode.BaseUrl`: Base URL for QR codes (defaults to request origin)
 - `Event.Name`: Event name displayed in the UI
+- `Slideshow.SwirlEffect`: Enable swirl animation effect on slideshow (default: true)
 
 ## Project Structure
 
@@ -107,6 +112,7 @@ src/
   PhotoBooth.Server/        # ASP.NET Core REST API + web UI
 tests/
   PhotoBooth.Application.Tests/
+  PhotoBooth.Infrastructure.Tests/
   PhotoBooth.Server.Tests/
 ```
 

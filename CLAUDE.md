@@ -61,10 +61,19 @@ Clean architecture with four layers:
 - `IPhotoRepository`: Store and retrieve photos
 - `IPhotoCodeGenerator`: Generate download codes for photos
 
+### Events (in Application)
+
+- `IEventBroadcaster`: Broadcasts real-time events (countdown, capture, errors) to SSE clients
+
 ### Key Services (in Application)
 
-- `PhotoCaptureService`: Orchestrates countdown and photo capture
+- `PhotoCaptureService`: Orchestrates photo capture and storage
+- `CaptureWorkflowService`: Manages countdown + capture + event broadcasting workflow
 - `SlideshowService`: Manages slideshow photo selection
+
+### Code Generation
+
+- `SequentialCodeGenerator` (default): Assigns sequential numeric codes (1, 2, 3, ...) based on photo count
 
 ## Tech Stack
 
@@ -115,6 +124,15 @@ Example configuration:
   }
 }
 ```
+
+## Additional Configuration
+
+| Key | Description | Default |
+|-----|-------------|---------|
+| `Slideshow:SwirlEffect` | Enable swirl animation effect on slideshow | `true` |
+| `Event:Name` | Event name (used as storage subfolder) | Current date |
+| `QrCode:BaseUrl` | Base URL for QR code links | Request origin |
+| `Capture:CountdownDurationMs` | Default countdown duration in ms | `3000` |
 
 ## Security
 

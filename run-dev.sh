@@ -33,7 +33,7 @@ echo "Starting Photo Booth development servers..."
 echo ""
 
 # Start backend
-echo "Starting backend (dotnet) on http://localhost:5000..."
+echo "Starting backend (dotnet) on http://localhost:5192..."
 dotnet run --project src/PhotoBooth.Server &
 BACKEND_PID=$!
 
