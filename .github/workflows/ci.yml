@@ -51,6 +51,10 @@ jobs:
         working-directory: src/PhotoBooth.Web
         run: pnpm run lint
 
+      - name: Test frontend
+        working-directory: src/PhotoBooth.Web
+        run: pnpm run test
+
       - name: Build frontend
         working-directory: src/PhotoBooth.Web
         run: pnpm run build
