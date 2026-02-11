@@ -77,10 +77,10 @@ Keyboard shortcuts are disabled during the countdown overlay to prevent accident
 
 ### Countdown
 
-- Configurable duration (default: 5 seconds)
+- Configurable duration (default: 3 seconds)
 - Visual countdown displayed prominently
-- Optional audio feedback (beeps)
-- Cancellation possible (press button again or escape key)
+- Audio feedback (beeps) — future enhancement
+- Countdown cancellation — future enhancement
 
 ## Photo Storage and Retrieval
 
@@ -89,13 +89,11 @@ Keyboard shortcuts are disabled during the countdown overlay to prevent accident
 - Photos stored locally on the server machine
 - Organized by event/session
 - Original quality preserved
-- Thumbnails generated for slideshow performance
 
 ### Download Codes
 
 Each photo gets a unique, short, human-friendly code:
-- Numeric only for easy verbal sharing (e.g., "4521")
-- 4-6 digits depending on event size
+- Sequential numeric codes (1, 2, 3, ...) assigned in capture order
 - Displayed on photo during slideshow
 - Valid for the duration of the event
 
@@ -145,12 +143,12 @@ Key configurable parameters:
 
 | Setting | Description | Default |
 |---------|-------------|---------|
-| `StoragePath` | Where photos are saved | `./photos` |
-| `Camera` | Camera type to use | `Webcam` |
-| `CountdownSeconds` | Countdown duration | `5` |
-| `SlideshowInterval` | Seconds between photos | `8` |
-| `CodeLength` | Download code digits | `4` |
-| `ShowQrCode` | Display QR codes on slideshow | `true` |
+| `PhotoStorage:Path` | Where photos are saved | OS-specific app data |
+| `Camera:Provider` | Camera provider to use | `OpenCv` |
+| `Capture:CountdownDurationMs` | Countdown duration in ms | `3000` |
+| `Slideshow:SwirlEffect` | Enable swirl effect on slideshow | `true` |
+| `Event:Name` | Event name (used for storage folder) | Current date |
+| `QrCode:BaseUrl` | Base URL for QR codes | Request origin |
 
 ## Internationalization (i18n)
 

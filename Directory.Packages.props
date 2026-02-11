@@ -10,8 +10,6 @@
     <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.2" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.2" />
     <PackageVersion Include="Serilog.AspNetCore" Version="10.0.0" />
-    <PackageVersion Include="SixLabors.ImageSharp" Version="3.1.12" />
-    <PackageVersion Include="SkiaSharp" Version="3.119.1" />
     <PackageVersion Include="Swashbuckle.AspNetCore" Version="10.1.0" />
     <!-- Testing -->
     <PackageVersion Include="MSTest" Version="4.0.1" />
