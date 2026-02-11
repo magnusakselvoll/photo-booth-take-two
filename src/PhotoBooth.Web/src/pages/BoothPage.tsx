@@ -327,36 +327,49 @@ export function BoothPage({ qrCodeBaseUrl, swirlEffect = true }: BoothPageProps)
     startShowingPhoto(photoQueueRef.current[prevIdx], true);
   }, [startShowingPhoto]);
 
-  // Wrapped callbacks: left/right navigate queue when showing a queue photo
+  // Dismiss a non-queue photo (just-captured), letting queue processing pick up next
+  const dismissCurrentPhoto = useCallback(() => {
+    if (previewTimeoutRef.current !== null) {
+      clearTimeout(previewTimeoutRef.current);
+      previewTimeoutRef.current = null;
+    }
+    setCurrentDisplay(null);
+    refreshSlideshow();
+  }, [refreshSlideshow]);
+
+  // Wrapped callbacks: navigate queue when showing a photo, pass through to slideshow otherwise
   const handleNavNext = useCallback(() => {
     if (currentDisplayRef.current?.fromQueue) {
       navigateQueueForward();
+    } else if (currentDisplayRef.current !== null) {
+      dismissCurrentPhoto();
     } else {
       goNext();
     }
-  }, [navigateQueueForward, goNext]);
+  }, [navigateQueueForward, dismissCurrentPhoto, goNext]);
 
   const handleNavPrevious = useCallback(() => {
     if (currentDisplayRef.current?.fromQueue) {
       navigateQueueBackward();
-    } else {
+    } else if (currentDisplayRef.current === null) {
       goPrevious();
     }
+    // Non-queue photo showing: no "previous" exists, ignore
   }, [navigateQueueBackward, goPrevious]);
 
-  // Other nav actions clear the queue if active, then perform the slideshow action
+  // Other nav actions clear any displayed photo/queue, then perform the slideshow action
   const handleNavSkipForward = useCallback(() => {
-    if (photoQueueRef.current.length > 0) clearQueueAndDisplay();
+    if (currentDisplayRef.current !== null || photoQueueRef.current.length > 0) clearQueueAndDisplay();
     skip(10);
   }, [clearQueueAndDisplay, skip]);
 
   const handleNavSkipBackward = useCallback(() => {
-    if (photoQueueRef.current.length > 0) clearQueueAndDisplay();
+    if (currentDisplayRef.current !== null || photoQueueRef.current.length > 0) clearQueueAndDisplay();
     skip(-10);
   }, [clearQueueAndDisplay, skip]);
 
   const handleNavToggleMode = useCallback(() => {
-    if (photoQueueRef.current.length > 0) clearQueueAndDisplay();
+    if (currentDisplayRef.current !== null || photoQueueRef.current.length > 0) clearQueueAndDisplay();
     toggleMode();
   }, [clearQueueAndDisplay, toggleMode]);
 
