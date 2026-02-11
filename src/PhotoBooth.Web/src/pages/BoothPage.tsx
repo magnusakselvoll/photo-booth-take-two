@@ -71,8 +71,10 @@ interface DisplayPhoto {
 }
 
 export function BoothPage({ qrCodeBaseUrl, swirlEffect = true }: BoothPageProps) {
-  // Queue of interrupted photos waiting to be displayed (FIFO)
+  // Queue of interrupted photos waiting to be displayed
   const [photoQueue, setPhotoQueue] = useState<QueuedPhoto[]>([]);
+  // Current index within the queue
+  const [queueIndex, setQueueIndex] = useState(0);
   // Currently displaying photo
   const [currentDisplay, setCurrentDisplay] = useState<DisplayPhoto | null>(null);
   // Previous photo for crossfade
@@ -90,6 +92,8 @@ export function BoothPage({ qrCodeBaseUrl, swirlEffect = true }: BoothPageProps)
   const photoKeyRef = useRef(0);
   // Track the current display for use in callbacks (avoid stale closure)
   const currentDisplayRef = useRef<DisplayPhoto | null>(null);
+  const queueIndexRef = useRef(0);
+  const photoQueueRef = useRef<QueuedPhoto[]>([]);
 
   // Slideshow navigation
   const showSlideshow = currentDisplay === null;
@@ -127,10 +131,12 @@ export function BoothPage({ qrCodeBaseUrl, swirlEffect = true }: BoothPageProps)
     };
   }, [resetWatchdog]);
 
-  // Keep ref in sync with state
+  // Keep refs in sync with state
   useEffect(() => {
     currentDisplayRef.current = currentDisplay;
   }, [currentDisplay]);
+  useEffect(() => { queueIndexRef.current = queueIndex; }, [queueIndex]);
+  useEffect(() => { photoQueueRef.current = photoQueue; }, [photoQueue]);
 
   // Helper to start showing a photo
   const startShowingPhoto = useCallback((photo: QueuedPhoto, fromQueue: boolean) => {
@@ -161,9 +167,15 @@ export function BoothPage({ qrCodeBaseUrl, swirlEffect = true }: BoothPageProps)
     previewTimeoutRef.current = window.setTimeout(() => {
       console.log('Preview complete for:', photo.code);
 
-      // If it was from queue, remove it (it was shown fully)
+      // If it was from queue, advance to next or clear queue
       if (fromQueue) {
-        setPhotoQueue(q => q.filter(p => p.photoId !== photo.photoId));
+        const nextIdx = queueIndexRef.current + 1;
+        if (nextIdx >= photoQueueRef.current.length) {
+          setPhotoQueue([]);
+          setQueueIndex(0);
+        } else {
+          setQueueIndex(nextIdx);
+        }
       }
 
       // Clear display to trigger showing next from queue or slideshow
@@ -176,27 +188,23 @@ export function BoothPage({ qrCodeBaseUrl, swirlEffect = true }: BoothPageProps)
 
   // Show next photo from queue
   const showNextFromQueue = useCallback(() => {
-    setPhotoQueue(queue => {
-      if (queue.length === 0) {
-        return queue;
-      }
-
-      const [nextPhoto] = queue;
-      // Don't remove from queue yet - will be removed when preview completes
-      startShowingPhoto(nextPhoto, true);
-      return queue;
-    });
+    const idx = queueIndexRef.current;
+    const queue = photoQueueRef.current;
+    if (idx < queue.length) {
+      startShowingPhoto(queue[idx], true);
+    }
   }, [startShowingPhoto]);
 
   // Process queue when conditions change
   useEffect(() => {
     // Start showing queue when no countdowns and nothing currently displayed
-    if (activeCountdowns === 0 && currentDisplay === null && photoQueue.length > 0) {
+    if (activeCountdowns === 0 && currentDisplay === null
+        && photoQueue.length > 0 && queueIndex < photoQueue.length) {
       // Defer to avoid synchronous setState within effect
       const timeoutId = setTimeout(showNextFromQueue, 0);
       return () => clearTimeout(timeoutId);
     }
-  }, [activeCountdowns, currentDisplay, photoQueue.length, showNextFromQueue]);
+  }, [activeCountdowns, currentDisplay, photoQueue.length, queueIndex, showNextFromQueue]);
 
   // Handle interruption - adds current photo to queue if it was newly captured
   const handleInterruption = useCallback(() => {
@@ -282,13 +290,83 @@ export function BoothPage({ qrCodeBaseUrl, swirlEffect = true }: BoothPageProps)
     }
   }, [resetWatchdog]);
 
+  // Clear queue and dismiss current display
+  const clearQueueAndDisplay = useCallback(() => {
+    if (previewTimeoutRef.current !== null) {
+      clearTimeout(previewTimeoutRef.current);
+      previewTimeoutRef.current = null;
+    }
+    setPhotoQueue([]);
+    setQueueIndex(0);
+    setCurrentDisplay(null);
+    refreshSlideshow();
+  }, [refreshSlideshow]);
+
+  // Queue navigation functions
+  const navigateQueueForward = useCallback(() => {
+    if (previewTimeoutRef.current !== null) {
+      clearTimeout(previewTimeoutRef.current);
+    }
+    const nextIdx = queueIndexRef.current + 1;
+    const queue = photoQueueRef.current;
+    if (nextIdx >= queue.length) {
+      clearQueueAndDisplay();
+    } else {
+      setQueueIndex(nextIdx);
+      startShowingPhoto(queue[nextIdx], true);
+    }
+  }, [startShowingPhoto, clearQueueAndDisplay]);
+
+  const navigateQueueBackward = useCallback(() => {
+    if (queueIndexRef.current <= 0) return;
+    if (previewTimeoutRef.current !== null) {
+      clearTimeout(previewTimeoutRef.current);
+    }
+    const prevIdx = queueIndexRef.current - 1;
+    setQueueIndex(prevIdx);
+    startShowingPhoto(photoQueueRef.current[prevIdx], true);
+  }, [startShowingPhoto]);
+
+  // Wrapped callbacks: left/right navigate queue when showing a queue photo
+  const handleNavNext = useCallback(() => {
+    if (currentDisplayRef.current?.fromQueue) {
+      navigateQueueForward();
+    } else {
+      goNext();
+    }
+  }, [navigateQueueForward, goNext]);
+
+  const handleNavPrevious = useCallback(() => {
+    if (currentDisplayRef.current?.fromQueue) {
+      navigateQueueBackward();
+    } else {
+      goPrevious();
+    }
+  }, [navigateQueueBackward, goPrevious]);
+
+  // Other nav actions clear the queue if active, then perform the slideshow action
+  const handleNavSkipForward = useCallback(() => {
+    if (photoQueueRef.current.length > 0) clearQueueAndDisplay();
+    skip(10);
+  }, [clearQueueAndDisplay, skip]);
+
+  const handleNavSkipBackward = useCallback(() => {
+    if (photoQueueRef.current.length > 0) clearQueueAndDisplay();
+    skip(-10);
+  }, [clearQueueAndDisplay, skip]);
+
+  const handleNavToggleMode = useCallback(() => {
+    if (photoQueueRef.current.length > 0) clearQueueAndDisplay();
+    toggleMode();
+  }, [clearQueueAndDisplay, toggleMode]);
+
   // Keyboard navigation - disabled during countdown
   useKeyboardNavigation({
-    onNext: goNext,
-    onPrevious: goPrevious,
-    onSkipForward: () => skip(10),
-    onSkipBackward: () => skip(-10),
-    onToggleMode: toggleMode,
+    onNext: handleNavNext,
+    onPrevious: handleNavPrevious,
+    onSkipForward: handleNavSkipForward,
+    onSkipBackward: handleNavSkipBackward,
+    onToggleMode: handleNavToggleMode,
     onTriggerCapture: handleTrigger,
     enabled: !showCountdown,
   });
