@@ -54,6 +54,31 @@ switch (cameraProvider.ToLowerInvariant())
             new MockCameraProvider(isAvailable: true, captureLatency: captureLatency));
         break;
 
+    case "android":
+        var androidOptions = new AndroidCameraOptions
+        {
+            AdbPath = builder.Configuration.GetValue<string>("Camera:AdbPath") ?? "adb",
+            DeviceImageFolder = builder.Configuration.GetValue<string>("Camera:DeviceImageFolder") ?? "/sdcard/DCIM/Camera",
+            PinCode = builder.Configuration.GetValue<string>("Camera:PinCode"),
+            CameraAction = builder.Configuration.GetValue<string>("Camera:CameraAction") ?? "STILL_IMAGE_CAMERA",
+            FocusKeepaliveIntervalSeconds = builder.Configuration.GetValue<int?>("Camera:FocusKeepaliveIntervalSeconds") ?? 15,
+            DeleteAfterDownload = builder.Configuration.GetValue<bool?>("Camera:DeleteAfterDownload") ?? true,
+            FileSelectionRegex = builder.Configuration.GetValue<string>("Camera:FileSelectionRegex") ?? @"^.*\.jpg$",
+            CaptureLatencyMs = builder.Configuration.GetValue<int?>("Camera:CaptureLatencyMs") ?? 3000,
+            CaptureTimeoutMs = builder.Configuration.GetValue<int?>("Camera:CaptureTimeoutMs") ?? 15000,
+            FileStabilityDelayMs = builder.Configuration.GetValue<int?>("Camera:FileStabilityDelayMs") ?? 200,
+            CapturePollingIntervalMs = builder.Configuration.GetValue<int?>("Camera:CapturePollingIntervalMs") ?? 500,
+            AdbCommandTimeoutMs = builder.Configuration.GetValue<int?>("Camera:AdbCommandTimeoutMs") ?? 10000
+        };
+        builder.Services.AddSingleton<ICameraProvider>(sp =>
+        {
+            var adbLogger = sp.GetRequiredService<ILogger<AdbService>>();
+            var adbService = new AdbService(androidOptions.AdbPath, androidOptions.AdbCommandTimeoutMs, adbLogger);
+            var logger = sp.GetRequiredService<ILogger<AndroidCameraProvider>>();
+            return new AndroidCameraProvider(adbService, androidOptions, logger);
+        });
+        break;
+
     case "opencv":
     default:
         var openCvOptions = new OpenCvCameraOptions

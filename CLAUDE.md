@@ -106,9 +106,10 @@ The application supports camera providers configured via `Camera:Provider` in ap
 | Provider | Value | Description |
 |----------|-------|-------------|
 | OpenCV | `"OpenCv"` | Default. Uses OpenCvSharp4 for cross-platform capture. |
+| Android | `"Android"` | Uses Android phone via ADB over USB. Based on [android-photo-booth-camera](https://github.com/magnusakselvoll/android-photo-booth-camera). |
 | Mock | `"Mock"` | For testing without a camera. |
 
-Example configuration:
+Example OpenCV configuration:
 ```json
 {
   "Camera": {
@@ -121,6 +122,27 @@ Example configuration:
     "PreferredWidth": 1920,
     "PreferredHeight": 1080,
     "InitializationWarmupMs": 500
+  }
+}
+```
+
+Example Android configuration:
+```json
+{
+  "Camera": {
+    "Provider": "Android",
+    "AdbPath": "adb",
+    "DeviceImageFolder": "/sdcard/DCIM/Camera",
+    "PinCode": null,
+    "CameraAction": "STILL_IMAGE_CAMERA",
+    "FocusKeepaliveIntervalSeconds": 15,
+    "DeleteAfterDownload": true,
+    "FileSelectionRegex": "^.*\\.jpg$",
+    "CaptureLatencyMs": 3000,
+    "CaptureTimeoutMs": 15000,
+    "FileStabilityDelayMs": 200,
+    "CapturePollingIntervalMs": 500,
+    "AdbCommandTimeoutMs": 10000
   }
 }
 ```
