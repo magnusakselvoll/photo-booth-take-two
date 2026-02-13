@@ -136,6 +136,7 @@ Example Android configuration:
     "PinCode": null,
     "CameraAction": "STILL_IMAGE_CAMERA",
     "FocusKeepaliveIntervalSeconds": 15,
+    "FocusKeepaliveMaxDurationSeconds": 180,
     "DeleteAfterDownload": true,
     "FileSelectionRegex": "^.*\\.jpg$",
     "CaptureLatencyMs": 3000,

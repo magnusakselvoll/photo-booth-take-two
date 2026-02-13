@@ -106,6 +106,32 @@ public class OpenCvCameraProvider : ICameraProvider, IDisposable
         _isInitialized = true;
     }
 
+    public async Task PrepareAsync(CancellationToken cancellationToken = default)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        if (!await _captureLock.WaitAsync(TimeSpan.Zero, cancellationToken))
+        {
+            _logger.LogDebug("PrepareAsync skipped — capture already in progress");
+            return;
+        }
+
+        try
+        {
+            _logger.LogInformation("Preparing OpenCV camera for upcoming capture");
+            EnsureInitialized();
+            _logger.LogInformation("OpenCV camera preparation complete");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "PrepareAsync failed — CaptureAsync will retry initialization");
+        }
+        finally
+        {
+            _captureLock.Release();
+        }
+    }
+
     public async Task<byte[]> CaptureAsync(CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
