@@ -90,7 +90,11 @@ public class CaptureWorkflowService : ICaptureWorkflowService
                 "Waiting {DelayMs}ms before capture (countdown: {CountdownMs}ms, camera latency: {LatencyMs}ms)",
                 delayMs, countdownDurationMs, captureLatencyMs);
 
-            await Task.Delay(delayMs);
+            // Start camera preparation concurrently with countdown delay.
+            // This allows slow setup (e.g., waking Android device) to overlap with the countdown.
+            var prepareTask = _cameraProvider.PrepareAsync(CancellationToken.None);
+            var delayTask = Task.Delay(delayMs);
+            await Task.WhenAll(prepareTask, delayTask);
 
             // Perform the actual capture
             var result = await _captureService.CaptureAsync(CancellationToken.None);

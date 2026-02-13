@@ -137,6 +137,15 @@ public class AdbService
     }
 
     /// <summary>
+    /// Locks the device by sending a sleep key event (turns screen off).
+    /// </summary>
+    public virtual async Task LockDeviceAsync(CancellationToken cancellationToken = default)
+    {
+        await ExecuteAdbCommandAsync("shell input keyevent KEYCODE_SLEEP", cancellationToken);
+        _logger.LogInformation("Device lock (sleep) command sent");
+    }
+
+    /// <summary>
     /// Sends a focus key event to the camera.
     /// </summary>
     public virtual async Task SendFocusAsync(CancellationToken cancellationToken = default)

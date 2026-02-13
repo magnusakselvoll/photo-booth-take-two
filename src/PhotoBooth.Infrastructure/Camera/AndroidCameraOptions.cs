@@ -31,6 +31,13 @@ public class AndroidCameraOptions
     public int FocusKeepaliveIntervalSeconds { get; set; } = 15;
 
     /// <summary>
+    /// Maximum duration in seconds that the focus keepalive runs before automatically
+    /// stopping and locking the device. Prevents battery drain and overheating.
+    /// Set to 0 for no timeout (keepalive runs indefinitely).
+    /// </summary>
+    public int FocusKeepaliveMaxDurationSeconds { get; set; } = 180;
+
+    /// <summary>
     /// Whether to delete photos from the device after downloading them.
     /// </summary>
     public bool DeleteAfterDownload { get; set; } = true;

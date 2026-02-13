@@ -21,6 +21,7 @@ public class AndroidCameraProvider : ICameraProvider, IDisposable
 
     private Timer? _focusTimer;
     private DateTime _lastCameraAction = DateTime.MinValue;
+    private DateTime _keepaliveStartedAt;
     private volatile bool _needsRecovery;
     private int _focusTickCount;
     private bool _disposed;
@@ -52,6 +53,32 @@ public class AndroidCameraProvider : ICameraProvider, IDisposable
         {
             _logger.LogWarning(ex, "Error checking Android device availability");
             return false;
+        }
+    }
+
+    public async Task PrepareAsync(CancellationToken cancellationToken = default)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        if (!await _captureLock.WaitAsync(TimeSpan.Zero, cancellationToken))
+        {
+            _logger.LogDebug("PrepareAsync skipped — capture already in progress");
+            return;
+        }
+
+        try
+        {
+            _logger.LogInformation("Preparing Android camera for upcoming capture");
+            await EnsureCameraReadyAsync(cancellationToken);
+            _logger.LogInformation("Android camera preparation complete");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "PrepareAsync failed — CaptureAsync will retry setup");
+        }
+        finally
+        {
+            _captureLock.Release();
         }
     }
 
@@ -267,7 +294,8 @@ public class AndroidCameraProvider : ICameraProvider, IDisposable
 
     private void StartFocusKeepalive()
     {
-        _focusTimer?.Dispose();
+        StopFocusKeepalive();
+        _keepaliveStartedAt = DateTime.UtcNow;
         var interval = TimeSpan.FromSeconds(_options.FocusKeepaliveIntervalSeconds);
         _focusTimer = new Timer(
             _ => _ = SendFocusFireAndForgetAsync(),
@@ -276,10 +304,35 @@ public class AndroidCameraProvider : ICameraProvider, IDisposable
             interval);
     }
 
+    private void StopFocusKeepalive()
+    {
+        _focusTimer?.Dispose();
+        _focusTimer = null;
+    }
+
     private async Task SendFocusFireAndForgetAsync()
     {
         try
         {
+            // Check if keepalive has exceeded max duration
+            if (_options.FocusKeepaliveMaxDurationSeconds > 0)
+            {
+                var elapsed = DateTime.UtcNow - _keepaliveStartedAt;
+                if (elapsed.TotalSeconds >= _options.FocusKeepaliveMaxDurationSeconds)
+                {
+                    _logger.LogInformation(
+                        "Focus keepalive max duration reached ({MaxDuration}s), stopping keepalive and locking device",
+                        _options.FocusKeepaliveMaxDurationSeconds);
+
+                    StopFocusKeepalive();
+                    await LockDeviceAsync();
+
+                    _needsRecovery = true;
+                    _lastCameraAction = DateTime.MinValue;
+                    return;
+                }
+            }
+
             // Every other tick, verify device is still interactive and unlocked
             var tickCount = Interlocked.Increment(ref _focusTickCount);
             if (tickCount % 2 == 0)
@@ -299,6 +352,18 @@ public class AndroidCameraProvider : ICameraProvider, IDisposable
         {
             _logger.LogWarning(ex, "Focus keepalive failed, flagging recovery needed");
             _needsRecovery = true;
+        }
+    }
+
+    private async Task LockDeviceAsync()
+    {
+        try
+        {
+            await _adbService.LockDeviceAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to lock device");
         }
     }
 
@@ -415,7 +480,7 @@ public class AndroidCameraProvider : ICameraProvider, IDisposable
         if (_disposed) return;
         _disposed = true;
 
-        _focusTimer?.Dispose();
+        StopFocusKeepalive();
         _captureLock.Dispose();
 
         GC.SuppressFinalize(this);

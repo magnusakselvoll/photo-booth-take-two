@@ -137,6 +137,50 @@ public sealed class AndroidCameraProviderTests
     }
 
     [TestMethod]
+    public async Task PrepareAsync_TriggersCameraSetup()
+    {
+        _adbService.DeviceConnected = true;
+        _adbService.IsUnlocked = true;
+
+        using var provider = new AndroidCameraProvider(_adbService, _options, _logger);
+
+        await provider.PrepareAsync();
+
+        Assert.AreEqual(1, _adbService.OpenCameraCalled, "PrepareAsync should trigger camera setup");
+    }
+
+    [TestMethod]
+    public async Task PrepareAsync_WhenSetupFails_DoesNotThrow()
+    {
+        _adbService.DeviceConnected = false;
+
+        using var provider = new AndroidCameraProvider(_adbService, _options, _logger);
+
+        // Should not throw — PrepareAsync swallows exceptions
+        await provider.PrepareAsync();
+    }
+
+    [TestMethod]
+    public async Task FocusKeepalive_StopsAndLocksDevice_AfterMaxDuration()
+    {
+        _adbService.DeviceConnected = true;
+        _adbService.IsUnlocked = true;
+        _adbService.SetupSuccessfulCapture();
+        _options.FocusKeepaliveIntervalSeconds = 1;
+        _options.FocusKeepaliveMaxDurationSeconds = 1; // Expire after 1 second
+
+        using var provider = new AndroidCameraProvider(_adbService, _options, _logger);
+
+        // Trigger capture to start the keepalive timer
+        await provider.CaptureAsync();
+
+        // Wait for keepalive to tick and detect max duration exceeded
+        await Task.Delay(2500);
+
+        Assert.IsTrue(_adbService.LockDeviceCalled, "Device should have been locked after keepalive timeout");
+    }
+
+    [TestMethod]
     public async Task CaptureAsync_DeviceLockedBetweenCaptures_TriggersFullSetup()
     {
         _adbService.DeviceConnected = true;
@@ -173,6 +217,7 @@ public sealed class AndroidCameraProviderTests
         public bool FailShutterOnce { get; set; }
         public bool AlwaysFailShutter { get; set; }
         public bool FailFocus { get; set; }
+        public bool LockDeviceCalled { get; private set; }
         public Dictionary<string, int>? StaticFileList { get; set; }
         public int OpenCameraCalled { get; private set; }
         /// <summary>
@@ -250,6 +295,12 @@ public sealed class AndroidCameraProviderTests
         public override Task OpenCameraAsync(string cameraAction, CancellationToken cancellationToken = default)
         {
             OpenCameraCalled++;
+            return Task.CompletedTask;
+        }
+
+        public override Task LockDeviceAsync(CancellationToken cancellationToken = default)
+        {
+            LockDeviceCalled = true;
             return Task.CompletedTask;
         }
 
