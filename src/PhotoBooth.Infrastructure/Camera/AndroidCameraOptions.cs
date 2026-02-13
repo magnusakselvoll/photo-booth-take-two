@@ -73,4 +73,10 @@ public class AndroidCameraOptions
     /// re-verified (wake, unlock, open camera) before the next capture.
     /// </summary>
     public int CameraOpenTimeoutSeconds { get; set; } = 30;
+
+    /// <summary>
+    /// Maximum number of capture retries after a failure. On retry, the provider
+    /// performs full device recovery (wake, unlock, open camera) before re-attempting.
+    /// </summary>
+    public int MaxCaptureRetries { get; set; } = 1;
 }

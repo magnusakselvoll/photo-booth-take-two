@@ -90,6 +90,7 @@ public sealed class AndroidCameraProviderTests
     {
         _adbService.DeviceConnected = true;
         _adbService.IsUnlocked = true;
+        _options.MaxCaptureRetries = 0; // No retries for this test
         // No new file will appear - ListFiles always returns the same set
         _adbService.StaticFileList = new Dictionary<string, int>
         {
@@ -102,6 +103,64 @@ public sealed class AndroidCameraProviderTests
             () => provider.CaptureAsync());
     }
 
+    [TestMethod]
+    public async Task CaptureAsync_FirstAttemptFails_RetrySucceeds()
+    {
+        _adbService.DeviceConnected = true;
+        _adbService.IsUnlocked = true;
+        _adbService.FailShutterOnce = true;
+        _adbService.SetupSuccessfulCapture();
+        _options.MaxCaptureRetries = 1;
+
+        using var provider = new AndroidCameraProvider(_adbService, _options, _logger);
+
+        var result = await provider.CaptureAsync();
+
+        // Should succeed on retry with valid JPEG data
+        Assert.AreEqual(0xFF, result[0]);
+        Assert.AreEqual(0xD8, result[1]);
+        Assert.IsGreaterThanOrEqualTo(2, _adbService.OpenCameraCalled, "Should have re-opened camera during recovery");
+    }
+
+    [TestMethod]
+    public async Task CaptureAsync_AllAttemptsFail_ThrowsException()
+    {
+        _adbService.DeviceConnected = true;
+        _adbService.IsUnlocked = true;
+        _adbService.AlwaysFailShutter = true;
+        _options.MaxCaptureRetries = 1;
+
+        using var provider = new AndroidCameraProvider(_adbService, _options, _logger);
+
+        await Assert.ThrowsExactlyAsync<CameraNotAvailableException>(
+            () => provider.CaptureAsync());
+    }
+
+    [TestMethod]
+    public async Task CaptureAsync_DeviceLockedBetweenCaptures_TriggersFullSetup()
+    {
+        _adbService.DeviceConnected = true;
+        _adbService.IsUnlocked = true;
+        _adbService.SetupSuccessfulCapture();
+        _options.MaxCaptureRetries = 0;
+
+        using var provider = new AndroidCameraProvider(_adbService, _options, _logger);
+
+        // First capture - establishes camera
+        await provider.CaptureAsync();
+        var openCountAfterFirst = _adbService.OpenCameraCalled;
+
+        // Simulate device locking between captures. The EnsureCameraReadyAsync check
+        // will see IsInteractiveAndUnlockedAsync return false on the first call,
+        // triggering full setup. After setup calls wake+unlock, device becomes unlocked.
+        _adbService.UnlockAfterNChecks = 3; // First few checks return false, then true
+        _adbService.ResetFileListForNewCapture();
+        await provider.CaptureAsync();
+
+        Assert.IsGreaterThan(openCountAfterFirst, _adbService.OpenCameraCalled,
+            "Should have re-opened camera when device was detected as locked");
+    }
+
     /// <summary>
     /// Mock ADB service for unit testing the AndroidCameraProvider.
     /// </summary>
@@ -111,11 +170,40 @@ public sealed class AndroidCameraProviderTests
         public bool IsUnlocked { get; set; }
         public bool ThrowOnDetect { get; set; }
         public bool SimulateSlowCapture { get; set; }
+        public bool FailShutterOnce { get; set; }
+        public bool AlwaysFailShutter { get; set; }
+        public bool FailFocus { get; set; }
         public Dictionary<string, int>? StaticFileList { get; set; }
+        public int OpenCameraCalled { get; private set; }
+        /// <summary>
+        /// When set to N > 0, IsInteractiveAndUnlockedAsync returns false for the
+        /// first N calls, then returns true. Resets IsUnlocked to true after N calls.
+        /// </summary>
+        public int UnlockAfterNChecks { get; set; }
+
+        private bool _shutterTriggered;
+        private bool _hasNewFile;
+        private byte[]? _jpegData;
+        private string? _tempDir;
+        private int _unlockCheckCount;
 
         public MockAdbService()
             : base("adb", 10000, NullLogger.Instance)
         {
+        }
+
+        public void SetupSuccessfulCapture()
+        {
+            // Create a minimal valid JPEG file that will be "pulled"
+            _jpegData = [0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10];
+            _hasNewFile = false;
+            _shutterTriggered = false;
+        }
+
+        public void ResetFileListForNewCapture()
+        {
+            _hasNewFile = false;
+            _shutterTriggered = false;
         }
 
         public override Task<(bool Connected, string? DeviceInfo)> TryDetectDeviceAsync(CancellationToken cancellationToken = default)
@@ -129,10 +217,29 @@ public sealed class AndroidCameraProviderTests
         }
 
         public override Task<(bool ScreenOn, bool Unlocked)> GetScreenStateAsync(CancellationToken cancellationToken = default)
-            => Task.FromResult(IsUnlocked ? (true, true) : (false, false));
+            => Task.FromResult(GetEffectiveUnlocked() ? (true, true) : (false, false));
 
         public override Task<bool> IsInteractiveAndUnlockedAsync(CancellationToken cancellationToken = default)
-            => Task.FromResult(IsUnlocked);
+            => Task.FromResult(GetEffectiveUnlocked());
+
+        private bool GetEffectiveUnlocked()
+        {
+            if (UnlockAfterNChecks > 0)
+            {
+                _unlockCheckCount++;
+                if (_unlockCheckCount >= UnlockAfterNChecks)
+                {
+                    IsUnlocked = true;
+                    UnlockAfterNChecks = 0;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            return IsUnlocked;
+        }
 
         public override Task WakeDeviceAsync(CancellationToken cancellationToken = default)
             => Task.CompletedTask;
@@ -141,13 +248,32 @@ public sealed class AndroidCameraProviderTests
             => Task.CompletedTask;
 
         public override Task OpenCameraAsync(string cameraAction, CancellationToken cancellationToken = default)
-            => Task.CompletedTask;
+        {
+            OpenCameraCalled++;
+            return Task.CompletedTask;
+        }
 
         public override Task SendFocusAsync(CancellationToken cancellationToken = default)
-            => Task.CompletedTask;
+        {
+            if (FailFocus)
+                throw new CameraNotAvailableException("Focus failed - device disconnected");
+            return Task.CompletedTask;
+        }
 
         public override Task TriggerShutterAsync(CancellationToken cancellationToken = default)
-            => Task.CompletedTask;
+        {
+            if (AlwaysFailShutter)
+                throw new CameraNotAvailableException("Shutter failed");
+
+            if (FailShutterOnce)
+            {
+                FailShutterOnce = false;
+                throw new CameraNotAvailableException("Shutter failed (transient)");
+            }
+
+            _shutterTriggered = true;
+            return Task.CompletedTask;
+        }
 
         public override async Task<Dictionary<string, int>> ListFilesAsync(string folder, CancellationToken cancellationToken = default)
         {
@@ -156,11 +282,39 @@ public sealed class AndroidCameraProviderTests
                 await Task.Delay(30000, cancellationToken);
             }
 
-            return StaticFileList ?? new Dictionary<string, int>();
+            if (StaticFileList != null)
+            {
+                return StaticFileList;
+            }
+
+            // If shutter was triggered, show a new file on the second listing call
+            if (_shutterTriggered && !_hasNewFile)
+            {
+                _hasNewFile = true;
+                return new Dictionary<string, int>();
+            }
+
+            if (_hasNewFile)
+            {
+                return new Dictionary<string, int> { ["photo_001.jpg"] = 4096 };
+            }
+
+            return new Dictionary<string, int>();
         }
 
         public override Task PullFileAsync(string devicePath, string localDir, CancellationToken cancellationToken = default)
-            => Task.CompletedTask;
+        {
+            if (_jpegData != null)
+            {
+                _tempDir = localDir;
+                var fileName = Path.GetFileName(devicePath);
+                var localPath = Path.Combine(localDir, fileName);
+                Directory.CreateDirectory(localDir);
+                File.WriteAllBytes(localPath, _jpegData);
+            }
+
+            return Task.CompletedTask;
+        }
 
         public override Task DeleteFileAsync(string devicePath, CancellationToken cancellationToken = default)
             => Task.CompletedTask;
