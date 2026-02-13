@@ -4,6 +4,7 @@ using PhotoBooth.Infrastructure.Camera;
 namespace PhotoBooth.Infrastructure.Tests;
 
 [TestClass]
+[TestCategory("Integration")]
 public class OpenCvCaptureTests
 {
     private ILogger<OpenCvCameraProvider> _logger = null!;

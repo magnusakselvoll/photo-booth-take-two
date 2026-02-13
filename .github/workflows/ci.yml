@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  build-and-test:
+  dotnet:
     runs-on: ubuntu-latest
 
     steps:
@@ -21,6 +21,21 @@ jobs:
         with:
           dotnet-version: "10.0.x"
           dotnet-quality: "preview"
+
+      - name: Restore .NET dependencies
+        run: dotnet restore
+
+      - name: Build .NET
+        run: dotnet build --no-restore
+
+      - name: Test .NET
+        run: dotnet test --no-build --verbosity normal --filter "TestCategory!=Integration"
+
+  frontend:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -33,15 +48,6 @@ jobs:
           node-version: "22"
           cache: "pnpm"
           cache-dependency-path: src/PhotoBooth.Web/pnpm-lock.yaml
-
-      - name: Restore .NET dependencies
-        run: dotnet restore
-
-      - name: Build .NET
-        run: dotnet build --no-restore
-
-      - name: Test .NET
-        run: dotnet test --no-build --verbosity normal
 
       - name: Install frontend dependencies
         working-directory: src/PhotoBooth.Web
