@@ -174,8 +174,10 @@ public sealed class AndroidCameraProviderTests
         // Trigger capture to start the keepalive timer
         await provider.CaptureAsync();
 
-        // Wait for keepalive to tick and detect max duration exceeded
-        await Task.Delay(2500);
+        // Wait for the mock to signal that LockDeviceAsync was called (with timeout)
+        var completed = await Task.WhenAny(
+            _adbService.LockDeviceSignal.Task,
+            Task.Delay(TimeSpan.FromSeconds(10)));
 
         Assert.IsTrue(_adbService.LockDeviceCalled, "Device should have been locked after keepalive timeout");
     }
@@ -218,6 +220,7 @@ public sealed class AndroidCameraProviderTests
         public bool AlwaysFailShutter { get; set; }
         public bool FailFocus { get; set; }
         public bool LockDeviceCalled { get; private set; }
+        public TaskCompletionSource LockDeviceSignal { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public Dictionary<string, int>? StaticFileList { get; set; }
         public int OpenCameraCalled { get; private set; }
         /// <summary>
@@ -301,6 +304,7 @@ public sealed class AndroidCameraProviderTests
         public override Task LockDeviceAsync(CancellationToken cancellationToken = default)
         {
             LockDeviceCalled = true;
+            LockDeviceSignal.TrySetResult();
             return Task.CompletedTask;
         }
 
