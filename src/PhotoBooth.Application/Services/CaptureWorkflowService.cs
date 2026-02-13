@@ -47,8 +47,12 @@ public class CaptureWorkflowService : ICaptureWorkflowService
     private async Task RunCaptureWorkflowAsync(string triggerSource, int countdownDurationMs)
     {
         // Use a hard timeout that will forcefully complete this task
-        // even if the camera hangs on synchronous operations
-        const int maxWorkflowTimeoutMs = 12000; // 12 seconds max for entire workflow
+        // even if the camera hangs on synchronous operations.
+        // For cameras with high latency (e.g. Android over ADB), use a longer timeout
+        // to account for capture time, potential retry with recovery, and margin.
+        var captureLatencyMs = (int)_cameraProvider.CaptureLatency.TotalMilliseconds;
+        var bufferMs = captureLatencyMs >= 1000 ? 45_000 : 12_000;
+        var maxWorkflowTimeoutMs = countdownDurationMs + bufferMs;
 
         var workflowTask = RunCaptureWorkflowCoreAsync(triggerSource, countdownDurationMs);
         var timeoutTask = Task.Delay(maxWorkflowTimeoutMs);

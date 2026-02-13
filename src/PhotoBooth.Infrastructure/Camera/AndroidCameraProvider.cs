@@ -21,6 +21,8 @@ public class AndroidCameraProvider : ICameraProvider, IDisposable
 
     private Timer? _focusTimer;
     private DateTime _lastCameraAction = DateTime.MinValue;
+    private volatile bool _needsRecovery;
+    private int _focusTickCount;
     private bool _disposed;
 
     public TimeSpan CaptureLatency { get; }
@@ -66,6 +68,38 @@ public class AndroidCameraProvider : ICameraProvider, IDisposable
 
         try
         {
+            var maxAttempts = 1 + _options.MaxCaptureRetries;
+
+            for (var attempt = 1; attempt <= maxAttempts; attempt++)
+            {
+                try
+                {
+                    return await CaptureWithSetupAsync(cancellationToken);
+                }
+                catch (Exception ex) when (attempt < maxAttempts && ex is not OperationCanceledException)
+                {
+                    _logger.LogWarning(ex,
+                        "Capture attempt {Attempt}/{MaxAttempts} failed, scheduling recovery and retrying",
+                        attempt, maxAttempts);
+
+                    _needsRecovery = true;
+                    _lastCameraAction = DateTime.MinValue;
+                }
+            }
+
+            // This is unreachable, but the compiler doesn't know that
+            throw new CameraNotAvailableException("Capture failed after all retry attempts");
+        }
+        finally
+        {
+            _captureLock.Release();
+        }
+    }
+
+    private async Task<byte[]> CaptureWithSetupAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
             await EnsureCameraReadyAsync(cancellationToken);
 
             // Snapshot current files on device
@@ -107,10 +141,6 @@ public class AndroidCameraProvider : ICameraProvider, IDisposable
             _logger.LogError(ex, "Failed to capture image from Android device");
             throw new CameraNotAvailableException("Failed to capture image from Android device", ex);
         }
-        finally
-        {
-            _captureLock.Release();
-        }
     }
 
     /// <summary>
@@ -121,14 +151,16 @@ public class AndroidCameraProvider : ICameraProvider, IDisposable
     private async Task EnsureCameraReadyAsync(CancellationToken cancellationToken)
     {
         var cameraStale = _lastCameraAction + TimeSpan.FromSeconds(_options.CameraOpenTimeoutSeconds) < DateTime.UtcNow;
-        var needsFullSetup = cameraStale || !await _adbService.IsInteractiveAndUnlockedAsync(cancellationToken);
+        var recoveryNeeded = _needsRecovery;
+        var needsFullSetup = cameraStale || recoveryNeeded || !await _adbService.IsInteractiveAndUnlockedAsync(cancellationToken);
 
         if (!needsFullSetup)
         {
             return;
         }
 
-        _logger.LogInformation("Camera needs setup (stale={CameraStale}), preparing device...", cameraStale);
+        _logger.LogInformation("Camera needs setup (stale={CameraStale}, recovery={RecoveryNeeded}), preparing device...",
+            cameraStale, recoveryNeeded);
 
         // Verify device is connected
         var (connected, deviceInfo) = await _adbService.TryDetectDeviceAsync(cancellationToken);
@@ -153,6 +185,7 @@ public class AndroidCameraProvider : ICameraProvider, IDisposable
         // Start/restart focus keepalive timer
         StartFocusKeepalive();
 
+        _needsRecovery = false;
         UpdateLastCameraAction();
         _logger.LogInformation("Android camera ready");
     }
@@ -247,12 +280,25 @@ public class AndroidCameraProvider : ICameraProvider, IDisposable
     {
         try
         {
+            // Every other tick, verify device is still interactive and unlocked
+            var tickCount = Interlocked.Increment(ref _focusTickCount);
+            if (tickCount % 2 == 0)
+            {
+                if (!await _adbService.IsInteractiveAndUnlockedAsync())
+                {
+                    _logger.LogWarning("Device is no longer interactive/unlocked, flagging recovery needed");
+                    _needsRecovery = true;
+                    return;
+                }
+            }
+
             await _adbService.SendFocusAsync();
             UpdateLastCameraAction();
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Focus keepalive failed");
+            _logger.LogWarning(ex, "Focus keepalive failed, flagging recovery needed");
+            _needsRecovery = true;
         }
     }
 

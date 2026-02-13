@@ -68,7 +68,9 @@ switch (cameraProvider.ToLowerInvariant())
             CaptureTimeoutMs = builder.Configuration.GetValue<int?>("Camera:CaptureTimeoutMs") ?? 15000,
             FileStabilityDelayMs = builder.Configuration.GetValue<int?>("Camera:FileStabilityDelayMs") ?? 200,
             CapturePollingIntervalMs = builder.Configuration.GetValue<int?>("Camera:CapturePollingIntervalMs") ?? 500,
-            AdbCommandTimeoutMs = builder.Configuration.GetValue<int?>("Camera:AdbCommandTimeoutMs") ?? 10000
+            AdbCommandTimeoutMs = builder.Configuration.GetValue<int?>("Camera:AdbCommandTimeoutMs") ?? 10000,
+            CameraOpenTimeoutSeconds = builder.Configuration.GetValue<int?>("Camera:CameraOpenTimeoutSeconds") ?? 30,
+            MaxCaptureRetries = builder.Configuration.GetValue<int?>("Camera:MaxCaptureRetries") ?? 1
         };
         builder.Services.AddSingleton<ICameraProvider>(sp =>
         {
