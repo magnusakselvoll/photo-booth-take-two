@@ -8,7 +8,7 @@ A photo booth application for events. Runs unattended with slideshow display, ph
 - **Photo capture**: Countdown timer triggered by click, touch, or keyboard, supports multiple rapid captures with queuing
 - **Keyboard navigation**: Arrow keys to browse photos, R to toggle random/sorted, 1/3/5 for custom countdown durations
 - **Photo download**: Guests retrieve photos via numeric code or QR code
-- **Multiple camera support**: Webcam (via OpenCV), mobile phone (Android - planned)
+- **Multiple camera support**: Webcam (via OpenCV), Android phone (via ADB over USB)
 - **Internationalization**: English and Spanish language support with automatic detection and URL override (`?lang=es`)
 
 ## Prerequisites
@@ -84,14 +84,29 @@ Configuration is done via `appsettings.json` in the Server project:
 
 ### Camera Options
 
-- `Provider`: Camera provider to use (`"OpenCv"` or `"Mock"`)
-- `DeviceIndex`: Webcam device index (0 = first camera)
+- `Provider`: Camera provider to use (`"OpenCv"`, `"Android"`, or `"Mock"`)
+- `DeviceIndex`: Webcam device index (0 = first camera) — OpenCV only
 - `CaptureLatencyMs`: Delay before capture to sync with countdown
-- `FramesToSkip`: Number of frames to skip for auto-exposure adjustment
-- `FlipVertical`: Mirror the image vertically
-- `JpegQuality`: JPEG encoding quality, 1-100 (default: 90)
-- `InitializationWarmupMs`: Camera warmup time on startup
-- `PreferredWidth`/`PreferredHeight`: Requested camera resolution
+- `FramesToSkip`: Number of frames to skip for auto-exposure adjustment — OpenCV only
+- `FlipVertical`: Mirror the image vertically — OpenCV only
+- `JpegQuality`: JPEG encoding quality, 1-100 (default: 90) — OpenCV only
+- `InitializationWarmupMs`: Camera warmup time on startup — OpenCV only
+- `PreferredWidth`/`PreferredHeight`: Requested camera resolution — OpenCV only
+
+### Android Camera Options
+
+Requires [ADB](https://developer.android.com/tools/adb) installed and an Android phone connected via USB with USB debugging enabled.
+
+- `AdbPath`: Path to ADB executable (default: `"adb"`)
+- `DeviceImageFolder`: Device folder where camera saves photos (default: `"/sdcard/DCIM/Camera"`)
+- `PinCode`: Optional PIN to unlock device screen
+- `CameraAction`: Camera intent action (default: `"STILL_IMAGE_CAMERA"`)
+- `FocusKeepaliveIntervalSeconds`: Periodic focus interval (default: 15)
+- `DeleteAfterDownload`: Delete photos from device after download (default: true)
+- `FileSelectionRegex`: Regex to match photo files (default: `^.*\.jpg$`)
+- `CaptureTimeoutMs`: Max wait for new photo (default: 15000)
+- `CapturePollingIntervalMs`: Polling interval for new files (default: 500)
+- `AdbCommandTimeoutMs`: Per-command timeout (default: 10000)
 
 ### Other Options
 
@@ -115,6 +130,10 @@ tests/
   PhotoBooth.Infrastructure.Tests/
   PhotoBooth.Server.Tests/
 ```
+
+## Acknowledgments
+
+The Android camera integration is based on [android-photo-booth-camera](https://github.com/magnusakselvoll/android-photo-booth-camera).
 
 ## License
 
