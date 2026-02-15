@@ -11,6 +11,7 @@ using PhotoBooth.Infrastructure.Network;
 using PhotoBooth.Infrastructure.Storage;
 using PhotoBooth.Server.Endpoints;
 using PhotoBooth.Server.Filters;
+using PhotoBooth.Server;
 using PhotoBooth.Server.Middleware;
 using Serilog;
 
@@ -18,6 +19,8 @@ Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
     .WriteTo.File("logs/photobooth.log", rollingInterval: RollingInterval.Day)
     .CreateLogger();
+
+DefaultSettingsRestorer.EnsureSettingsExist(AppContext.BaseDirectory);
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Host.UseSerilog();
