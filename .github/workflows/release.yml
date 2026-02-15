@@ -44,8 +44,10 @@ jobs:
         id: version
         run: |
           VERSION="${{ github.event.release.tag_name }}"
-          # Strip leading 'v' if present
-          echo "version=${VERSION#v}" >> $GITHUB_OUTPUT
+          # Strip leading 'v' and any leading dots (e.g. v.0.0.1 -> 0.0.1)
+          VERSION="${VERSION#v}"
+          VERSION="${VERSION#.}"
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
 
       - name: Publish for Windows x64
         run: |
