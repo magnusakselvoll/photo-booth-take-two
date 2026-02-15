@@ -101,7 +101,7 @@ Avoid: niche libraries, multiple libraries solving the same problem, dependencie
 
 ## Camera Provider Configuration
 
-The application supports camera providers configured via `Camera:Provider` in appsettings.json:
+The application supports camera providers configured via `Camera:Provider` in appsettings.json. Provider-specific settings are in subsections (`Camera:OpenCv`, `Camera:Android`), each with their own `CaptureLatencyMs`.
 
 | Provider | Value | Description |
 |----------|-------|-------------|
@@ -110,40 +110,48 @@ The application supports camera providers configured via `Camera:Provider` in ap
 | Mock | `"Mock"` | For testing without a camera. |
 
 Example OpenCV configuration:
-```json
+```jsonc
 {
   "Camera": {
     "Provider": "OpenCv",
-    "DeviceIndex": 0,
-    "CaptureLatencyMs": 100,
-    "FramesToSkip": 5,
-    "FlipVertical": false,
-    "JpegQuality": 90,
-    "PreferredWidth": 1920,
-    "PreferredHeight": 1080,
-    "InitializationWarmupMs": 500
+    "OpenCv": {
+      "CaptureLatencyMs": 100,
+      "DeviceIndex": 0,
+      "FramesToSkip": 5,
+      "FlipVertical": false,
+      "JpegQuality": 90,
+      "PreferredWidth": 1920,
+      "PreferredHeight": 1080,
+      "InitializationWarmupMs": 500,
+      "CaptureLockTimeoutSeconds": 5
+    }
   }
 }
 ```
 
 Example Android configuration:
-```json
+```jsonc
 {
   "Camera": {
     "Provider": "Android",
-    "AdbPath": "adb",
-    "DeviceImageFolder": "/sdcard/DCIM/Camera",
-    "PinCode": null,
-    "CameraAction": "STILL_IMAGE_CAMERA",
-    "FocusKeepaliveIntervalSeconds": 15,
-    "FocusKeepaliveMaxDurationSeconds": 180,
-    "DeleteAfterDownload": true,
-    "FileSelectionRegex": "^.*\\.jpg$",
-    "CaptureLatencyMs": 3000,
-    "CaptureTimeoutMs": 15000,
-    "FileStabilityDelayMs": 200,
-    "CapturePollingIntervalMs": 500,
-    "AdbCommandTimeoutMs": 10000
+    "Android": {
+      "CaptureLatencyMs": 100,
+      "AdbPath": "adb",
+      "DeviceImageFolder": "/sdcard/DCIM/Camera",
+      "PinCode": null,
+      "CameraAction": "STILL_IMAGE_CAMERA",
+      "FocusKeepaliveIntervalSeconds": 15,
+      "FocusKeepaliveMaxDurationSeconds": 180,
+      "DeleteAfterDownload": true,
+      "FileSelectionRegex": "^.*\\.jpg$",
+      "CaptureTimeoutMs": 15000,
+      "FileStabilityDelayMs": 200,
+      "CapturePollingIntervalMs": 500,
+      "AdbCommandTimeoutMs": 10000,
+      "CameraOpenTimeoutSeconds": 30,
+      "MaxCaptureRetries": 1,
+      "CaptureLockTimeoutSeconds": 5
+    }
   }
 }
 ```
@@ -152,10 +160,15 @@ Example Android configuration:
 
 | Key | Description | Default |
 |-----|-------------|---------|
+| `Capture:CountdownDurationMs` | Countdown duration in ms before photo is taken | `7000` |
+| `Capture:BufferTimeoutHighLatencyMs` | Hard timeout buffer for high-latency cameras | `45000` |
+| `Capture:BufferTimeoutLowLatencyMs` | Hard timeout buffer for low-latency cameras | `12000` |
 | `Slideshow:SwirlEffect` | Enable swirl animation effect on slideshow | `true` |
+| `Slideshow:IntervalMs` | Interval in ms between slideshow transitions | `30000` |
 | `Event:Name` | Event name (used as storage subfolder) | Current date |
 | `QrCode:BaseUrl` | Base URL for QR code links | Request origin |
-| `Capture:CountdownDurationMs` | Default countdown duration in ms | `3000` |
+| `RateLimiting:PermitLimit` | Max requests per rate limit window | `5` |
+| `RateLimiting:WindowSeconds` | Rate limit window duration in seconds | `10` |
 
 ## Security
 
@@ -173,7 +186,7 @@ No HSTS header — inappropriate for a local-network app with dynamic IPs.
 
 ### Rate Limiting
 
-The `/api/photos/capture` and `/api/photos/trigger` endpoints are rate-limited using ASP.NET Core's built-in rate limiter: 5 requests per 10-second fixed window. Returns HTTP 429 when exceeded.
+The `/api/photos/capture` and `/api/photos/trigger` endpoints are rate-limited using ASP.NET Core's built-in rate limiter. Defaults: 5 requests per 10-second fixed window (configurable via `RateLimiting:PermitLimit` and `RateLimiting:WindowSeconds`). Returns HTTP 429 when exceeded.
 
 ## CI/CD
 

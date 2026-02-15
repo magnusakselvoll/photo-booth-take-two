@@ -11,6 +11,8 @@ public class CaptureWorkflowService : ICaptureWorkflowService
     private readonly ICameraProvider _cameraProvider;
     private readonly IEventBroadcaster _eventBroadcaster;
     private readonly ILogger<CaptureWorkflowService> _logger;
+    private readonly int _bufferTimeoutHighLatencyMs;
+    private readonly int _bufferTimeoutLowLatencyMs;
 
     public int CountdownDurationMs { get; }
 
@@ -19,13 +21,17 @@ public class CaptureWorkflowService : ICaptureWorkflowService
         ICameraProvider cameraProvider,
         IEventBroadcaster eventBroadcaster,
         ILogger<CaptureWorkflowService> logger,
-        int countdownDurationMs = 3000)
+        int countdownDurationMs = 3000,
+        int bufferTimeoutHighLatencyMs = 45000,
+        int bufferTimeoutLowLatencyMs = 12000)
     {
         _captureService = captureService;
         _cameraProvider = cameraProvider;
         _eventBroadcaster = eventBroadcaster;
         _logger = logger;
         CountdownDurationMs = countdownDurationMs;
+        _bufferTimeoutHighLatencyMs = bufferTimeoutHighLatencyMs;
+        _bufferTimeoutLowLatencyMs = bufferTimeoutLowLatencyMs;
     }
 
     public async Task TriggerCaptureAsync(string triggerSource, int? durationOverrideMs = null, CancellationToken cancellationToken = default)
@@ -51,7 +57,7 @@ public class CaptureWorkflowService : ICaptureWorkflowService
         // For cameras with high latency (e.g. Android over ADB), use a longer timeout
         // to account for capture time, potential retry with recovery, and margin.
         var captureLatencyMs = (int)_cameraProvider.CaptureLatency.TotalMilliseconds;
-        var bufferMs = captureLatencyMs >= 1000 ? 45_000 : 12_000;
+        var bufferMs = captureLatencyMs >= 1000 ? _bufferTimeoutHighLatencyMs : _bufferTimeoutLowLatencyMs;
         var maxWorkflowTimeoutMs = countdownDurationMs + bufferMs;
 
         var workflowTask = RunCaptureWorkflowCoreAsync(triggerSource, countdownDurationMs);
@@ -81,14 +87,16 @@ public class CaptureWorkflowService : ICaptureWorkflowService
     {
         try
         {
-            // Calculate when to actually trigger the capture
-            // We subtract the camera latency so the photo is taken when countdown hits 0
+            // Calculate when to actually trigger the capture.
+            // We subtract the camera latency and add 500ms so the photo is taken
+            // ~500ms into the "Smile" phase (after the countdown reaches 0).
             var captureLatencyMs = (int)_cameraProvider.CaptureLatency.TotalMilliseconds;
-            var delayMs = Math.Max(0, countdownDurationMs - captureLatencyMs);
+            const int smileDelayMs = 500;
+            var delayMs = Math.Max(0, countdownDurationMs - captureLatencyMs + smileDelayMs);
 
             _logger.LogDebug(
-                "Waiting {DelayMs}ms before capture (countdown: {CountdownMs}ms, camera latency: {LatencyMs}ms)",
-                delayMs, countdownDurationMs, captureLatencyMs);
+                "Waiting {DelayMs}ms before capture (countdown: {CountdownMs}ms, camera latency: {LatencyMs}ms, smile delay: {SmileDelayMs}ms)",
+                delayMs, countdownDurationMs, captureLatencyMs, smileDelayMs);
 
             // Start camera preparation concurrently with countdown delay.
             // This allows slow setup (e.g., waking Android device) to overlap with the countdown.

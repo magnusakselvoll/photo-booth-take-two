@@ -145,10 +145,13 @@ Key configurable parameters:
 |---------|-------------|---------|
 | `PhotoStorage:Path` | Where photos are saved | OS-specific app data |
 | `Camera:Provider` | Camera provider to use | `OpenCv` |
-| `Capture:CountdownDurationMs` | Countdown duration in ms | `3000` |
+| `Capture:CountdownDurationMs` | Countdown duration in ms | `7000` |
 | `Slideshow:SwirlEffect` | Enable swirl effect on slideshow | `true` |
+| `Slideshow:IntervalMs` | Interval in ms between slideshow transitions | `30000` |
 | `Event:Name` | Event name (used for storage folder) | Current date |
 | `QrCode:BaseUrl` | Base URL for QR codes | Request origin |
+| `RateLimiting:PermitLimit` | Max requests per rate limit window | `5` |
+| `RateLimiting:WindowSeconds` | Rate limit window in seconds | `10` |
 
 ## Internationalization (i18n)
 

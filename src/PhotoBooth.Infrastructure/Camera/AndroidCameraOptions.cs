@@ -52,7 +52,7 @@ public class AndroidCameraOptions
     /// triggering capture to when the photo is actually taken, used to adjust
     /// countdown timing so "0" aligns with the actual capture moment.
     /// </summary>
-    public int CaptureLatencyMs { get; set; } = 3000;
+    public int CaptureLatencyMs { get; set; } = 100;
 
     /// <summary>
     /// Maximum time in milliseconds to wait for a new photo to appear on the device.
@@ -86,4 +86,9 @@ public class AndroidCameraOptions
     /// performs full device recovery (wake, unlock, open camera) before re-attempting.
     /// </summary>
     public int MaxCaptureRetries { get; set; } = 1;
+
+    /// <summary>
+    /// Seconds to wait for the capture lock before reporting camera busy.
+    /// </summary>
+    public int CaptureLockTimeoutSeconds { get; set; } = 5;
 }

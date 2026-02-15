@@ -56,7 +56,7 @@ public sealed class CaptureWorkflowServiceTests
         await _service.TriggerCaptureAsync("test");
 
         // Wait for the background workflow to complete
-        await Task.Delay(500);
+        await Task.Delay(1000);
 
         // Assert - should have countdown event and photo captured event
         Assert.IsGreaterThanOrEqualTo(_eventBroadcaster.BroadcastedEvents.Count, 2);
@@ -75,7 +75,7 @@ public sealed class CaptureWorkflowServiceTests
         await _service.TriggerCaptureAsync("test");
 
         // Wait for the background workflow to complete
-        await Task.Delay(500);
+        await Task.Delay(1000);
 
         // Assert - should have countdown event and capture failed event
         Assert.IsGreaterThanOrEqualTo(_eventBroadcaster.BroadcastedEvents.Count, 2);

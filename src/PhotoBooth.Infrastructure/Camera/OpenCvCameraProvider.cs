@@ -138,7 +138,7 @@ public class OpenCvCameraProvider : ICameraProvider, IDisposable
 
         _logger.LogInformation("Starting OpenCV camera capture from device {DeviceIndex}", _options.DeviceIndex);
 
-        if (!await _captureLock.WaitAsync(TimeSpan.FromSeconds(5), cancellationToken))
+        if (!await _captureLock.WaitAsync(TimeSpan.FromSeconds(_options.CaptureLockTimeoutSeconds), cancellationToken))
         {
             throw new CameraNotAvailableException("Camera is busy");
         }

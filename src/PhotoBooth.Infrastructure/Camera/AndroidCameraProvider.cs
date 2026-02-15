@@ -88,7 +88,7 @@ public class AndroidCameraProvider : ICameraProvider, IDisposable
 
         _logger.LogInformation("Starting Android camera capture");
 
-        if (!await _captureLock.WaitAsync(TimeSpan.FromSeconds(5), cancellationToken))
+        if (!await _captureLock.WaitAsync(TimeSpan.FromSeconds(_options.CaptureLockTimeoutSeconds), cancellationToken))
         {
             throw new CameraNotAvailableException("Camera is busy");
         }
