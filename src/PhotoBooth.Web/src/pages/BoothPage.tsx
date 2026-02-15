@@ -8,7 +8,7 @@ import { useSlideshowNavigation } from '../hooks/useSlideshowNavigation';
 import { useKeyboardNavigation } from '../hooks/useKeyboardNavigation';
 import type { PhotoBoothEvent, QueuedPhoto } from '../api/types';
 
-const PREVIEW_DURATION_MS = 8000; // Same as slideshow interval
+const DEFAULT_SLIDESHOW_INTERVAL_MS = 30000;
 const ERROR_DISPLAY_MS = 3000;
 const FADE_DURATION_MS = 500;
 const WATCHDOG_RELOAD_MS = 5 * 60 * 1000;
@@ -16,6 +16,7 @@ const WATCHDOG_RELOAD_MS = 5 * 60 * 1000;
 interface BoothPageProps {
   qrCodeBaseUrl?: string;
   swirlEffect?: boolean;
+  slideshowIntervalMs?: number;
 }
 
 function randomInRange(min: number, max: number): number {
@@ -70,7 +71,7 @@ interface DisplayPhoto {
   fromQueue: boolean; // true if from queue, false if newly captured
 }
 
-export function BoothPage({ qrCodeBaseUrl, swirlEffect = true }: BoothPageProps) {
+export function BoothPage({ qrCodeBaseUrl, swirlEffect = true, slideshowIntervalMs = DEFAULT_SLIDESHOW_INTERVAL_MS }: BoothPageProps) {
   // Queue of interrupted photos waiting to be displayed
   const [photoQueue, setPhotoQueue] = useState<QueuedPhoto[]>([]);
   // Current index within the queue
@@ -108,7 +109,7 @@ export function BoothPage({ qrCodeBaseUrl, swirlEffect = true }: BoothPageProps)
     toggleMode,
     refresh: refreshSlideshow,
   } = useSlideshowNavigation({
-    intervalMs: PREVIEW_DURATION_MS,
+    intervalMs: slideshowIntervalMs,
     paused: slideshowPaused,
   });
 
@@ -183,8 +184,8 @@ export function BoothPage({ qrCodeBaseUrl, swirlEffect = true }: BoothPageProps)
 
       // Refresh slideshow to include the newly captured photo
       refreshSlideshow();
-    }, PREVIEW_DURATION_MS);
-  }, [refreshSlideshow]);
+    }, slideshowIntervalMs);
+  }, [refreshSlideshow, slideshowIntervalMs]);
 
   // Show next photo from queue
   const showNextFromQueue = useCallback(() => {

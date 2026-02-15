@@ -9,6 +9,7 @@ import './App.css';
 function App() {
   const [qrCodeBaseUrl, setQrCodeBaseUrl] = useState<string | undefined>(undefined);
   const [swirlEffect, setSwirlEffect] = useState(true);
+  const [slideshowIntervalMs, setSlideshowIntervalMs] = useState(30000);
 
   useEffect(() => {
     getClientConfig()
@@ -17,6 +18,7 @@ function App() {
           setQrCodeBaseUrl(config.qrCodeBaseUrl);
         }
         setSwirlEffect(config.swirlEffect);
+        setSlideshowIntervalMs(config.slideshowIntervalMs);
       })
       .catch(err => {
         console.error('Failed to load client config:', err);
@@ -27,7 +29,7 @@ function App() {
     <BrowserRouter>
       <div className="app">
         <Routes>
-          <Route path="/" element={<BoothPage qrCodeBaseUrl={qrCodeBaseUrl} swirlEffect={swirlEffect} />} />
+          <Route path="/" element={<BoothPage qrCodeBaseUrl={qrCodeBaseUrl} swirlEffect={swirlEffect} slideshowIntervalMs={slideshowIntervalMs} />} />
           <Route path="/download" element={<DownloadPage />} />
           <Route path="/photo/:code" element={<PhotoDetailPage />} />
         </Routes>

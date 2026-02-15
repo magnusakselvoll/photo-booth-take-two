@@ -49,4 +49,9 @@ public class OpenCvCameraOptions
     /// Set to 0 to disable warmup. Default is 500ms.
     /// </summary>
     public int InitializationWarmupMs { get; set; } = 500;
+
+    /// <summary>
+    /// Seconds to wait for the capture lock before reporting camera busy.
+    /// </summary>
+    public int CaptureLockTimeoutSeconds { get; set; } = 5;
 }

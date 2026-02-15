@@ -55,23 +55,8 @@ switch (cameraProvider.ToLowerInvariant())
         break;
 
     case "android":
-        var androidOptions = new AndroidCameraOptions
-        {
-            AdbPath = builder.Configuration.GetValue<string>("Camera:AdbPath") ?? "adb",
-            DeviceImageFolder = builder.Configuration.GetValue<string>("Camera:DeviceImageFolder") ?? "/sdcard/DCIM/Camera",
-            PinCode = builder.Configuration.GetValue<string>("Camera:PinCode"),
-            CameraAction = builder.Configuration.GetValue<string>("Camera:CameraAction") ?? "STILL_IMAGE_CAMERA",
-            FocusKeepaliveIntervalSeconds = builder.Configuration.GetValue<int?>("Camera:FocusKeepaliveIntervalSeconds") ?? 15,
-            DeleteAfterDownload = builder.Configuration.GetValue<bool?>("Camera:DeleteAfterDownload") ?? true,
-            FileSelectionRegex = builder.Configuration.GetValue<string>("Camera:FileSelectionRegex") ?? @"^.*\.jpg$",
-            CaptureLatencyMs = builder.Configuration.GetValue<int?>("Camera:CaptureLatencyMs") ?? 3000,
-            CaptureTimeoutMs = builder.Configuration.GetValue<int?>("Camera:CaptureTimeoutMs") ?? 15000,
-            FileStabilityDelayMs = builder.Configuration.GetValue<int?>("Camera:FileStabilityDelayMs") ?? 200,
-            CapturePollingIntervalMs = builder.Configuration.GetValue<int?>("Camera:CapturePollingIntervalMs") ?? 500,
-            AdbCommandTimeoutMs = builder.Configuration.GetValue<int?>("Camera:AdbCommandTimeoutMs") ?? 10000,
-            CameraOpenTimeoutSeconds = builder.Configuration.GetValue<int?>("Camera:CameraOpenTimeoutSeconds") ?? 30,
-            MaxCaptureRetries = builder.Configuration.GetValue<int?>("Camera:MaxCaptureRetries") ?? 1
-        };
+        var androidOptions = new AndroidCameraOptions();
+        builder.Configuration.GetSection("Camera:Android").Bind(androidOptions);
         builder.Services.AddSingleton<ICameraProvider>(sp =>
         {
             var adbLogger = sp.GetRequiredService<ILogger<AdbService>>();
@@ -83,17 +68,8 @@ switch (cameraProvider.ToLowerInvariant())
 
     case "opencv":
     default:
-        var openCvOptions = new OpenCvCameraOptions
-        {
-            DeviceIndex = builder.Configuration.GetValue<int>("Camera:DeviceIndex"),
-            CaptureLatencyMs = builder.Configuration.GetValue<int?>("Camera:CaptureLatencyMs") ?? 100,
-            FramesToSkip = builder.Configuration.GetValue<int?>("Camera:FramesToSkip") ?? 5,
-            FlipVertical = builder.Configuration.GetValue<bool?>("Camera:FlipVertical") ?? false,
-            JpegQuality = builder.Configuration.GetValue<int?>("Camera:JpegQuality") ?? 90,
-            PreferredWidth = builder.Configuration.GetValue<int?>("Camera:PreferredWidth") ?? 1920,
-            PreferredHeight = builder.Configuration.GetValue<int?>("Camera:PreferredHeight") ?? 1080,
-            InitializationWarmupMs = builder.Configuration.GetValue<int?>("Camera:InitializationWarmupMs") ?? 500
-        };
+        var openCvOptions = new OpenCvCameraOptions();
+        builder.Configuration.GetSection("Camera:OpenCv").Bind(openCvOptions);
         builder.Services.AddSingleton<ICameraProvider>(sp =>
         {
             var logger = sp.GetRequiredService<ILogger<OpenCvCameraProvider>>();
@@ -123,14 +99,16 @@ builder.Services.AddSingleton<ISlideshowService>(sp =>
 });
 
 // Register capture workflow service
-var countdownDurationMs = builder.Configuration.GetValue<int?>("Capture:CountdownDurationMs") ?? 3000;
+var countdownDurationMs = builder.Configuration.GetValue<int?>("Capture:CountdownDurationMs") ?? 7000;
+var bufferTimeoutHighLatencyMs = builder.Configuration.GetValue<int?>("Capture:BufferTimeoutHighLatencyMs") ?? 45000;
+var bufferTimeoutLowLatencyMs = builder.Configuration.GetValue<int?>("Capture:BufferTimeoutLowLatencyMs") ?? 12000;
 builder.Services.AddSingleton<ICaptureWorkflowService>(sp =>
 {
     var captureService = sp.GetRequiredService<IPhotoCaptureService>();
     var cameraProvider = sp.GetRequiredService<ICameraProvider>();
     var eventBroadcaster = sp.GetRequiredService<IEventBroadcaster>();
     var logger = sp.GetRequiredService<ILogger<CaptureWorkflowService>>();
-    return new CaptureWorkflowService(captureService, cameraProvider, eventBroadcaster, logger, countdownDurationMs);
+    return new CaptureWorkflowService(captureService, cameraProvider, eventBroadcaster, logger, countdownDurationMs, bufferTimeoutHighLatencyMs, bufferTimeoutLowLatencyMs);
 });
 
 // Register input providers and manager
@@ -153,13 +131,15 @@ builder.Services.AddCors(options =>
 });
 
 // Add rate limiting for capture endpoints
+var rateLimitPermitLimit = builder.Configuration.GetValue<int?>("RateLimiting:PermitLimit") ?? 5;
+var rateLimitWindowSeconds = builder.Configuration.GetValue<int?>("RateLimiting:WindowSeconds") ?? 10;
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
     options.AddFixedWindowLimiter("capture", limiter =>
     {
-        limiter.PermitLimit = 5;
-        limiter.Window = TimeSpan.FromSeconds(10);
+        limiter.PermitLimit = rateLimitPermitLimit;
+        limiter.Window = TimeSpan.FromSeconds(rateLimitWindowSeconds);
         limiter.QueueLimit = 0;
     });
 });
