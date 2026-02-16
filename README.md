@@ -46,17 +46,22 @@ Configuration is done via `appsettings.json` in the Server project:
 {
   "Camera": {
     "Provider": "OpenCv",
-    "DeviceIndex": 0,
-    "CaptureLatencyMs": 100,
-    "FramesToSkip": 5,
-    "FlipVertical": false,
-    "JpegQuality": 90,
-    "PreferredWidth": 1920,
-    "PreferredHeight": 1080,
-    "InitializationWarmupMs": 500
+    "OpenCv": {
+      "CaptureLatencyMs": 100,
+      "DeviceIndex": 0,
+      "FramesToSkip": 5,
+      "FlipVertical": false,
+      "JpegQuality": 90,
+      "PreferredWidth": 1920,
+      "PreferredHeight": 1080,
+      "InitializationWarmupMs": 500,
+      "CaptureLockTimeoutSeconds": 5
+    }
   },
   "Capture": {
-    "CountdownDurationMs": 3000
+    "CountdownDurationMs": 7000,
+    "BufferTimeoutHighLatencyMs": 45000,
+    "BufferTimeoutLowLatencyMs": 12000
   },
   "Input": {
     "EnableKeyboard": false
@@ -77,7 +82,12 @@ Configuration is done via `appsettings.json` in the Server project:
     "Name": ""
   },
   "Slideshow": {
-    "SwirlEffect": true
+    "SwirlEffect": true,
+    "IntervalMs": 30000
+  },
+  "RateLimiting": {
+    "PermitLimit": 5,
+    "WindowSeconds": 10
   }
 }
 ```
@@ -85,15 +95,19 @@ Configuration is done via `appsettings.json` in the Server project:
 ### Camera Options
 
 - `Provider`: Camera provider to use (`"OpenCv"`, `"Android"`, or `"Mock"`)
-- `DeviceIndex`: Webcam device index (0 = first camera) — OpenCV only
-- `CaptureLatencyMs`: Delay before capture to sync with countdown
-- `FramesToSkip`: Number of frames to skip for auto-exposure adjustment — OpenCV only
-- `FlipVertical`: Mirror the image vertically — OpenCV only
-- `JpegQuality`: JPEG encoding quality, 1-100 (default: 90) — OpenCV only
-- `InitializationWarmupMs`: Camera warmup time on startup — OpenCV only
-- `PreferredWidth`/`PreferredHeight`: Requested camera resolution — OpenCV only
 
-### Android Camera Options
+#### OpenCV Options (`Camera:OpenCv`)
+
+- `DeviceIndex`: Webcam device index (0 = first camera)
+- `CaptureLatencyMs`: Delay before capture to sync with countdown
+- `FramesToSkip`: Number of frames to skip for auto-exposure adjustment
+- `FlipVertical`: Mirror the image vertically
+- `JpegQuality`: JPEG encoding quality, 1-100 (default: 90)
+- `InitializationWarmupMs`: Camera warmup time on startup
+- `PreferredWidth`/`PreferredHeight`: Requested camera resolution
+- `CaptureLockTimeoutSeconds`: Seconds to wait for capture lock before reporting camera busy (default: 5)
+
+### Android Camera Options (`Camera:Android`)
 
 Requires [ADB](https://developer.android.com/tools/adb) installed and an Android phone connected via USB with USB debugging enabled.
 
@@ -101,21 +115,32 @@ Requires [ADB](https://developer.android.com/tools/adb) installed and an Android
 - `DeviceImageFolder`: Device folder where camera saves photos (default: `"/sdcard/DCIM/Camera"`)
 - `PinCode`: Optional PIN to unlock device screen
 - `CameraAction`: Camera intent action (default: `"STILL_IMAGE_CAMERA"`)
-- `FocusKeepaliveIntervalSeconds`: Periodic focus interval (default: 15)
+- `FocusKeepaliveIntervalSeconds`: Periodic focus interval in seconds (default: 15)
+- `FocusKeepaliveMaxDurationSeconds`: Max duration for focus keepalive in seconds (default: 180)
 - `DeleteAfterDownload`: Delete photos from device after download (default: true)
 - `FileSelectionRegex`: Regex to match photo files (default: `^.*\.jpg$`)
-- `CaptureTimeoutMs`: Max wait for new photo (default: 15000)
-- `CapturePollingIntervalMs`: Polling interval for new files (default: 500)
-- `AdbCommandTimeoutMs`: Per-command timeout (default: 10000)
+- `CaptureTimeoutMs`: Max wait for new photo in ms (default: 15000)
+- `FileStabilityDelayMs`: Delay between file stability checks in ms (default: 200)
+- `CapturePollingIntervalMs`: Polling interval for new files in ms (default: 500)
+- `AdbCommandTimeoutMs`: Per-command timeout in ms (default: 10000)
+- `CameraOpenTimeoutSeconds`: Seconds after which the camera is considered stale (default: 30)
+- `MaxCaptureRetries`: Maximum number of capture retries after failure (default: 1)
+- `CaptureLockTimeoutSeconds`: Seconds to wait for capture lock before reporting camera busy (default: 5)
 
 ### Other Options
 
+- `Capture.CountdownDurationMs`: Countdown duration in ms before photo is taken (default: 7000)
+- `Capture.BufferTimeoutHighLatencyMs`: Hard timeout buffer in ms for high-latency cameras (default: 45000)
+- `Capture.BufferTimeoutLowLatencyMs`: Hard timeout buffer in ms for low-latency cameras (default: 12000)
 - `Input.EnableKeyboard`: Enable spacebar key to trigger capture (default: false)
 - `Trigger.RestrictToLocalhost`: Only allow trigger API from localhost (default: true)
 - `NetworkSecurity.BlockOutboundRequests`: Block outbound network requests (default: true)
 - `QrCode.BaseUrl`: Base URL for QR codes (defaults to request origin)
-- `Event.Name`: Event name displayed in the UI
+- `Event.Name`: Event name used as storage subfolder (defaults to current date)
 - `Slideshow.SwirlEffect`: Enable swirl animation effect on slideshow (default: true)
+- `Slideshow.IntervalMs`: Interval in ms between slideshow transitions (default: 30000)
+- `RateLimiting.PermitLimit`: Max requests per rate limit window (default: 5)
+- `RateLimiting.WindowSeconds`: Rate limit window duration in seconds (default: 10)
 
 ## Project Structure
 
