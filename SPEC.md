@@ -51,7 +51,7 @@ Input methods:
 Multiple camera types supported through abstraction:
 
 1. **Webcam**: USB webcam or built-in laptop camera using OpenCvSharp4 for cross-platform capture
-2. **Mobile phone (Android)**: Phone connected via USB or network, using the phone's camera for higher quality photos (not yet implemented)
+2. **Mobile phone (Android)**: Phone connected via USB, using the phone's camera for higher quality photos via ADB
 
 Camera selection is configurable. The system should handle camera disconnection gracefully and attempt reconnection.
 
