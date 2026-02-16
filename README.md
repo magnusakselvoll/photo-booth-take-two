@@ -40,7 +40,7 @@ dotnet run --project src/PhotoBooth.Server
 
 ## Configuration
 
-Configuration is done via `appsettings.json` in the Server project:
+Configuration is done via `appsettings.json` in the Server project. You can delete `appsettings.json` to revert all settings to their defaults.
 
 ```json
 {
