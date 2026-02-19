@@ -74,12 +74,15 @@ export function useGamepadNavigation({
   // Build action map (memoized to avoid rebuilding unless buttons config changes)
   const actionMap = useMemo(() => buildActionMap(buttons), [buttons]);
 
-  // Update refs on every render so the polling callback always reads latest values
-  callbacksRef.current = { onNext, onPrevious, onSkipForward, onSkipBackward, onToggleMode, onTriggerCapture, onDebugEvent };
-  enabledRef.current = enabled;
-  debugModeRef.current = debugMode;
-  actionMapRef.current = actionMap;
-  dpadAxesRef.current = dpadAxes;
+  // Sync all mutable values into refs after every render so the RAF polling
+  // callback always reads the latest props without needing to be re-registered.
+  useEffect(() => {
+    callbacksRef.current = { onNext, onPrevious, onSkipForward, onSkipBackward, onToggleMode, onTriggerCapture, onDebugEvent };
+    enabledRef.current = enabled;
+    debugModeRef.current = debugMode;
+    actionMapRef.current = actionMap;
+    dpadAxesRef.current = dpadAxes;
+  });
 
   // Set up RAF polling once on mount, tear down on unmount
   useEffect(() => {
@@ -166,5 +169,5 @@ export function useGamepadNavigation({
     return () => {
       cancelAnimationFrame(rafId);
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 }
