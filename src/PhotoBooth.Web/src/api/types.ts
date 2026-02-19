@@ -57,8 +57,34 @@ export interface QueuedPhoto {
   timestamp: string;
 }
 
+export interface GamepadButtonsConfig {
+  next: number[];
+  previous: number[];
+  skipForward: number[];
+  skipBackward: number[];
+  triggerCapture: number[];
+  triggerCapture1s: number[];
+  triggerCapture3s: number[];
+  triggerCapture5s: number[];
+  toggleMode: number[];
+}
+
+export interface GamepadDpadAxesConfig {
+  horizontalAxisIndex: number;
+  verticalAxisIndex: number;
+  threshold: number;
+}
+
+export interface GamepadConfig {
+  enabled: boolean;
+  debugMode: boolean;
+  buttons: GamepadButtonsConfig;
+  dpadAxes: GamepadDpadAxesConfig;
+}
+
 export interface ClientConfigDto {
   qrCodeBaseUrl: string | null;
   swirlEffect: boolean;
   slideshowIntervalMs: number;
+  gamepad: GamepadConfig;
 }
