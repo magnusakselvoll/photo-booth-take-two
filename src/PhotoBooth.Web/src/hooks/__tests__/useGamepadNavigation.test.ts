@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, cleanup } from '@testing-library/react';
 import { useGamepadNavigation } from '../useGamepadNavigation';
-import type { GamepadDpadAxesConfig } from '../../api/types';
+import type { GamepadButtonsConfig, GamepadDpadAxesConfig } from '../../api/types';
 
 // ---- helpers ---------------------------------------------------------------
 
@@ -27,6 +27,18 @@ function makeGamepad(
     vibrationActuator: null,
   } as unknown as Gamepad;
 }
+
+const DEFAULT_BUTTONS_FOR_TEST: GamepadButtonsConfig = {
+  next: [5, 15],
+  previous: [4, 14],
+  skipForward: [3, 13],
+  skipBackward: [2, 12],
+  triggerCapture: [0],
+  triggerCapture1s: [],
+  triggerCapture3s: [],
+  triggerCapture5s: [],
+  toggleMode: [8],
+};
 
 const DEFAULT_DPAD_AXES: GamepadDpadAxesConfig = {
   horizontalAxisIndex: 6,
@@ -263,6 +275,42 @@ describe('useGamepadNavigation', () => {
     expect(onNext).not.toHaveBeenCalled();
   });
 
+  it('calls onTriggerCapture with 1000 when a TriggerCapture1s button is pressed', () => {
+    const onTriggerCapture = vi.fn();
+    const customButtons = { ...DEFAULT_BUTTONS_FOR_TEST, triggerCapture1s: [6] };
+    mockGetGamepads.mockReturnValue([makeGamepad(0, new Array<boolean>(16).fill(false))]);
+    renderHook(() => useGamepadNavigation({ onTriggerCapture, buttons: customButtons }));
+
+    tick();
+    mockGetGamepads.mockReturnValue([makeGamepad(0, pressed(6))]);
+    tick();
+    expect(onTriggerCapture).toHaveBeenCalledWith(1000);
+  });
+
+  it('calls onTriggerCapture with 3000 when a TriggerCapture3s button is pressed', () => {
+    const onTriggerCapture = vi.fn();
+    const customButtons = { ...DEFAULT_BUTTONS_FOR_TEST, triggerCapture3s: [7] };
+    mockGetGamepads.mockReturnValue([makeGamepad(0, new Array<boolean>(16).fill(false))]);
+    renderHook(() => useGamepadNavigation({ onTriggerCapture, buttons: customButtons }));
+
+    tick();
+    mockGetGamepads.mockReturnValue([makeGamepad(0, pressed(7))]);
+    tick();
+    expect(onTriggerCapture).toHaveBeenCalledWith(3000);
+  });
+
+  it('calls onTriggerCapture with 5000 when a TriggerCapture5s button is pressed', () => {
+    const onTriggerCapture = vi.fn();
+    const customButtons = { ...DEFAULT_BUTTONS_FOR_TEST, triggerCapture5s: [9] };
+    mockGetGamepads.mockReturnValue([makeGamepad(0, new Array<boolean>(16).fill(false))]);
+    renderHook(() => useGamepadNavigation({ onTriggerCapture, buttons: customButtons }));
+
+    tick();
+    mockGetGamepads.mockReturnValue([makeGamepad(0, pressed(9))]);
+    tick();
+    expect(onTriggerCapture).toHaveBeenCalledWith(5000);
+  });
+
   it('cancels animation frame on unmount', () => {
     mockGetGamepads.mockReturnValue([]);
     const { unmount } = renderHook(() => useGamepadNavigation({}));
@@ -282,6 +330,9 @@ describe('useGamepadNavigation', () => {
       skipForward: [],
       skipBackward: [],
       triggerCapture: [],
+      triggerCapture1s: [],
+      triggerCapture3s: [],
+      triggerCapture5s: [],
       toggleMode: [],
     };
     mockGetGamepads.mockReturnValue([makeGamepad(0, new Array<boolean>(16).fill(false))]);

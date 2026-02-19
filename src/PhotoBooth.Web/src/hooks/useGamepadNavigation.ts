@@ -30,6 +30,9 @@ const DEFAULT_BUTTONS: GamepadButtonsConfig = {
   skipForward: [3, 13],
   skipBackward: [2, 12],
   triggerCapture: [0],
+  triggerCapture1s: [],
+  triggerCapture3s: [],
+  triggerCapture5s: [],
   toggleMode: [8],
 };
 
@@ -40,6 +43,9 @@ function buildActionMap(buttons: GamepadButtonsConfig): Map<number, string> {
   for (const idx of buttons.skipForward) map.set(idx, 'skipForward');
   for (const idx of buttons.skipBackward) map.set(idx, 'skipBackward');
   for (const idx of buttons.triggerCapture) map.set(idx, 'triggerCapture');
+  for (const idx of buttons.triggerCapture1s) map.set(idx, 'triggerCapture1s');
+  for (const idx of buttons.triggerCapture3s) map.set(idx, 'triggerCapture3s');
+  for (const idx of buttons.triggerCapture5s) map.set(idx, 'triggerCapture5s');
   for (const idx of buttons.toggleMode) map.set(idx, 'toggleMode');
   return map;
 }
@@ -91,6 +97,9 @@ export function useGamepadNavigation({
         case 'skipForward': cbs.onSkipForward?.(); break;
         case 'skipBackward': cbs.onSkipBackward?.(); break;
         case 'triggerCapture': cbs.onTriggerCapture?.(); break;
+        case 'triggerCapture1s': cbs.onTriggerCapture?.(1000); break;
+        case 'triggerCapture3s': cbs.onTriggerCapture?.(3000); break;
+        case 'triggerCapture5s': cbs.onTriggerCapture?.(5000); break;
         case 'toggleMode': cbs.onToggleMode?.(); break;
       }
     }

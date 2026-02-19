@@ -26,6 +26,9 @@ public static class ConfigEndpoints
             SkipForward: buttonsSection.GetSection("SkipForward").Get<int[]>() ?? [3, 13],
             SkipBackward: buttonsSection.GetSection("SkipBackward").Get<int[]>() ?? [2, 12],
             TriggerCapture: buttonsSection.GetSection("TriggerCapture").Get<int[]>() ?? [0],
+            TriggerCapture1s: buttonsSection.GetSection("TriggerCapture1s").Get<int[]>() ?? [],
+            TriggerCapture3s: buttonsSection.GetSection("TriggerCapture3s").Get<int[]>() ?? [],
+            TriggerCapture5s: buttonsSection.GetSection("TriggerCapture5s").Get<int[]>() ?? [],
             ToggleMode: buttonsSection.GetSection("ToggleMode").Get<int[]>() ?? [8]);
         var dpadAxesSection = gamepadSection.GetSection("DpadAxes");
         var dpadAxes = new GamepadDpadAxesDto(

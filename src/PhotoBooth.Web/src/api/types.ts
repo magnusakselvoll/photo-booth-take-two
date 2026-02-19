@@ -63,6 +63,9 @@ export interface GamepadButtonsConfig {
   skipForward: number[];
   skipBackward: number[];
   triggerCapture: number[];
+  triggerCapture1s: number[];
+  triggerCapture3s: number[];
+  triggerCapture5s: number[];
   toggleMode: number[];
 }
 
