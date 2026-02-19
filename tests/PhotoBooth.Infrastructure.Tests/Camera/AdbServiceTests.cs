@@ -6,6 +6,7 @@ using PhotoBooth.Infrastructure.Camera;
 namespace PhotoBooth.Infrastructure.Tests.Camera;
 
 [TestClass]
+[TestCategory("Integration")]
 public sealed class AdbServiceTests
 {
     private TestableAdbService _service = null!;
