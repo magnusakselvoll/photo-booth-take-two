@@ -8,13 +8,16 @@ interface SlideshowProps {
   photo: SlideshowPhoto | null;
   qrCodeBaseUrl?: string;
   swirlEffect?: boolean;
+  slideshowIntervalMs?: number;
 }
+
+const FADE_DURATION_MS = 500;
 
 function randomInRange(min: number, max: number): number {
   return min + Math.random() * (max - min);
 }
 
-function generateKenBurnsConfig(): KenBurnsConfig {
+function generateKenBurnsConfig(intervalMs: number): KenBurnsConfig {
   // Random zoom direction: in or out
   const zoomIn = Math.random() > 0.5;
 
@@ -36,8 +39,8 @@ function generateKenBurnsConfig(): KenBurnsConfig {
   ];
   const pan = panDirections[Math.floor(Math.random() * panDirections.length)];
 
-  // Randomized duration (8-10 seconds) - must cover slideshow interval
-  const duration = randomInRange(8, 10);
+  // Duration slightly overshoots the slideshow interval to avoid freezing at the end
+  const duration = intervalMs / 1000;
 
   if (zoomIn) {
     return {
@@ -68,9 +71,7 @@ interface PhotoState {
   key: number;
 }
 
-const FADE_DURATION_MS = 500;
-
-export function Slideshow({ photo, qrCodeBaseUrl, swirlEffect = true }: SlideshowProps) {
+export function Slideshow({ photo, qrCodeBaseUrl, swirlEffect = true, slideshowIntervalMs = 30000 }: SlideshowProps) {
   const { t } = useTranslation();
   const [currentState, setCurrentState] = useState<PhotoState | null>(null);
   const [previousState, setPreviousState] = useState<PhotoState | null>(null);
@@ -100,7 +101,7 @@ export function Slideshow({ photo, qrCodeBaseUrl, swirlEffect = true }: Slidesho
       photoKeyRef.current += 1;
       return {
         photo,
-        kenBurns: generateKenBurnsConfig(),
+        kenBurns: generateKenBurnsConfig(slideshowIntervalMs),
         key: photoKeyRef.current,
       };
     });
