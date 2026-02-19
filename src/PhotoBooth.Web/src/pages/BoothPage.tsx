@@ -27,7 +27,7 @@ function randomInRange(min: number, max: number): number {
   return min + Math.random() * (max - min);
 }
 
-function generateKenBurnsConfig(): KenBurnsConfig {
+function generateKenBurnsConfig(intervalMs: number): KenBurnsConfig {
   const zoomIn = Math.random() > 0.5;
   const scaleSmall = randomInRange(1.08, 1.12);
   const scaleLarge = randomInRange(1.18, 1.28);
@@ -43,7 +43,8 @@ function generateKenBurnsConfig(): KenBurnsConfig {
     { x: -panAmount * 0.7, y: -panAmount * 0.7 },
   ];
   const pan = panDirections[Math.floor(Math.random() * panDirections.length)];
-  const duration = randomInRange(8, 10);
+  // Duration slightly overshoots the slideshow interval to avoid freezing at the end
+  const duration = intervalMs / 1000;
 
   if (zoomIn) {
     return {
@@ -162,7 +163,7 @@ export function BoothPage({ qrCodeBaseUrl, swirlEffect = true, slideshowInterval
     photoKeyRef.current += 1;
     const newDisplay: DisplayPhoto = {
       photo,
-      kenBurns: generateKenBurnsConfig(),
+      kenBurns: generateKenBurnsConfig(slideshowIntervalMs),
       key: photoKeyRef.current,
       fromQueue,
     };
@@ -432,7 +433,7 @@ export function BoothPage({ qrCodeBaseUrl, swirlEffect = true, slideshowInterval
   return (
     <div className="booth-page" onClick={handleClick}>
       {/* Show slideshow when not showing captured photos */}
-      {showSlideshow && <Slideshow photo={slideshowPhoto} qrCodeBaseUrl={qrCodeBaseUrl} swirlEffect={swirlEffect} />}
+      {showSlideshow && <Slideshow photo={slideshowPhoto} qrCodeBaseUrl={qrCodeBaseUrl} swirlEffect={swirlEffect} slideshowIntervalMs={slideshowIntervalMs} />}
 
       {/* Show captured photo with same Ken Burns effect as slideshow */}
       {showCapturedPhoto && (
