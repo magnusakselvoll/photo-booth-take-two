@@ -27,7 +27,12 @@ public static class ConfigEndpoints
             SkipBackward: buttonsSection.GetSection("SkipBackward").Get<int[]>() ?? [2, 12],
             TriggerCapture: buttonsSection.GetSection("TriggerCapture").Get<int[]>() ?? [0],
             ToggleMode: buttonsSection.GetSection("ToggleMode").Get<int[]>() ?? [8]);
-        var gamepad = new GamepadConfigDto(gamepadEnabled, gamepadDebugMode, buttons);
+        var dpadAxesSection = gamepadSection.GetSection("DpadAxes");
+        var dpadAxes = new GamepadDpadAxesDto(
+            HorizontalAxisIndex: dpadAxesSection.GetValue<int>("HorizontalAxisIndex", 6),
+            VerticalAxisIndex: dpadAxesSection.GetValue<int>("VerticalAxisIndex", 7),
+            Threshold: dpadAxesSection.GetValue<double>("Threshold", 0.5));
+        var gamepad = new GamepadConfigDto(gamepadEnabled, gamepadDebugMode, buttons, dpadAxes);
 
         var config = new ClientConfigDto(qrCodeBaseUrl, swirlEffect, slideshowIntervalMs, gamepad);
         return Results.Ok(config);

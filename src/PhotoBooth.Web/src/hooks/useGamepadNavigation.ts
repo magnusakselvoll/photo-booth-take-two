@@ -1,9 +1,12 @@
 import { useEffect, useRef, useMemo } from 'react';
-import type { GamepadButtonsConfig } from '../api/types';
+import type { GamepadButtonsConfig, GamepadDpadAxesConfig } from '../api/types';
 
 export interface GamepadDebugEvent {
   gamepadId: string;
-  buttonIndex: number;
+  /** Set for button events */
+  buttonIndex?: number;
+  /** Set for axis events */
+  axisIndex?: number;
   action: string;
 }
 
@@ -17,6 +20,7 @@ export interface GamepadNavigationConfig {
   enabled?: boolean;
   debugMode?: boolean;
   buttons?: GamepadButtonsConfig;
+  dpadAxes?: GamepadDpadAxesConfig | null;
   onDebugEvent?: (event: GamepadDebugEvent) => void;
 }
 
@@ -50,6 +54,7 @@ export function useGamepadNavigation({
   enabled = true,
   debugMode = false,
   buttons = DEFAULT_BUTTONS,
+  dpadAxes = null,
   onDebugEvent,
 }: GamepadNavigationConfig): void {
   // Keep refs for all mutable values so the RAF callback always has fresh values
@@ -58,6 +63,7 @@ export function useGamepadNavigation({
   const enabledRef = useRef(enabled);
   const debugModeRef = useRef(debugMode);
   const actionMapRef = useRef<Map<number, string>>(new Map());
+  const dpadAxesRef = useRef(dpadAxes);
 
   // Build action map (memoized to avoid rebuilding unless buttons config changes)
   const actionMap = useMemo(() => buildActionMap(buttons), [buttons]);
@@ -67,11 +73,27 @@ export function useGamepadNavigation({
   enabledRef.current = enabled;
   debugModeRef.current = debugMode;
   actionMapRef.current = actionMap;
+  dpadAxesRef.current = dpadAxes;
 
   // Set up RAF polling once on mount, tear down on unmount
   useEffect(() => {
     const prevButtonStates = new Map<number, boolean[]>();
+    // Axis virtual-button states: key = `${gamepadIndex}_${axisIndex}_${direction}`
+    const prevAxisStates = new Map<string, boolean>();
     let rafId: number;
+
+    function fireAction(action: string) {
+      if (!enabledRef.current || action === 'unmapped') return;
+      const cbs = callbacksRef.current;
+      switch (action) {
+        case 'next': cbs.onNext?.(); break;
+        case 'previous': cbs.onPrevious?.(); break;
+        case 'skipForward': cbs.onSkipForward?.(); break;
+        case 'skipBackward': cbs.onSkipBackward?.(); break;
+        case 'triggerCapture': cbs.onTriggerCapture?.(); break;
+        case 'toggleMode': cbs.onToggleMode?.(); break;
+      }
+    }
 
     function poll() {
       const gamepads = navigator.getGamepads();
@@ -79,6 +101,7 @@ export function useGamepadNavigation({
       for (const gamepad of gamepads) {
         if (!gamepad) continue;
 
+        // --- Button polling ---
         const prevStates = prevButtonStates.get(gamepad.index) ?? [];
         const newStates = gamepad.buttons.map(b => b.pressed);
 
@@ -92,28 +115,38 @@ export function useGamepadNavigation({
 
             // Debug mode fires for all presses (including unmapped), regardless of enabled
             if (debugModeRef.current) {
-              callbacksRef.current.onDebugEvent?.({
-                gamepadId: gamepad.id,
-                buttonIndex: i,
-                action,
-              });
+              callbacksRef.current.onDebugEvent?.({ gamepadId: gamepad.id, buttonIndex: i, action });
             }
 
-            if (enabledRef.current && action !== 'unmapped') {
-              const cbs = callbacksRef.current;
-              switch (action) {
-                case 'next': cbs.onNext?.(); break;
-                case 'previous': cbs.onPrevious?.(); break;
-                case 'skipForward': cbs.onSkipForward?.(); break;
-                case 'skipBackward': cbs.onSkipBackward?.(); break;
-                case 'triggerCapture': cbs.onTriggerCapture?.(); break;
-                case 'toggleMode': cbs.onToggleMode?.(); break;
-              }
-            }
+            fireAction(action);
           }
         }
 
         prevButtonStates.set(gamepad.index, newStates);
+
+        // --- Axis-based D-pad polling ---
+        const axesCfg = dpadAxesRef.current;
+        if (axesCfg) {
+          const checkAxis = (axisIdx: number, positive: boolean, action: string) => {
+            const key = `${gamepad.index}_${axisIdx}_${positive ? 'pos' : 'neg'}`;
+            const value = gamepad.axes[axisIdx] ?? 0;
+            const isActive = positive ? value > axesCfg.threshold : value < -axesCfg.threshold;
+            const wasActive = prevAxisStates.get(key) ?? false;
+            prevAxisStates.set(key, isActive);
+
+            if (!wasActive && isActive) {
+              if (debugModeRef.current) {
+                callbacksRef.current.onDebugEvent?.({ gamepadId: gamepad.id, axisIndex: axisIdx, action });
+              }
+              fireAction(action);
+            }
+          };
+
+          checkAxis(axesCfg.horizontalAxisIndex, true, 'next');
+          checkAxis(axesCfg.horizontalAxisIndex, false, 'previous');
+          checkAxis(axesCfg.verticalAxisIndex, true, 'skipForward');
+          checkAxis(axesCfg.verticalAxisIndex, false, 'skipBackward');
+        }
       }
 
       rafId = requestAnimationFrame(poll);

@@ -8,7 +8,9 @@ public record GamepadButtonsDto(
     int[] TriggerCapture,
     int[] ToggleMode);
 
-public record GamepadConfigDto(bool Enabled, bool DebugMode, GamepadButtonsDto Buttons);
+public record GamepadDpadAxesDto(int HorizontalAxisIndex, int VerticalAxisIndex, double Threshold);
+
+public record GamepadConfigDto(bool Enabled, bool DebugMode, GamepadButtonsDto Buttons, GamepadDpadAxesDto DpadAxes);
 
 public record ClientConfigDto(
     string? QrCodeBaseUrl,

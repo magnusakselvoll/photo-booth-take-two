@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, cleanup } from '@testing-library/react';
 import { useGamepadNavigation } from '../useGamepadNavigation';
+import type { GamepadDpadAxesConfig } from '../../api/types';
 
 // ---- helpers ---------------------------------------------------------------
 
@@ -12,18 +13,33 @@ function makeGamepad(
   index: number,
   buttonStates: boolean[],
   id = 'test-gamepad',
+  axes: number[] = [],
 ): Gamepad {
   return {
     id,
     index,
     buttons: buttonStates.map(makeButton),
-    axes: [],
+    axes,
     connected: true,
     mapping: 'standard' as GamepadMappingType,
     timestamp: 0,
     hapticActuators: [],
     vibrationActuator: null,
   } as unknown as Gamepad;
+}
+
+const DEFAULT_DPAD_AXES: GamepadDpadAxesConfig = {
+  horizontalAxisIndex: 6,
+  verticalAxisIndex: 7,
+  threshold: 0.5,
+};
+
+/** Build an 8-element axis array with D-pad at indices 6 and 7 */
+function axes(h = 0, v = 0): number[] {
+  const arr = new Array<number>(8).fill(0);
+  arr[6] = h;
+  arr[7] = v;
+  return arr;
 }
 
 /** 16-element button array, all false except the given indices */
@@ -286,5 +302,100 @@ describe('useGamepadNavigation', () => {
     mockGetGamepads.mockReturnValue([makeGamepad(0, pressed(5))]);
     tick();
     expect(onNext).toHaveBeenCalledOnce(); // still only once
+  });
+
+  // ---- D-pad axis tests ----
+
+  it('calls onNext when horizontal axis goes positive (D-pad right)', () => {
+    const onNext = vi.fn();
+    mockGetGamepads.mockReturnValue([makeGamepad(0, new Array<boolean>(16).fill(false), 'gp', axes(0, 0))]);
+    renderHook(() => useGamepadNavigation({ onNext, dpadAxes: DEFAULT_DPAD_AXES }));
+
+    tick(); // establish initial state
+    mockGetGamepads.mockReturnValue([makeGamepad(0, new Array<boolean>(16).fill(false), 'gp', axes(1, 0))]);
+    tick();
+    expect(onNext).toHaveBeenCalledOnce();
+  });
+
+  it('calls onPrevious when horizontal axis goes negative (D-pad left)', () => {
+    const onPrevious = vi.fn();
+    mockGetGamepads.mockReturnValue([makeGamepad(0, new Array<boolean>(16).fill(false), 'gp', axes(0, 0))]);
+    renderHook(() => useGamepadNavigation({ onPrevious, dpadAxes: DEFAULT_DPAD_AXES }));
+
+    tick();
+    mockGetGamepads.mockReturnValue([makeGamepad(0, new Array<boolean>(16).fill(false), 'gp', axes(-1, 0))]);
+    tick();
+    expect(onPrevious).toHaveBeenCalledOnce();
+  });
+
+  it('calls onSkipForward when vertical axis goes positive (D-pad down)', () => {
+    const onSkipForward = vi.fn();
+    mockGetGamepads.mockReturnValue([makeGamepad(0, new Array<boolean>(16).fill(false), 'gp', axes(0, 0))]);
+    renderHook(() => useGamepadNavigation({ onSkipForward, dpadAxes: DEFAULT_DPAD_AXES }));
+
+    tick();
+    mockGetGamepads.mockReturnValue([makeGamepad(0, new Array<boolean>(16).fill(false), 'gp', axes(0, 1))]);
+    tick();
+    expect(onSkipForward).toHaveBeenCalledOnce();
+  });
+
+  it('calls onSkipBackward when vertical axis goes negative (D-pad up)', () => {
+    const onSkipBackward = vi.fn();
+    mockGetGamepads.mockReturnValue([makeGamepad(0, new Array<boolean>(16).fill(false), 'gp', axes(0, 0))]);
+    renderHook(() => useGamepadNavigation({ onSkipBackward, dpadAxes: DEFAULT_DPAD_AXES }));
+
+    tick();
+    mockGetGamepads.mockReturnValue([makeGamepad(0, new Array<boolean>(16).fill(false), 'gp', axes(0, -1))]);
+    tick();
+    expect(onSkipBackward).toHaveBeenCalledOnce();
+  });
+
+  it('does not repeat-fire while axis is held (only on edge)', () => {
+    const onNext = vi.fn();
+    mockGetGamepads.mockReturnValue([makeGamepad(0, new Array<boolean>(16).fill(false), 'gp', axes(0, 0))]);
+    renderHook(() => useGamepadNavigation({ onNext, dpadAxes: DEFAULT_DPAD_AXES }));
+
+    tick();
+    mockGetGamepads.mockReturnValue([makeGamepad(0, new Array<boolean>(16).fill(false), 'gp', axes(1, 0))]);
+    tick(); // edge → fires
+    tick(); // still held → no fire
+    tick(); // still held → no fire
+
+    expect(onNext).toHaveBeenCalledOnce();
+  });
+
+  it('does not fire axis action when enabled is false', () => {
+    const onNext = vi.fn();
+    mockGetGamepads.mockReturnValue([makeGamepad(0, new Array<boolean>(16).fill(false), 'gp', axes(0, 0))]);
+    renderHook(() => useGamepadNavigation({ onNext, enabled: false, dpadAxes: DEFAULT_DPAD_AXES }));
+
+    tick();
+    mockGetGamepads.mockReturnValue([makeGamepad(0, new Array<boolean>(16).fill(false), 'gp', axes(1, 0))]);
+    tick();
+    expect(onNext).not.toHaveBeenCalled();
+  });
+
+  it('fires onDebugEvent with axisIndex for axis events in debugMode', () => {
+    const onDebugEvent = vi.fn();
+    mockGetGamepads.mockReturnValue([makeGamepad(0, new Array<boolean>(16).fill(false), 'gp', axes(0, 0))]);
+    renderHook(() => useGamepadNavigation({ debugMode: true, onDebugEvent, dpadAxes: DEFAULT_DPAD_AXES }));
+
+    tick();
+    mockGetGamepads.mockReturnValue([makeGamepad(0, new Array<boolean>(16).fill(false), 'gp', axes(1, 0))]);
+    tick();
+
+    expect(onDebugEvent).toHaveBeenCalledOnce();
+    expect(onDebugEvent).toHaveBeenCalledWith({ gamepadId: 'gp', axisIndex: 6, action: 'next' });
+  });
+
+  it('does not fire axis actions when dpadAxes is null', () => {
+    const onNext = vi.fn();
+    mockGetGamepads.mockReturnValue([makeGamepad(0, new Array<boolean>(16).fill(false), 'gp', axes(0, 0))]);
+    renderHook(() => useGamepadNavigation({ onNext, dpadAxes: null }));
+
+    tick();
+    mockGetGamepads.mockReturnValue([makeGamepad(0, new Array<boolean>(16).fill(false), 'gp', axes(1, 0))]);
+    tick();
+    expect(onNext).not.toHaveBeenCalled();
   });
 });

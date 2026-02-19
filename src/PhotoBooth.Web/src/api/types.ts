@@ -66,10 +66,17 @@ export interface GamepadButtonsConfig {
   toggleMode: number[];
 }
 
+export interface GamepadDpadAxesConfig {
+  horizontalAxisIndex: number;
+  verticalAxisIndex: number;
+  threshold: number;
+}
+
 export interface GamepadConfig {
   enabled: boolean;
   debugMode: boolean;
   buttons: GamepadButtonsConfig;
+  dpadAxes: GamepadDpadAxesConfig;
 }
 
 export interface ClientConfigDto {

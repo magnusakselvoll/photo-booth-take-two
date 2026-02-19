@@ -413,6 +413,7 @@ export function BoothPage({ qrCodeBaseUrl, swirlEffect = true, slideshowInterval
     enabled: !showCountdown && (gamepadConfig?.enabled ?? false),
     debugMode: gamepadConfig?.debugMode ?? false,
     buttons: gamepadConfig?.buttons,
+    dpadAxes: gamepadConfig?.dpadAxes,
     onDebugEvent: handleGamepadDebugEvent,
   });
 
@@ -473,7 +474,9 @@ export function BoothPage({ qrCodeBaseUrl, swirlEffect = true, slideshowInterval
       {/* Gamepad debug overlay */}
       {gamepadConfig?.debugMode && gamepadDebugEvent && (
         <div className="gamepad-debug">
-          <span>Button {gamepadDebugEvent.buttonIndex}</span>
+          {gamepadDebugEvent.buttonIndex !== undefined
+            ? <span>Button {gamepadDebugEvent.buttonIndex}</span>
+            : <span>Axis {gamepadDebugEvent.axisIndex}</span>}
           <span>{gamepadDebugEvent.action}</span>
         </div>
       )}
