@@ -6,17 +6,21 @@ import { useEventStream } from '../api/events';
 import { triggerCapture } from '../api/client';
 import { useSlideshowNavigation } from '../hooks/useSlideshowNavigation';
 import { useKeyboardNavigation } from '../hooks/useKeyboardNavigation';
-import type { PhotoBoothEvent, QueuedPhoto } from '../api/types';
+import { useGamepadNavigation } from '../hooks/useGamepadNavigation';
+import type { GamepadDebugEvent } from '../hooks/useGamepadNavigation';
+import type { PhotoBoothEvent, QueuedPhoto, GamepadConfig } from '../api/types';
 
 const DEFAULT_SLIDESHOW_INTERVAL_MS = 30000;
 const ERROR_DISPLAY_MS = 3000;
 const FADE_DURATION_MS = 500;
 const WATCHDOG_RELOAD_MS = 5 * 60 * 1000;
+const GAMEPAD_DEBUG_DISPLAY_MS = 3000;
 
 interface BoothPageProps {
   qrCodeBaseUrl?: string;
   swirlEffect?: boolean;
   slideshowIntervalMs?: number;
+  gamepadConfig?: GamepadConfig | null;
 }
 
 function randomInRange(min: number, max: number): number {
@@ -71,7 +75,7 @@ interface DisplayPhoto {
   fromQueue: boolean; // true if from queue, false if newly captured
 }
 
-export function BoothPage({ qrCodeBaseUrl, swirlEffect = true, slideshowIntervalMs = DEFAULT_SLIDESHOW_INTERVAL_MS }: BoothPageProps) {
+export function BoothPage({ qrCodeBaseUrl, swirlEffect = true, slideshowIntervalMs = DEFAULT_SLIDESHOW_INTERVAL_MS, gamepadConfig }: BoothPageProps) {
   // Queue of interrupted photos waiting to be displayed
   const [photoQueue, setPhotoQueue] = useState<QueuedPhoto[]>([]);
   // Current index within the queue
@@ -87,9 +91,12 @@ export function BoothPage({ qrCodeBaseUrl, swirlEffect = true, slideshowInterval
   // Countdown duration from latest event
   const [countdownDurationMs, setCountdownDurationMs] = useState(3000);
 
+  const [gamepadDebugEvent, setGamepadDebugEvent] = useState<GamepadDebugEvent | null>(null);
+
   const watchdogTimeoutRef = useRef<number | null>(null);
   const previewTimeoutRef = useRef<number | null>(null);
   const errorTimeoutRef = useRef<number | null>(null);
+  const gamepadDebugTimeoutRef = useRef<number | null>(null);
   const photoKeyRef = useRef(0);
   // Track the current display for use in callbacks (avoid stale closure)
   const currentDisplayRef = useRef<DisplayPhoto | null>(null);
@@ -385,6 +392,30 @@ export function BoothPage({ qrCodeBaseUrl, swirlEffect = true, slideshowInterval
     enabled: !showCountdown,
   });
 
+  const handleGamepadDebugEvent = useCallback((event: GamepadDebugEvent) => {
+    setGamepadDebugEvent(event);
+    if (gamepadDebugTimeoutRef.current !== null) {
+      clearTimeout(gamepadDebugTimeoutRef.current);
+    }
+    gamepadDebugTimeoutRef.current = window.setTimeout(() => {
+      setGamepadDebugEvent(null);
+    }, GAMEPAD_DEBUG_DISPLAY_MS);
+  }, []);
+
+  // Gamepad navigation - disabled during countdown, enabled only when gamepadConfig.enabled
+  useGamepadNavigation({
+    onNext: handleNavNext,
+    onPrevious: handleNavPrevious,
+    onSkipForward: handleNavSkipForward,
+    onSkipBackward: handleNavSkipBackward,
+    onToggleMode: handleNavToggleMode,
+    onTriggerCapture: handleTrigger,
+    enabled: !showCountdown && (gamepadConfig?.enabled ?? false),
+    debugMode: gamepadConfig?.debugMode ?? false,
+    buttons: gamepadConfig?.buttons,
+    onDebugEvent: handleGamepadDebugEvent,
+  });
+
   const handleClick = () => {
     handleTrigger();
   };
@@ -436,6 +467,14 @@ export function BoothPage({ qrCodeBaseUrl, swirlEffect = true, slideshowInterval
       {showError && (
         <div className="error-display">
           <div className="error-message">{errorMessage}</div>
+        </div>
+      )}
+
+      {/* Gamepad debug overlay */}
+      {gamepadConfig?.debugMode && gamepadDebugEvent && (
+        <div className="gamepad-debug">
+          <span>Button {gamepadDebugEvent.buttonIndex}</span>
+          <span>{gamepadDebugEvent.action}</span>
         </div>
       )}
     </div>

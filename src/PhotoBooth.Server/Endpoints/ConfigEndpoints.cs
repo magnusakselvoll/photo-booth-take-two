@@ -15,7 +15,21 @@ public static class ConfigEndpoints
         var qrCodeBaseUrl = configuration.GetValue<string>("QrCode:BaseUrl");
         var swirlEffect = configuration.GetValue<bool>("Slideshow:SwirlEffect", true);
         var slideshowIntervalMs = configuration.GetValue<int?>("Slideshow:IntervalMs") ?? 30000;
-        var config = new ClientConfigDto(qrCodeBaseUrl, swirlEffect, slideshowIntervalMs);
+
+        var gamepadSection = configuration.GetSection("Input:Gamepad");
+        var gamepadEnabled = gamepadSection.GetValue<bool>("Enabled", false);
+        var gamepadDebugMode = gamepadSection.GetValue<bool>("DebugMode", false);
+        var buttonsSection = gamepadSection.GetSection("Buttons");
+        var buttons = new GamepadButtonsDto(
+            Next: buttonsSection.GetSection("Next").Get<int[]>() ?? [5, 15],
+            Previous: buttonsSection.GetSection("Previous").Get<int[]>() ?? [4, 14],
+            SkipForward: buttonsSection.GetSection("SkipForward").Get<int[]>() ?? [3, 13],
+            SkipBackward: buttonsSection.GetSection("SkipBackward").Get<int[]>() ?? [2, 12],
+            TriggerCapture: buttonsSection.GetSection("TriggerCapture").Get<int[]>() ?? [0],
+            ToggleMode: buttonsSection.GetSection("ToggleMode").Get<int[]>() ?? [8]);
+        var gamepad = new GamepadConfigDto(gamepadEnabled, gamepadDebugMode, buttons);
+
+        var config = new ClientConfigDto(qrCodeBaseUrl, swirlEffect, slideshowIntervalMs, gamepad);
         return Results.Ok(config);
     }
 }
