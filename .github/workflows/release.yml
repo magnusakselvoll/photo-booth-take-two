@@ -65,8 +65,9 @@ jobs:
           zip -r ../../PhotoBooth-${{ steps.version.outputs.version }}-win-x64.zip .
 
       - name: Upload release assets
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.event.release.tag_name }}
-          files: |
-            PhotoBooth-${{ steps.version.outputs.version }}-win-x64.zip
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload ${{ github.event.release.tag_name }} \
+            PhotoBooth-${{ steps.version.outputs.version }}-win-x64.zip \
+            --clobber
