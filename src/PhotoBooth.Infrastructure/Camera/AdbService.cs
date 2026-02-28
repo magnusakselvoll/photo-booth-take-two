@@ -61,11 +61,36 @@ public class AdbService
     }
 
     /// <summary>
-    /// Gets the device screen state from NFC dumpsys.
+    /// Gets the device screen state. Tries NFC dumpsys first, then power dumpsys as fallback.
     /// Returns (screenOn, unlocked) tuple. Both false if state cannot be determined.
-    /// Possible states: OFF_LOCKED, OFF_UNLOCKED, ON_LOCKED, ON_UNLOCKED.
     /// </summary>
     public virtual async Task<(bool ScreenOn, bool Unlocked)> GetScreenStateAsync(CancellationToken cancellationToken = default)
+    {
+        var nfcResult = await TryGetScreenStateFromNfcDumpsysAsync(cancellationToken);
+        if (nfcResult.HasValue)
+        {
+            _logger.LogDebug("Screen state from NFC dumpsys: ScreenOn={ScreenOn}, Unlocked={Unlocked}",
+                nfcResult.Value.ScreenOn, nfcResult.Value.Unlocked);
+            return nfcResult.Value;
+        }
+
+        var powerResult = await TryGetScreenStateFromPowerDumpsysAsync(cancellationToken);
+        if (powerResult.HasValue)
+        {
+            _logger.LogDebug("Screen state from power dumpsys: ScreenOn={ScreenOn}, Unlocked={Unlocked}",
+                powerResult.Value.ScreenOn, powerResult.Value.Unlocked);
+            return powerResult.Value;
+        }
+
+        _logger.LogWarning("Unable to determine device screen state");
+        return (false, false);
+    }
+
+    /// <summary>
+    /// Attempts to get screen state from NFC dumpsys (mScreenState= field).
+    /// Returns null if the field is not found or has an unrecognized value.
+    /// </summary>
+    private async Task<(bool ScreenOn, bool Unlocked)?> TryGetScreenStateFromNfcDumpsysAsync(CancellationToken cancellationToken)
     {
         var lines = await ExecuteAdbCommandAsync("shell dumpsys nfc", cancellationToken);
 
@@ -74,7 +99,7 @@ public class AdbService
             if (line.StartsWith("mScreenState="))
             {
                 var value = line["mScreenState=".Length..].ToUpperInvariant();
-                _logger.LogDebug("Device screen state: {ScreenState}", value);
+                _logger.LogDebug("NFC dumpsys screen state: {ScreenState}", value);
 
                 return value switch
                 {
@@ -82,13 +107,72 @@ public class AdbService
                     "ON_LOCKED" => (true, false),
                     "OFF_UNLOCKED" => (false, true),
                     "OFF_LOCKED" => (false, false),
-                    _ => (false, false)
+                    _ => null
                 };
             }
         }
 
-        _logger.LogWarning("Unable to determine device screen state");
-        return (false, false);
+        _logger.LogDebug("NFC dumpsys did not contain mScreenState. First lines: {Lines}",
+            string.Join("; ", lines.Take(10)));
+        return null;
+    }
+
+    /// <summary>
+    /// Attempts to get screen state from power dumpsys.
+    /// Parses Display Power state or mWakefulness for screen on/off, mKeyguardShowing for lock state.
+    /// If screen state is found but keyguard state is absent, assumes unlocked.
+    /// Returns null if screen state cannot be determined.
+    /// </summary>
+    private async Task<(bool ScreenOn, bool Unlocked)?> TryGetScreenStateFromPowerDumpsysAsync(CancellationToken cancellationToken)
+    {
+        var lines = await ExecuteAdbCommandAsync("shell dumpsys power", cancellationToken);
+
+        bool? screenOn = null;
+        bool? unlocked = null;
+
+        foreach (var line in lines.Select(x => x.Trim()))
+        {
+            if (screenOn == null)
+            {
+                if (line.StartsWith("Display Power: state="))
+                {
+                    var state = line["Display Power: state=".Length..].ToUpperInvariant();
+                    screenOn = state == "ON";
+                    _logger.LogDebug("Power dumpsys Display Power state: {State}", state);
+                    continue;
+                }
+
+                if (line.StartsWith("mWakefulness="))
+                {
+                    var wakefulness = line["mWakefulness=".Length..].ToUpperInvariant();
+                    screenOn = wakefulness == "AWAKE";
+                    _logger.LogDebug("Power dumpsys wakefulness: {Wakefulness}", wakefulness);
+                    continue;
+                }
+            }
+
+            if (unlocked == null && line.StartsWith("mKeyguardShowing="))
+            {
+                var value = line["mKeyguardShowing=".Length..].ToLowerInvariant();
+                unlocked = value == "false";
+                _logger.LogDebug("Power dumpsys keyguard showing: {KeyguardShowing}", value);
+            }
+        }
+
+        if (screenOn == null)
+        {
+            _logger.LogDebug("Power dumpsys did not contain screen state information. First lines: {Lines}",
+                string.Join("; ", lines.Take(10)));
+            return null;
+        }
+
+        if (unlocked == null)
+        {
+            _logger.LogDebug("Power dumpsys did not contain keyguard state. Assuming unlocked.");
+            unlocked = true;
+        }
+
+        return (screenOn.Value, unlocked.Value);
     }
 
     /// <summary>
