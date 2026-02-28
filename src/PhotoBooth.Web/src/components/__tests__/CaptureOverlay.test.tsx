@@ -40,4 +40,26 @@ describe('CaptureOverlay', () => {
 
     expect(onComplete).toHaveBeenCalledOnce();
   });
+
+  it('shows "Smile!" immediately after countdown completes', () => {
+    render(<CaptureOverlay durationMs={3000} onComplete={vi.fn()} />);
+
+    act(() => { vi.advanceTimersByTime(1000); });
+    act(() => { vi.advanceTimersByTime(1000); });
+    act(() => { vi.advanceTimersByTime(1000); });
+
+    expect(screen.getByText('Smile!')).toBeInTheDocument();
+  });
+
+  it('shows waiting message after countdown completes and 500ms elapses', () => {
+    render(<CaptureOverlay durationMs={3000} onComplete={vi.fn()} />);
+
+    act(() => { vi.advanceTimersByTime(1000); });
+    act(() => { vi.advanceTimersByTime(1000); });
+    act(() => { vi.advanceTimersByTime(1000); });
+    act(() => { vi.advanceTimersByTime(500); });
+
+    expect(screen.getByText('Developing photo...')).toBeInTheDocument();
+    expect(screen.queryByText('Smile!')).not.toBeInTheDocument();
+  });
 });
