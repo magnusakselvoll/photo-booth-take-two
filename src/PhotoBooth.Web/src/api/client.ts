@@ -32,8 +32,9 @@ export async function getPhotoByCode(code: string): Promise<PhotoDto | null> {
   return response.json();
 }
 
-export function getPhotoImageUrl(photoId: string): string {
-  return `${API_BASE}/photos/${photoId}/image`;
+export function getPhotoImageUrl(photoId: string, width?: number): string {
+  const base = `${API_BASE}/photos/${photoId}/image`;
+  return width !== undefined ? `${base}?width=${width}` : base;
 }
 
 export async function getNextSlideshowPhoto(): Promise<SlideshowPhotoDto | null> {

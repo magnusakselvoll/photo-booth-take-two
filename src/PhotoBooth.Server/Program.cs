@@ -6,6 +6,7 @@ using PhotoBooth.Domain.Interfaces;
 using PhotoBooth.Infrastructure.Camera;
 using PhotoBooth.Infrastructure.CodeGeneration;
 using PhotoBooth.Infrastructure.Events;
+using PhotoBooth.Infrastructure.Imaging;
 using PhotoBooth.Infrastructure.Input;
 using PhotoBooth.Infrastructure.Network;
 using PhotoBooth.Infrastructure.Storage;
@@ -90,6 +91,15 @@ builder.Services.AddSingleton<IPhotoCodeGenerator>(sp =>
 {
     var repository = sp.GetRequiredService<IPhotoRepository>();
     return new SequentialCodeGenerator(repository.GetCountAsync);
+});
+
+// Register image resizer
+var thumbnailJpegQuality = builder.Configuration.GetValue<int?>("Thumbnails:JpegQuality") ?? 80;
+builder.Services.AddSingleton<IImageResizer>(sp =>
+{
+    var repository = sp.GetRequiredService<IPhotoRepository>();
+    var logger = sp.GetRequiredService<ILogger<OpenCvImageResizer>>();
+    return new OpenCvImageResizer(repository, Path.Combine(basePath, ".thumbnails"), thumbnailJpegQuality, logger);
 });
 
 // Register application services

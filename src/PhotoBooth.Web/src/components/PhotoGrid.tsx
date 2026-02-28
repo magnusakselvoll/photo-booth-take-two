@@ -41,7 +41,7 @@ export function PhotoGrid({ onPhotoClick }: PhotoGridProps) {
           onClick={() => onPhotoClick(photo.code)}
         >
           <img
-            src={getPhotoImageUrl(photo.id)}
+            src={getPhotoImageUrl(photo.id, 400)}
             alt={`Photo ${photo.code}`}
             loading="lazy"
           />

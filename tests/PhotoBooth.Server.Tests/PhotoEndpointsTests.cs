@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using PhotoBooth.Application.DTOs;
+using PhotoBooth.Application.Services;
 using PhotoBooth.Domain.Interfaces;
 using PhotoBooth.Infrastructure.Camera;
 using PhotoBooth.Infrastructure.Storage;
@@ -36,9 +37,16 @@ public sealed class PhotoEndpointsTests
                         services.Remove(repoDescriptor);
                     }
 
+                    var resizerDescriptor = services.FirstOrDefault(d => d.ServiceType == typeof(IImageResizer));
+                    if (resizerDescriptor != null)
+                    {
+                        services.Remove(resizerDescriptor);
+                    }
+
                     // Add test implementations
                     services.AddSingleton<ICameraProvider>(new MockCameraProvider(isAvailable: true));
                     services.AddSingleton<IPhotoRepository, InMemoryPhotoRepository>();
+                    services.AddSingleton<IImageResizer, PassThroughImageResizer>();
                 });
             });
 
@@ -109,6 +117,40 @@ public sealed class PhotoEndpointsTests
     }
 
     [TestMethod]
+    public async Task GetPhotoImage_WithWidth_ReturnsJpeg()
+    {
+        // Arrange - first capture a photo
+        var captureResponse = await _client.PostAsync("/api/photos/capture", null);
+        var captureResult = await captureResponse.Content.ReadFromJsonAsync<CaptureResultDto>();
+
+        // Act
+        var response = await _client.GetAsync($"/api/photos/{captureResult!.Id}/image?width=400");
+
+        // Assert
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        Assert.AreEqual("image/jpeg", response.Content.Headers.ContentType?.MediaType);
+    }
+
+    [TestMethod]
+    public async Task GetPhotoImage_HasCacheControlHeader()
+    {
+        // Arrange - first capture a photo
+        var captureResponse = await _client.PostAsync("/api/photos/capture", null);
+        var captureResult = await captureResponse.Content.ReadFromJsonAsync<CaptureResultDto>();
+
+        // Act
+        var response = await _client.GetAsync($"/api/photos/{captureResult!.Id}/image");
+
+        // Assert
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        var cacheControl = response.Headers.CacheControl;
+        Assert.IsNotNull(cacheControl);
+        Assert.IsTrue(cacheControl.Public, "Cache-Control should be public");
+        Assert.IsTrue(cacheControl.MaxAge.HasValue && cacheControl.MaxAge.Value.TotalSeconds >= 31536000,
+            "Cache-Control max-age should be at least 1 year");
+    }
+
+    [TestMethod]
     public async Task GetAllPhotos_WhenEmpty_ReturnsEmptyList()
     {
         // Act
@@ -141,4 +183,20 @@ public sealed class PhotoEndpointsTests
         // Lowest code number should be first (oldest photo)
         Assert.AreEqual(firstCaptureResult!.Code, photos[0].Code);
     }
+}
+
+/// <summary>
+/// Test implementation that passes through to IPhotoRepository without actual resizing.
+/// </summary>
+file sealed class PassThroughImageResizer : IImageResizer
+{
+    private readonly IPhotoRepository _repository;
+
+    public PassThroughImageResizer(IPhotoRepository repository)
+    {
+        _repository = repository;
+    }
+
+    public Task<byte[]?> GetResizedImageAsync(Guid photoId, int width, CancellationToken ct)
+        => _repository.GetImageDataAsync(photoId, ct);
 }
