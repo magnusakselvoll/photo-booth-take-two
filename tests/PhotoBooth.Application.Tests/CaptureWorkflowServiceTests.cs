@@ -12,6 +12,7 @@ public sealed class CaptureWorkflowServiceTests
     private StubPhotoCaptureService _captureService = null!;
     private StubCameraProvider _cameraProvider = null!;
     private StubEventBroadcaster _eventBroadcaster = null!;
+    private StubImageResizer _imageResizer = null!;
     private CaptureWorkflowService _service = null!;
 
     [TestInitialize]
@@ -20,11 +21,13 @@ public sealed class CaptureWorkflowServiceTests
         _captureService = new StubPhotoCaptureService();
         _cameraProvider = new StubCameraProvider();
         _eventBroadcaster = new StubEventBroadcaster();
+        _imageResizer = new StubImageResizer();
 
         _service = new CaptureWorkflowService(
             _captureService,
             _cameraProvider,
             _eventBroadcaster,
+            _imageResizer,
             NullLogger<CaptureWorkflowService>.Instance,
             countdownDurationMs: 100); // Short countdown for tests
     }

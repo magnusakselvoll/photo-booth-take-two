@@ -15,4 +15,12 @@ public interface IImageResizer
     }
 
     Task<byte[]?> GetResizedImageAsync(Guid photoId, int width, CancellationToken ct);
+
+    async Task PreGenerateAllSizesAsync(Guid photoId, CancellationToken ct)
+    {
+        foreach (var width in AllowedWidths)
+        {
+            await GetResizedImageAsync(photoId, width, ct);
+        }
+    }
 }

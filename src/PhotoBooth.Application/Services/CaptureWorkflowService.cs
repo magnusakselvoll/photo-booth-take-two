@@ -10,6 +10,7 @@ public class CaptureWorkflowService : ICaptureWorkflowService
     private readonly IPhotoCaptureService _captureService;
     private readonly ICameraProvider _cameraProvider;
     private readonly IEventBroadcaster _eventBroadcaster;
+    private readonly IImageResizer _imageResizer;
     private readonly ILogger<CaptureWorkflowService> _logger;
     private readonly int _bufferTimeoutHighLatencyMs;
     private readonly int _bufferTimeoutLowLatencyMs;
@@ -20,6 +21,7 @@ public class CaptureWorkflowService : ICaptureWorkflowService
         IPhotoCaptureService captureService,
         ICameraProvider cameraProvider,
         IEventBroadcaster eventBroadcaster,
+        IImageResizer imageResizer,
         ILogger<CaptureWorkflowService> logger,
         int countdownDurationMs = 3000,
         int bufferTimeoutHighLatencyMs = 45000,
@@ -28,6 +30,7 @@ public class CaptureWorkflowService : ICaptureWorkflowService
         _captureService = captureService;
         _cameraProvider = cameraProvider;
         _eventBroadcaster = eventBroadcaster;
+        _imageResizer = imageResizer;
         _logger = logger;
         CountdownDurationMs = countdownDurationMs;
         _bufferTimeoutHighLatencyMs = bufferTimeoutHighLatencyMs;
@@ -113,6 +116,9 @@ public class CaptureWorkflowService : ICaptureWorkflowService
             await _eventBroadcaster.BroadcastAsync(
                 new PhotoCapturedEvent(result.Id, result.Code, $"/api/photos/{result.Id}/image"),
                 CancellationToken.None);
+
+            // Pre-generate thumbnails in the background (fire-and-forget)
+            _ = _imageResizer.PreGenerateAllSizesAsync(result.Id, CancellationToken.None);
         }
         catch (Exception ex)
         {
