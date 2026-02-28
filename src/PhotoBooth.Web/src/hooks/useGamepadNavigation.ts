@@ -159,6 +159,38 @@ export function useGamepadNavigation({
           checkAxis(axesCfg.verticalAxisIndex, true, 'skipForward');
           checkAxis(axesCfg.verticalAxisIndex, false, 'skipBackward');
         }
+
+        // --- Debug-only: monitor all unconfigured axes ---
+        // Mirrors button debug behaviour: fire debug events for any axis movement,
+        // even on axes not mapped to an action, so users can identify their stick axes.
+        if (debugModeRef.current) {
+          const configuredAxes = axesCfg
+            ? new Set([axesCfg.horizontalAxisIndex, axesCfg.verticalAxisIndex])
+            : new Set<number>();
+          const threshold = axesCfg?.threshold ?? 0.5;
+
+          for (let i = 0; i < gamepad.axes.length; i++) {
+            if (configuredAxes.has(i)) continue;
+
+            const value = gamepad.axes[i] ?? 0;
+
+            const posKey = `${gamepad.index}_${i}_pos`;
+            const isActivePos = value > threshold;
+            const wasActivePos = prevAxisStates.get(posKey) ?? false;
+            prevAxisStates.set(posKey, isActivePos);
+            if (!wasActivePos && isActivePos) {
+              callbacksRef.current.onDebugEvent?.({ gamepadId: gamepad.id, axisIndex: i, action: 'unmapped' });
+            }
+
+            const negKey = `${gamepad.index}_${i}_neg`;
+            const isActiveNeg = value < -threshold;
+            const wasActiveNeg = prevAxisStates.get(negKey) ?? false;
+            prevAxisStates.set(negKey, isActiveNeg);
+            if (!wasActiveNeg && isActiveNeg) {
+              callbacksRef.current.onDebugEvent?.({ gamepadId: gamepad.id, axisIndex: i, action: 'unmapped' });
+            }
+          }
+        }
       }
 
       rafId = requestAnimationFrame(poll);
