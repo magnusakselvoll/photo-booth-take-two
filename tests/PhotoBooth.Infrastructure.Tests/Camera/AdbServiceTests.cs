@@ -322,6 +322,116 @@ public sealed class AdbServiceTests
         Assert.AreEqual("shell input keyevent KEYCODE_FOCUS", _service.ExecutedCommands[0]);
     }
 
+    [TestMethod]
+    public async Task GetScreenStateAsync_NfcFails_FallsBackToPowerDumpsys_OnUnlocked()
+    {
+        _service.SetCommandOutput("shell dumpsys nfc", ["some nfc output without screen state"]);
+        _service.SetCommandOutput("shell dumpsys power",
+        [
+            "POWER MANAGER (powerManager)",
+            "Display Power: state=ON",
+            "mKeyguardShowing=false"
+        ]);
+
+        var (screenOn, unlocked) = await _service.GetScreenStateAsync();
+
+        Assert.IsTrue(screenOn);
+        Assert.IsTrue(unlocked);
+    }
+
+    [TestMethod]
+    public async Task GetScreenStateAsync_NfcFails_FallsBackToPowerDumpsys_OffLocked()
+    {
+        _service.SetCommandOutput("shell dumpsys nfc", ["some nfc output without screen state"]);
+        _service.SetCommandOutput("shell dumpsys power",
+        [
+            "Display Power: state=OFF",
+            "mKeyguardShowing=true"
+        ]);
+
+        var (screenOn, unlocked) = await _service.GetScreenStateAsync();
+
+        Assert.IsFalse(screenOn);
+        Assert.IsFalse(unlocked);
+    }
+
+    [TestMethod]
+    public async Task GetScreenStateAsync_NfcFails_FallsBackToPowerDumpsys_OnLocked()
+    {
+        _service.SetCommandOutput("shell dumpsys nfc", ["some nfc output without screen state"]);
+        _service.SetCommandOutput("shell dumpsys power",
+        [
+            "Display Power: state=ON",
+            "mKeyguardShowing=true"
+        ]);
+
+        var (screenOn, unlocked) = await _service.GetScreenStateAsync();
+
+        Assert.IsTrue(screenOn);
+        Assert.IsFalse(unlocked);
+    }
+
+    [TestMethod]
+    public async Task GetScreenStateAsync_NfcFails_PowerUsesWakefulness()
+    {
+        _service.SetCommandOutput("shell dumpsys nfc", ["some nfc output without screen state"]);
+        _service.SetCommandOutput("shell dumpsys power",
+        [
+            "mWakefulness=Awake"
+        ]);
+
+        var (screenOn, unlocked) = await _service.GetScreenStateAsync();
+
+        Assert.IsTrue(screenOn);
+        Assert.IsTrue(unlocked); // assumed unlocked when keyguard state unknown
+    }
+
+    [TestMethod]
+    public async Task GetScreenStateAsync_NfcFails_PowerDumpsysAlsoFails()
+    {
+        _service.SetCommandOutput("shell dumpsys nfc", ["some nfc output without screen state"]);
+        _service.SetCommandOutput("shell dumpsys power", ["some power output without screen state"]);
+
+        var (screenOn, unlocked) = await _service.GetScreenStateAsync();
+
+        Assert.IsFalse(screenOn);
+        Assert.IsFalse(unlocked);
+    }
+
+    [TestMethod]
+    public async Task GetScreenStateAsync_NfcFails_PowerHasScreenButNoKeyguard()
+    {
+        _service.SetCommandOutput("shell dumpsys nfc", ["some nfc output without screen state"]);
+        _service.SetCommandOutput("shell dumpsys power",
+        [
+            "Display Power: state=ON"
+        ]);
+
+        var (screenOn, unlocked) = await _service.GetScreenStateAsync();
+
+        Assert.IsTrue(screenOn);
+        Assert.IsTrue(unlocked); // assumed unlocked when keyguard state absent
+    }
+
+    [TestMethod]
+    public async Task GetScreenStateAsync_NfcUnknownValue_FallsBackToPower()
+    {
+        _service.SetCommandOutput("shell dumpsys nfc",
+        [
+            "    mScreenState=SOME_UNKNOWN"
+        ]);
+        _service.SetCommandOutput("shell dumpsys power",
+        [
+            "Display Power: state=ON",
+            "mKeyguardShowing=false"
+        ]);
+
+        var (screenOn, unlocked) = await _service.GetScreenStateAsync();
+
+        Assert.IsTrue(screenOn);
+        Assert.IsTrue(unlocked);
+    }
+
     /// <summary>
     /// Testable subclass that overrides ExecuteAdbCommandAsync to return
     /// predetermined output and track executed commands.
