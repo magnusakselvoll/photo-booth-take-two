@@ -177,6 +177,19 @@ body {
   letter-spacing: -0.02em;
 }
 
+.waiting-message {
+  font-size: 5rem;
+  font-weight: 500;
+  color: #fff;
+  text-shadow: 0 0 40px rgba(255, 255, 255, 0.5);
+  animation: waiting-pulse 2s ease-in-out infinite;
+}
+
+@keyframes waiting-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
 /* Preview */
 .preview {
   width: 100%;
