@@ -1,3 +1,4 @@
+using Microsoft.Net.Http.Headers;
 using PhotoBooth.Application.Services;
 using PhotoBooth.Domain.Exceptions;
 
@@ -76,13 +77,30 @@ public static class PhotoEndpoints
 
     private static async Task<IResult> GetPhotoImage(
         Guid id,
+        int? width,
         IPhotoCaptureService captureService,
+        IImageResizer imageResizer,
+        HttpContext httpContext,
         CancellationToken cancellationToken)
     {
-        var imageData = await captureService.GetImageDataAsync(id, cancellationToken);
-        return imageData is null
-            ? Results.NotFound()
-            : Results.File(imageData, "image/jpeg");
+        byte[]? imageData;
+
+        if (width.HasValue)
+        {
+            imageData = await imageResizer.GetResizedImageAsync(id, width.Value, cancellationToken);
+        }
+        else
+        {
+            imageData = await captureService.GetImageDataAsync(id, cancellationToken);
+        }
+
+        if (imageData is null)
+        {
+            return Results.NotFound();
+        }
+
+        httpContext.Response.Headers[HeaderNames.CacheControl] = "public, max-age=31536000, immutable";
+        return Results.File(imageData, "image/jpeg");
     }
 
     private static async Task<IResult> GetAllPhotos(

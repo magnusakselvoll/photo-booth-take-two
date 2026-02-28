@@ -93,7 +93,7 @@ export function DownloadPage() {
 
       {photo && (
         <div className="photo-result">
-          <img src={getPhotoImageUrl(photo.id)} alt={`Photo ${photo.code}`} className="photo-preview" />
+          <img src={getPhotoImageUrl(photo.id, 800)} alt={`Photo ${photo.code}`} className="photo-preview" />
           <div className="photo-result-actions">
             <button onClick={handleDownload} className="download-button">
               {t('downloadPhoto')}
