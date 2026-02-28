@@ -178,6 +178,10 @@ else
 // Security headers (before static files so headers apply to all responses)
 app.UseSecurityHeaders();
 
+// Redirect non-localhost users from / to /download (gallery)
+var restrictBoothToLocalhost = builder.Configuration.GetValue<bool?>("Booth:RestrictToLocalhost") ?? true;
+app.UseBoothRedirect(restrictBoothToLocalhost);
+
 // Rate limiting
 app.UseRateLimiter();
 

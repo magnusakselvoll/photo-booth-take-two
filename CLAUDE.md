@@ -170,6 +170,7 @@ Example Android configuration:
 | `RateLimiting:PermitLimit` | Max requests per rate limit window | `5` |
 | `RateLimiting:WindowSeconds` | Rate limit window duration in seconds | `10` |
 | `Thumbnails:JpegQuality` | JPEG quality (0-100) for server-side resized thumbnails | `80` |
+| `Booth:RestrictToLocalhost` | Redirect non-localhost users from `/` to `/download` | `true` |
 
 ## Security
 
