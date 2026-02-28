@@ -6,7 +6,7 @@ interface QRCodeOverlayProps {
 }
 
 export function QRCodeOverlay({ code, baseUrl }: QRCodeOverlayProps) {
-  const downloadUrl = `${baseUrl}/download?code=${code}`;
+  const downloadUrl = `${baseUrl.replace(/\/$/, '')}/photo/${code}`;
 
   return (
     <div className="qr-code-container">
