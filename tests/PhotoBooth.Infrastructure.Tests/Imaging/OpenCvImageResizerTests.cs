@@ -9,6 +9,7 @@ using PhotoBooth.Infrastructure.Storage;
 namespace PhotoBooth.Infrastructure.Tests.Imaging;
 
 [TestClass]
+[TestCategory("Integration")]
 public sealed class OpenCvImageResizerTests
 {
     private string _cacheDirectory = null!;
