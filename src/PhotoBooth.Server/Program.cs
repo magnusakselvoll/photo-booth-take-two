@@ -120,9 +120,13 @@ builder.Services.AddSingleton<ICaptureWorkflowService>(sp =>
     var captureService = sp.GetRequiredService<IPhotoCaptureService>();
     var cameraProvider = sp.GetRequiredService<ICameraProvider>();
     var eventBroadcaster = sp.GetRequiredService<IEventBroadcaster>();
+    var imageResizer = sp.GetRequiredService<IImageResizer>();
     var logger = sp.GetRequiredService<ILogger<CaptureWorkflowService>>();
-    return new CaptureWorkflowService(captureService, cameraProvider, eventBroadcaster, logger, countdownDurationMs, bufferTimeoutHighLatencyMs, bufferTimeoutLowLatencyMs);
+    return new CaptureWorkflowService(captureService, cameraProvider, eventBroadcaster, imageResizer, logger, countdownDurationMs, bufferTimeoutHighLatencyMs, bufferTimeoutLowLatencyMs);
 });
+
+// Register thumbnail warmup service
+builder.Services.AddHostedService<ThumbnailWarmupService>();
 
 // Register input providers and manager
 var enableKeyboardInput = builder.Configuration.GetValue<bool>("Input:EnableKeyboard");
