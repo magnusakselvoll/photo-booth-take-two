@@ -71,7 +71,7 @@ export function PhotoDetailPage() {
       </div>
       <div className="photo-detail-content">
         <img
-          src={getPhotoImageUrl(photo.id)}
+          src={getPhotoImageUrl(photo.id, 1200)}
           alt={`Photo ${photo.code}`}
           className="photo-detail-image"
         />
