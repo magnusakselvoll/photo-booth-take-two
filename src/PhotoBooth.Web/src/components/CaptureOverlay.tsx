@@ -77,6 +77,10 @@ function pickRandom<T>(arr: readonly T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
+function pickRandomWithChance<T>(arr: readonly T[], chance: number): T | null {
+  return Math.random() < chance ? pickRandom(arr) : null;
+}
+
 interface CaptureOverlayProps {
   durationMs: number;
   onComplete: () => void;
@@ -94,11 +98,8 @@ export function CaptureOverlay({ durationMs, onComplete }: CaptureOverlayProps) 
     const displays: Record<number, string> = {};
     for (let s = 1; s <= maxSeconds; s++) {
       const subs = COUNTDOWN_SUBSTITUTIONS[s];
-      if (subs && Math.random() < 0.05) {
-        displays[s] = pickRandom(subs);
-      } else {
-        displays[s] = String(s);
-      }
+      const sub = subs ? pickRandomWithChance(subs, 0.05) : null;
+      displays[s] = sub ?? String(s);
     }
     return displays;
   }, [durationMs]);
