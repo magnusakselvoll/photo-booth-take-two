@@ -255,7 +255,8 @@ body {
 }
 
 .submit-button,
-.download-button {
+.download-button,
+.share-button {
   font-size: 1.25rem;
   padding: 0.75rem 1.5rem;
   border: none;
@@ -267,7 +268,8 @@ body {
 }
 
 .submit-button:hover:not(:disabled),
-.download-button:hover {
+.download-button:hover,
+.share-button:hover {
   background: #2563eb;
 }
 
@@ -289,7 +291,8 @@ body {
   border-radius: 0.5rem;
 }
 
-.download-button {
+.download-button,
+.share-button {
   font-size: 1.5rem;
   padding: 1rem 2rem;
 }

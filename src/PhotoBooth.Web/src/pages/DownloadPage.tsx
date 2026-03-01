@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { getPhotoByCode, getPhotoImageUrl } from '../api/client';
+import { getPhotoByCode, getPhotoImageUrl, sharePhoto } from '../api/client';
 import type { PhotoDto } from '../api/types';
 import { PhotoGrid } from '../components/PhotoGrid';
 import { useTranslation } from '../i18n/useTranslation';
@@ -13,6 +13,14 @@ export function DownloadPage() {
   const [photo, setPhoto] = useState<PhotoDto | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [canShare, setCanShare] = useState(false);
+
+  useEffect(() => {
+    if (navigator.canShare) {
+      const testFile = new File([''], 'test.jpg', { type: 'image/jpeg' });
+      setCanShare(navigator.canShare({ files: [testFile] }));
+    }
+  }, []);
 
   const fetchPhoto = useCallback(async (photoCode: string) => {
     if (!photoCode.trim()) return;
@@ -60,6 +68,11 @@ export function DownloadPage() {
     document.body.removeChild(link);
   };
 
+  const handleShare = async () => {
+    if (!photo) return;
+    await sharePhoto(photo.id, photo.code);
+  };
+
   const handlePhotoClick = (photoCode: string) => {
     navigate(`/photo/${photoCode}`);
   };
@@ -98,6 +111,11 @@ export function DownloadPage() {
             <button onClick={handleDownload} className="download-button">
               {t('downloadPhoto')}
             </button>
+            {canShare && (
+              <button onClick={handleShare} className="share-button">
+                {t('sharePhoto')}
+              </button>
+            )}
             <button onClick={handleBackToSearch} className="back-button">
               {t('backToSearch')}
             </button>
