@@ -1,93 +1,29 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { getPhotoByCode, getPhotoImageUrl, sharePhoto } from '../api/client';
-import type { PhotoDto } from '../api/types';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { PhotoGrid } from '../components/PhotoGrid';
+import { SearchIcon } from '../components/Icons';
 import { useTranslation } from '../i18n/useTranslation';
 
 export function DownloadPage() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const { t, language, setLanguage } = useTranslation();
   const [code, setCode] = useState('');
-  const [photo, setPhoto] = useState<PhotoDto | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [canShare, setCanShare] = useState(false);
 
-  useEffect(() => {
-    if (navigator.canShare) {
-      const testFile = new File([''], 'test.jpg', { type: 'image/jpeg' });
-      setCanShare(navigator.canShare({ files: [testFile] }));
-    }
-  }, []);
-
-  const fetchPhoto = useCallback(async (photoCode: string) => {
-    if (!photoCode.trim()) return;
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const result = await getPhotoByCode(photoCode.trim());
-      if (result) {
-        setPhoto(result);
-      } else {
-        setError(t('photoNotFound'));
-        setPhoto(null);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('photoNotFound'));
-      setPhoto(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [t]);
-
-  useEffect(() => {
-    const codeFromUrl = searchParams.get('code');
-    if (codeFromUrl) {
-      setCode(codeFromUrl);
-      fetchPhoto(codeFromUrl);
-    }
-  }, [searchParams, fetchPhoto]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    await fetchPhoto(code);
-  };
-
-  const handleDownload = () => {
-    if (!photo) return;
-
-    const link = document.createElement('a');
-    link.href = getPhotoImageUrl(photo.id);
-    link.download = `photo-${photo.code}.jpg`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const handleShare = async () => {
-    if (!photo) return;
-    await sharePhoto(photo.id, photo.code);
+    const trimmed = code.trim();
+    if (trimmed) {
+      navigate(`/photo/${trimmed}`);
+    }
   };
 
   const handlePhotoClick = (photoCode: string) => {
     navigate(`/photo/${photoCode}`);
   };
 
-  const handleBackToSearch = () => {
-    setPhoto(null);
-    setCode('');
-    setError(null);
-  };
-
   return (
     <div className="download-page">
-      <h1>{t('downloadYourPhoto')}</h1>
-
-      <form onSubmit={handleSubmit} className="code-form">
+      <form onSubmit={handleSubmit} className="search-bar">
         <input
           type="text"
           value={code}
@@ -95,42 +31,15 @@ export function DownloadPage() {
           placeholder={t('enterPhotoCode')}
           className="code-input"
           maxLength={10}
+          inputMode="numeric"
           autoFocus
         />
-        <button type="submit" disabled={loading || !code.trim()} className="submit-button">
-          {loading ? t('searching') : t('findPhoto')}
+        <button type="submit" disabled={!code.trim()} className="search-button" aria-label={t('findPhoto')}>
+          <SearchIcon size={20} />
         </button>
       </form>
 
-      {error && <div className="error-message">{error}</div>}
-
-      {photo && (
-        <div className="photo-result">
-          <img src={getPhotoImageUrl(photo.id, 800)} alt={`Photo ${photo.code}`} className="photo-preview" />
-          <div className="photo-result-actions">
-            <button onClick={handleDownload} className="download-button">
-              {t('downloadPhoto')}
-            </button>
-            {canShare && (
-              <button onClick={handleShare} className="share-button">
-                {t('sharePhoto')}
-              </button>
-            )}
-            <button onClick={handleBackToSearch} className="back-button">
-              {t('backToSearch')}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {!photo && (
-        <>
-          <div className="divider">
-            <span>{t('orBrowseAllPhotos')}</span>
-          </div>
-          <PhotoGrid onPhotoClick={handlePhotoClick} />
-        </>
-      )}
+      <PhotoGrid onPhotoClick={handlePhotoClick} />
 
       <footer className="language-footer">
         <button

@@ -46,7 +46,7 @@ describe('useTranslation', () => {
   it('t() returns correct string for each key', () => {
     const { result } = renderHook(() => useTranslation());
 
-    expect(result.current.t('downloadYourPhoto')).toBe('Download Your Photo');
+    expect(result.current.t('enterPhotoCode')).toBe('Photo code');
     expect(result.current.t('searching')).toBe('Searching...');
     expect(result.current.t('tapToTakePhoto')).toBe('Tap anywhere to take a photo');
   });
