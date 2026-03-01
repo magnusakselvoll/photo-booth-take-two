@@ -70,3 +70,15 @@ export async function getAllPhotos(): Promise<PhotoDto[]> {
 
   return response.json();
 }
+
+export async function sharePhoto(photoId: string, code: string): Promise<void> {
+  const response = await fetch(getPhotoImageUrl(photoId));
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch photo: ${response.statusText}`);
+  }
+
+  const blob = await response.blob();
+  const file = new File([blob], `photo-${code}.jpg`, { type: 'image/jpeg' });
+  await navigator.share({ files: [file] });
+}

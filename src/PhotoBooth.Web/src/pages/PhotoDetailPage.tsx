@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getPhotoByCode, getPhotoImageUrl } from '../api/client';
+import { getPhotoByCode, getPhotoImageUrl, sharePhoto } from '../api/client';
 import type { PhotoDto } from '../api/types';
 import { useTranslation } from '../i18n/useTranslation';
 
@@ -11,6 +11,7 @@ export function PhotoDetailPage() {
   const [photo, setPhoto] = useState<PhotoDto | null>(null);
   const [loading, setLoading] = useState(!!code);
   const [error, setError] = useState<string | null>(code ? null : t('photoNotFoundError'));
+  const canShare = !!(navigator.canShare && navigator.canShare({ files: [new File([''], 'test.jpg', { type: 'image/jpeg' })] }));
 
   useEffect(() => {
     if (!code) return;
@@ -36,6 +37,11 @@ export function PhotoDetailPage() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const handleShare = async () => {
+    if (!photo) return;
+    await sharePhoto(photo.id, photo.code);
   };
 
   const handleBack = () => {
@@ -75,9 +81,16 @@ export function PhotoDetailPage() {
           alt={`Photo ${photo.code}`}
           className="photo-detail-image"
         />
-        <button onClick={handleDownload} className="download-button">
-          {t('downloadPhoto')}
-        </button>
+        <div className="photo-result-actions">
+          <button onClick={handleDownload} className="download-button">
+            {t('downloadPhoto')}
+          </button>
+          {canShare && (
+            <button onClick={handleShare} className="share-button">
+              {t('sharePhoto')}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
