@@ -422,9 +422,9 @@ export function BoothPage({ qrCodeBaseUrl, swirlEffect = true, slideshowInterval
     handleTrigger();
   };
 
-  const handleCountdownComplete = () => {
+  const handleCountdownComplete = useCallback(() => {
     // Server handles actual capture
-  };
+  }, []);
 
   // Determine what to show
   const showCapturedPhoto = currentDisplay !== null;

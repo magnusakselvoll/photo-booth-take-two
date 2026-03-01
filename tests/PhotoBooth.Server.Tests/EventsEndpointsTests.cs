@@ -6,6 +6,7 @@ using PhotoBooth.Application.Events;
 namespace PhotoBooth.Server.Tests;
 
 [TestClass]
+[TestCategory("Integration")]
 public sealed class EventsEndpointsTests
 {
     [TestMethod]

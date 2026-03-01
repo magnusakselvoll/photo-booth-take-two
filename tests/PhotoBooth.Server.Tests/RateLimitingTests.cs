@@ -8,6 +8,7 @@ using PhotoBooth.Infrastructure.Storage;
 namespace PhotoBooth.Server.Tests;
 
 [TestClass]
+[TestCategory("Integration")]
 public sealed class RateLimitingTests
 {
     private WebApplicationFactory<Program> _factory = null!;
