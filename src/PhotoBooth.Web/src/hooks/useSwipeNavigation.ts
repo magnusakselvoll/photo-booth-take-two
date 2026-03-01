@@ -17,8 +17,11 @@ export function useSwipeNavigation({ onSwipeLeft, onSwipeRight, elementRef }: Sw
   // Use refs for callbacks so handlers don't need to be recreated when prev/next changes
   const onSwipeLeftRef = useRef(onSwipeLeft);
   const onSwipeRightRef = useRef(onSwipeRight);
-  onSwipeLeftRef.current = onSwipeLeft;
-  onSwipeRightRef.current = onSwipeRight;
+
+  useEffect(() => {
+    onSwipeLeftRef.current = onSwipeLeft;
+    onSwipeRightRef.current = onSwipeRight;
+  }, [onSwipeLeft, onSwipeRight]);
 
   const handleTouchStart = useCallback((event: TouchEvent) => {
     const touch = event.touches[0];
