@@ -9,6 +9,7 @@ using PhotoBooth.Infrastructure.Camera;
 namespace PhotoBooth.Server.Tests;
 
 [TestClass]
+[TestCategory("Integration")]
 public sealed class CameraEndpointsTests
 {
     [TestMethod]

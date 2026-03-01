@@ -10,6 +10,7 @@ using PhotoBooth.Infrastructure.Storage;
 namespace PhotoBooth.Server.Tests;
 
 [TestClass]
+[TestCategory("Integration")]
 public sealed class SlideshowEndpointsTests
 {
     private WebApplicationFactory<Program> _factory = null!;

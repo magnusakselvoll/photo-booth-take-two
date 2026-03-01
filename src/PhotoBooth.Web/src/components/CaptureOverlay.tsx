@@ -58,10 +58,27 @@ const COUNTDOWN_SUBSTITUTIONS: Record<number, readonly [string, string, string]>
   5: ['five', 'cinco', '🎉'],
   6: ['six', 'seis', '✌️'],
   7: ['seven', 'siete', '😎'],
+  8: ['eight', 'ocho', '🎱'],
+  9: ['nine', 'nueve', '🎶'],
+  10: ['ten', 'diez', '💯'],
+  11: ['eleven', 'once', '⚡'],
+  12: ['twelve', 'doce', '🎁'],
+  13: ['thirteen', 'trece', '🍀'],
+  14: ['fourteen', 'catorce', '💪'],
+  15: ['fifteen', 'quince', '🌟'],
+  16: ['sixteen', 'dieciseis', '🎊'],
+  17: ['seventeen', 'diecisiete', '🚀'],
+  18: ['eighteen', 'dieciocho', '🎭'],
+  19: ['nineteen', 'diecinueve', '🌈'],
+  20: ['twenty', 'veinte', '🏆'],
 };
 
 function pickRandom<T>(arr: readonly T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function pickRandomWithChance<T>(arr: readonly T[], chance: number): T | null {
+  return Math.random() < chance ? pickRandom(arr) : null;
 }
 
 interface CaptureOverlayProps {
@@ -81,11 +98,8 @@ export function CaptureOverlay({ durationMs, onComplete }: CaptureOverlayProps) 
     const displays: Record<number, string> = {};
     for (let s = 1; s <= maxSeconds; s++) {
       const subs = COUNTDOWN_SUBSTITUTIONS[s];
-      if (subs && Math.random() < 0.15) {
-        displays[s] = pickRandom(subs);
-      } else {
-        displays[s] = String(s);
-      }
+      const sub = subs ? pickRandomWithChance(subs, 0.05) : null;
+      displays[s] = sub ?? String(s);
     }
     return displays;
   }, [durationMs]);

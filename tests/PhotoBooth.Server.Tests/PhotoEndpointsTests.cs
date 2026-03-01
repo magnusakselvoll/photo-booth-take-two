@@ -11,6 +11,7 @@ using PhotoBooth.Infrastructure.Storage;
 namespace PhotoBooth.Server.Tests;
 
 [TestClass]
+[TestCategory("Integration")]
 public sealed class PhotoEndpointsTests
 {
     private WebApplicationFactory<Program> _factory = null!;

@@ -6,6 +6,7 @@ using PhotoBooth.Application.DTOs;
 namespace PhotoBooth.Server.Tests;
 
 [TestClass]
+[TestCategory("Integration")]
 public sealed class ConfigEndpointsTests
 {
     [TestMethod]

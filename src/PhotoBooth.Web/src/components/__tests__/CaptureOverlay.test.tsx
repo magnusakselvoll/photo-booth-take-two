@@ -55,6 +55,13 @@ describe('CaptureOverlay', () => {
     expect(container.querySelector('.waiting-message')).not.toBeInTheDocument();
   });
 
+  it('shows substitution for number above 7 when random condition is met', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+    render(<CaptureOverlay durationMs={10000} onComplete={vi.fn()} />);
+
+    expect(screen.getByText('ten')).toBeInTheDocument();
+  });
+
   it('shows waiting message after countdown completes and 500ms elapses', () => {
     const { container } = render(<CaptureOverlay durationMs={3000} onComplete={vi.fn()} />);
 
