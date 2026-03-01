@@ -11,14 +11,7 @@ export function PhotoDetailPage() {
   const [photo, setPhoto] = useState<PhotoDto | null>(null);
   const [loading, setLoading] = useState(!!code);
   const [error, setError] = useState<string | null>(code ? null : t('photoNotFoundError'));
-  const [canShare, setCanShare] = useState(false);
-
-  useEffect(() => {
-    if (navigator.canShare) {
-      const testFile = new File([''], 'test.jpg', { type: 'image/jpeg' });
-      setCanShare(navigator.canShare({ files: [testFile] }));
-    }
-  }, []);
+  const canShare = !!(navigator.canShare && navigator.canShare({ files: [new File([''], 'test.jpg', { type: 'image/jpeg' })] }));
 
   useEffect(() => {
     if (!code) return;
