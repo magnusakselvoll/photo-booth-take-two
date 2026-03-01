@@ -45,7 +45,6 @@ export function PhotoGrid({ onPhotoClick }: PhotoGridProps) {
             alt={`Photo ${photo.code}`}
             loading="lazy"
           />
-          <div className="photo-grid-code">{photo.code}</div>
         </div>
       ))}
     </div>

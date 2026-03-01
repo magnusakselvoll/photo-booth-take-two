@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getPhotoByCode, getPhotoImageUrl, sharePhoto } from '../api/client';
 import type { PhotoDto } from '../api/types';
+import { ChevronLeftIcon, DownloadIcon, ShareIcon } from '../components/Icons';
 import { useTranslation } from '../i18n/useTranslation';
 
 export function PhotoDetailPage() {
@@ -48,9 +49,20 @@ export function PhotoDetailPage() {
     navigate('/download');
   };
 
+  const navBar = (
+    <div className="photo-detail-nav">
+      <button onClick={handleBack} className="nav-back-button" aria-label={t('backToGallery')}>
+        <ChevronLeftIcon size={28} />
+      </button>
+      <span className="photo-detail-code">{photo?.code ?? code}</span>
+      <div className="nav-spacer" />
+    </div>
+  );
+
   if (loading) {
     return (
       <div className="photo-detail-page">
+        {navBar}
         <div className="photo-detail-loading">{t('loading')}</div>
       </div>
     );
@@ -59,38 +71,31 @@ export function PhotoDetailPage() {
   if (error || !photo) {
     return (
       <div className="photo-detail-page">
+        {navBar}
         <div className="error-message">{error || t('photoNotFoundError')}</div>
-        <button onClick={handleBack} className="back-button">
-          {t('backToGallery')}
-        </button>
       </div>
     );
   }
 
   return (
     <div className="photo-detail-page">
-      <div className="photo-detail-header">
-        <button onClick={handleBack} className="back-button">
-          {t('backToGallery')}
-        </button>
-        <span className="photo-detail-code">{t('code')}: {photo.code}</span>
-      </div>
+      {navBar}
       <div className="photo-detail-content">
         <img
           src={getPhotoImageUrl(photo.id, 1200)}
           alt={`Photo ${photo.code}`}
           className="photo-detail-image"
         />
-        <div className="photo-result-actions">
-          <button onClick={handleDownload} className="download-button">
-            {t('downloadPhoto')}
+      </div>
+      <div className="photo-detail-actions">
+        <button onClick={handleDownload} className="action-button" aria-label={t('downloadPhoto')}>
+          <DownloadIcon size={24} />
+        </button>
+        {canShare && (
+          <button onClick={handleShare} className="action-button" aria-label={t('sharePhoto')}>
+            <ShareIcon size={24} />
           </button>
-          {canShare && (
-            <button onClick={handleShare} className="share-button">
-              {t('sharePhoto')}
-            </button>
-          )}
-        </div>
+        )}
       </div>
     </div>
   );

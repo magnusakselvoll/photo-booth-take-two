@@ -1,15 +1,12 @@
 export const translations = {
   en: {
     // Download page
-    downloadYourPhoto: 'Download Your Photo',
-    enterPhotoCode: 'Enter your photo code',
+    enterPhotoCode: 'Photo code',
     searching: 'Searching...',
     findPhoto: 'Find Photo',
     photoNotFound: 'Photo not found. Please check your code.',
     downloadPhoto: 'Download Photo',
     sharePhoto: 'Share Photo',
-    backToSearch: 'Back to Search',
-    orBrowseAllPhotos: 'or browse all photos',
 
     // Photo grid
     loadingPhotos: 'Loading photos...',
@@ -20,7 +17,6 @@ export const translations = {
     loading: 'Loading...',
     photoNotFoundError: 'Photo not found',
     backToGallery: 'Back to Gallery',
-    code: 'Code',
 
     // Booth page
     tapToTakePhoto: 'Tap anywhere to take a photo',
@@ -30,15 +26,12 @@ export const translations = {
   },
   es: {
     // Download page
-    downloadYourPhoto: 'Descarga Tu Foto',
-    enterPhotoCode: 'Ingresa el código de tu foto',
+    enterPhotoCode: 'Código de foto',
     searching: 'Buscando...',
     findPhoto: 'Buscar Foto',
     photoNotFound: 'Foto no encontrada. Por favor verifica el código.',
     downloadPhoto: 'Descargar Foto',
     sharePhoto: 'Compartir Foto',
-    backToSearch: 'Volver a Buscar',
-    orBrowseAllPhotos: 'o explora todas las fotos',
 
     // Photo grid
     loadingPhotos: 'Cargando fotos...',
@@ -49,7 +42,6 @@ export const translations = {
     loading: 'Cargando...',
     photoNotFoundError: 'Foto no encontrada',
     backToGallery: 'Volver a la Galería',
-    code: 'Código',
 
     // Booth page
     tapToTakePhoto: 'Toca en cualquier lugar para tomar una foto',
