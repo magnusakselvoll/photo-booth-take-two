@@ -335,6 +335,7 @@ body {
   flex-direction: column;
   background: #000;
   padding-top: env(safe-area-inset-top);
+  touch-action: pan-y;
 }
 
 .photo-detail-nav {
