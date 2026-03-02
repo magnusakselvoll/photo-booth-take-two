@@ -8,6 +8,7 @@ using PhotoBooth.Infrastructure.CodeGeneration;
 using PhotoBooth.Infrastructure.Events;
 using PhotoBooth.Infrastructure.Imaging;
 using PhotoBooth.Infrastructure.Input;
+using PhotoBooth.Infrastructure.Monitoring;
 using PhotoBooth.Infrastructure.Network;
 using PhotoBooth.Infrastructure.Storage;
 using PhotoBooth.Server.Endpoints;
@@ -128,6 +129,16 @@ builder.Services.AddSingleton<ICaptureWorkflowService>(sp =>
 // Register thumbnail warmup service
 builder.Services.AddHostedService<ThumbnailWarmupService>();
 
+// Register activity tracker
+builder.Services.AddSingleton<IActivityTracker, ActivityTracker>();
+
+// Register inactivity watchdog (disabled if threshold is 0)
+var watchdogInactivityMinutes = builder.Configuration.GetValue<int?>("Watchdog:ServerInactivityMinutes") ?? 30;
+if (watchdogInactivityMinutes > 0)
+{
+    builder.Services.AddHostedService<InactivityWatchdogService>();
+}
+
 // Register input providers and manager
 var enableKeyboardInput = builder.Configuration.GetValue<bool>("Input:EnableKeyboard");
 if (enableKeyboardInput)
@@ -177,6 +188,9 @@ else
 
 // Security headers (before static files so headers apply to all responses)
 app.UseSecurityHeaders();
+
+// Activity tracking (records API calls for inactivity watchdog)
+app.UseActivityTracking();
 
 // Redirect non-localhost users from / to /download (gallery)
 var restrictBoothToLocalhost = builder.Configuration.GetValue<bool?>("Booth:RestrictToLocalhost") ?? true;

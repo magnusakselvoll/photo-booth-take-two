@@ -92,4 +92,5 @@ export interface ClientConfigDto {
   swirlEffect: boolean;
   slideshowIntervalMs: number;
   gamepad: GamepadConfig;
+  watchdogTimeoutMs: number;
 }

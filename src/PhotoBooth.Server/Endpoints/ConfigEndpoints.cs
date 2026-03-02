@@ -37,7 +37,9 @@ public static class ConfigEndpoints
             Threshold: dpadAxesSection.GetValue<double>("Threshold", 0.5));
         var gamepad = new GamepadConfigDto(gamepadEnabled, gamepadDebugMode, buttons, dpadAxes);
 
-        var config = new ClientConfigDto(qrCodeBaseUrl, swirlEffect, slideshowIntervalMs, gamepad);
+        var watchdogTimeoutMs = configuration.GetValue<int?>("Watchdog:ClientTimeoutMs") ?? 300000;
+
+        var config = new ClientConfigDto(qrCodeBaseUrl, swirlEffect, slideshowIntervalMs, gamepad, watchdogTimeoutMs);
         return Results.Ok(config);
     }
 }

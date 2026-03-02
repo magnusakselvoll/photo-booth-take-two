@@ -22,6 +22,7 @@ public sealed class ConfigEndpointsTests
         Assert.IsNotNull(config);
         Assert.IsTrue(config.SwirlEffect, "SwirlEffect should default to true");
         Assert.IsTrue(string.IsNullOrEmpty(config.QrCodeBaseUrl), "QrCodeBaseUrl should default to empty");
+        Assert.AreEqual(300000, config.WatchdogTimeoutMs, "WatchdogTimeoutMs should default to 300000");
     }
 
     [TestMethod]

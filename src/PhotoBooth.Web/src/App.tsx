@@ -12,6 +12,7 @@ function App() {
   const [swirlEffect, setSwirlEffect] = useState(true);
   const [slideshowIntervalMs, setSlideshowIntervalMs] = useState(30000);
   const [gamepadConfig, setGamepadConfig] = useState<GamepadConfig | null>(null);
+  const [watchdogTimeoutMs, setWatchdogTimeoutMs] = useState(300000);
 
   useEffect(() => {
     getClientConfig()
@@ -22,6 +23,7 @@ function App() {
         setSwirlEffect(config.swirlEffect);
         setSlideshowIntervalMs(config.slideshowIntervalMs);
         setGamepadConfig(config.gamepad);
+        setWatchdogTimeoutMs(config.watchdogTimeoutMs);
       })
       .catch(err => {
         console.error('Failed to load client config:', err);
@@ -32,7 +34,7 @@ function App() {
     <BrowserRouter>
       <div className="app">
         <Routes>
-          <Route path="/" element={<BoothPage qrCodeBaseUrl={qrCodeBaseUrl} swirlEffect={swirlEffect} slideshowIntervalMs={slideshowIntervalMs} gamepadConfig={gamepadConfig} />} />
+          <Route path="/" element={<BoothPage qrCodeBaseUrl={qrCodeBaseUrl} swirlEffect={swirlEffect} slideshowIntervalMs={slideshowIntervalMs} gamepadConfig={gamepadConfig} watchdogTimeoutMs={watchdogTimeoutMs} />} />
           <Route path="/download" element={<DownloadPage />} />
           <Route path="/photo/:code" element={<PhotoDetailPage />} />
         </Routes>
