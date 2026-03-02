@@ -27,4 +27,7 @@ public sealed class StubPhotoCaptureService : IPhotoCaptureService
 
     public Task<IReadOnlyList<PhotoDto>> GetAllAsync(CancellationToken cancellationToken = default)
         => Task.FromResult<IReadOnlyList<PhotoDto>>([]);
+
+    public Task<PhotoPageDto> GetPageAsync(int limit, string? cursor = null, CancellationToken cancellationToken = default)
+        => Task.FromResult(new PhotoPageDto([], null));
 }

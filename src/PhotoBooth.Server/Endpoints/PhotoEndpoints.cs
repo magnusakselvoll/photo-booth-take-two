@@ -105,8 +105,16 @@ public static class PhotoEndpoints
 
     private static async Task<IResult> GetAllPhotos(
         IPhotoCaptureService captureService,
+        int? limit,
+        string? cursor,
         CancellationToken cancellationToken)
     {
+        if (limit > 0)
+        {
+            var page = await captureService.GetPageAsync(limit.Value, cursor, cancellationToken);
+            return Results.Ok(page);
+        }
+
         var photos = await captureService.GetAllAsync(cancellationToken);
         return Results.Ok(photos);
     }

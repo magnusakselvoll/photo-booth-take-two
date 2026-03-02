@@ -37,4 +37,16 @@ public sealed class StubPhotoRepository : IPhotoRepository
 
     public Task<IReadOnlyList<Photo>> GetAllAsync(CancellationToken cancellationToken = default)
         => Task.FromResult<IReadOnlyList<Photo>>(_photos.Values.Select(p => p.Photo).OrderBy(p => int.TryParse(p.Code, out var code) ? code : int.MaxValue).ToList());
+
+    public Task<IReadOnlyList<Photo>> GetPageAsync(int limit, string? cursor = null, CancellationToken cancellationToken = default)
+    {
+        var cursorValue = cursor is not null && int.TryParse(cursor, out var c) ? c : int.MaxValue;
+        var page = _photos.Values
+            .Select(p => p.Photo)
+            .Where(p => int.TryParse(p.Code, out var code) && code < cursorValue)
+            .OrderByDescending(p => int.Parse(p.Code))
+            .Take(limit)
+            .ToList();
+        return Task.FromResult<IReadOnlyList<Photo>>(page);
+    }
 }

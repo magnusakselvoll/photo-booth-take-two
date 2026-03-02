@@ -8,4 +8,5 @@ public interface IPhotoCaptureService
     Task<PhotoDto?> GetByCodeAsync(string code, CancellationToken cancellationToken = default);
     Task<byte[]?> GetImageDataAsync(Guid id, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<PhotoDto>> GetAllAsync(CancellationToken cancellationToken = default);
+    Task<PhotoPageDto> GetPageAsync(int limit, string? cursor = null, CancellationToken cancellationToken = default);
 }

@@ -184,7 +184,92 @@ public sealed class PhotoEndpointsTests
         // Lowest code number should be first (oldest photo)
         Assert.AreEqual(firstCaptureResult!.Code, photos[0].Code);
     }
+
+    [TestMethod]
+    public async Task GetPhotosPage_ReturnsCorrectPageSizeAndNextCursor()
+    {
+        // Arrange - capture 5 photos
+        for (var i = 0; i < 5; i++)
+        {
+            await _client.PostAsync("/api/photos/capture", null);
+        }
+
+        // Act - request first page of 3
+        var response = await _client.GetAsync("/api/photos?limit=3");
+
+        // Assert
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        var page = await response.Content.ReadFromJsonAsync<PhotoPageDto>();
+        Assert.IsNotNull(page);
+        Assert.HasCount(3, page.Photos);
+        Assert.IsNotNull(page.NextCursor);
+    }
+
+    [TestMethod]
+    public async Task GetPhotosPage_SecondPageReturnRemainingPhotos()
+    {
+        // Arrange - capture 5 photos
+        for (var i = 0; i < 5; i++)
+        {
+            await _client.PostAsync("/api/photos/capture", null);
+        }
+
+        // Act - get first page then second page
+        var firstPageResponse = await _client.GetAsync("/api/photos?limit=3");
+        var firstPage = await firstPageResponse.Content.ReadFromJsonAsync<PhotoPageDto>();
+        Assert.IsNotNull(firstPage?.NextCursor);
+
+        var secondPageResponse = await _client.GetAsync($"/api/photos?limit=3&cursor={firstPage.NextCursor}");
+        var secondPage = await secondPageResponse.Content.ReadFromJsonAsync<PhotoPageDto>();
+
+        // Assert
+        Assert.AreEqual(HttpStatusCode.OK, secondPageResponse.StatusCode);
+        Assert.IsNotNull(secondPage);
+        Assert.HasCount(2, secondPage.Photos);
+        Assert.IsNull(secondPage.NextCursor);
+    }
+
+    [TestMethod]
+    public async Task GetPhotosPage_ReturnsNewestFirst()
+    {
+        // Arrange - capture 3 photos
+        var captures = new List<CaptureResultDto>();
+        for (var i = 0; i < 3; i++)
+        {
+            var res = await _client.PostAsync("/api/photos/capture", null);
+            var dto = await res.Content.ReadFromJsonAsync<CaptureResultDto>();
+            captures.Add(dto!);
+        }
+
+        // Act
+        var response = await _client.GetAsync("/api/photos?limit=3");
+        var page = await response.Content.ReadFromJsonAsync<PhotoPageDto>();
+
+        // Assert - newest (highest code) should be first
+        Assert.IsNotNull(page);
+        var codes = page.Photos.Select(p => int.Parse(p.Code)).ToList();
+        Assert.IsTrue(codes[0] > codes[1] && codes[1] > codes[2], "Photos should be newest-first (descending code)");
+    }
+
+    [TestMethod]
+    public async Task GetPhotosPage_WhenFewerPhotosThanLimit_HasNoNextCursor()
+    {
+        // Arrange - capture 2 photos
+        await _client.PostAsync("/api/photos/capture", null);
+        await _client.PostAsync("/api/photos/capture", null);
+
+        // Act
+        var response = await _client.GetAsync("/api/photos?limit=10");
+        var page = await response.Content.ReadFromJsonAsync<PhotoPageDto>();
+
+        // Assert
+        Assert.IsNotNull(page);
+        Assert.HasCount(2, page.Photos);
+        Assert.IsNull(page.NextCursor);
+    }
 }
+
+file record PhotoPageDto(List<PhotoDto> Photos, string? NextCursor);
 
 /// <summary>
 /// Test implementation that passes through to IPhotoRepository without actual resizing.

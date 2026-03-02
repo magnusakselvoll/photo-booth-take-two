@@ -94,6 +94,17 @@ public class FileSystemPhotoRepository : IPhotoRepository
         return photos.OrderBy(p => int.TryParse(p.Code, out var code) ? code : int.MaxValue).ToList();
     }
 
+    public async Task<IReadOnlyList<Photo>> GetPageAsync(int limit, string? cursor = null, CancellationToken cancellationToken = default)
+    {
+        var photos = await GetPhotosAsync(cancellationToken);
+        var cursorValue = cursor is not null && int.TryParse(cursor, out var c) ? c : int.MaxValue;
+        return photos
+            .Where(p => int.TryParse(p.Code, out var code) && code < cursorValue)
+            .OrderByDescending(p => int.Parse(p.Code))
+            .Take(limit)
+            .ToList();
+    }
+
     private async Task<List<Photo>> GetPhotosAsync(CancellationToken cancellationToken)
     {
         if (_photosCache is not null)
