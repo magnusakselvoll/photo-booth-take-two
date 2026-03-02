@@ -19,4 +19,5 @@ public record ClientConfigDto(
     string? QrCodeBaseUrl,
     bool SwirlEffect,
     int SlideshowIntervalMs,
-    GamepadConfigDto Gamepad);
+    GamepadConfigDto Gamepad,
+    int WatchdogTimeoutMs);

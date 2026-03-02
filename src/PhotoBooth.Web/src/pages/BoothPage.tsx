@@ -11,9 +11,9 @@ import type { GamepadDebugEvent } from '../hooks/useGamepadNavigation';
 import type { PhotoBoothEvent, QueuedPhoto, GamepadConfig } from '../api/types';
 
 const DEFAULT_SLIDESHOW_INTERVAL_MS = 30000;
+const DEFAULT_WATCHDOG_TIMEOUT_MS = 5 * 60 * 1000;
 const ERROR_DISPLAY_MS = 3000;
 const FADE_DURATION_MS = 500;
-const WATCHDOG_RELOAD_MS = 5 * 60 * 1000;
 const GAMEPAD_DEBUG_DISPLAY_MS = 3000;
 
 interface BoothPageProps {
@@ -21,6 +21,7 @@ interface BoothPageProps {
   swirlEffect?: boolean;
   slideshowIntervalMs?: number;
   gamepadConfig?: GamepadConfig | null;
+  watchdogTimeoutMs?: number;
 }
 
 function randomInRange(min: number, max: number): number {
@@ -76,7 +77,7 @@ interface DisplayPhoto {
   fromQueue: boolean; // true if from queue, false if newly captured
 }
 
-export function BoothPage({ qrCodeBaseUrl, swirlEffect = true, slideshowIntervalMs = DEFAULT_SLIDESHOW_INTERVAL_MS, gamepadConfig }: BoothPageProps) {
+export function BoothPage({ qrCodeBaseUrl, swirlEffect = true, slideshowIntervalMs = DEFAULT_SLIDESHOW_INTERVAL_MS, gamepadConfig, watchdogTimeoutMs = DEFAULT_WATCHDOG_TIMEOUT_MS }: BoothPageProps) {
   // Queue of interrupted photos waiting to be displayed
   const [photoQueue, setPhotoQueue] = useState<QueuedPhoto[]>([]);
   // Current index within the queue
@@ -126,10 +127,10 @@ export function BoothPage({ qrCodeBaseUrl, swirlEffect = true, slideshowInterval
       clearTimeout(watchdogTimeoutRef.current);
     }
     watchdogTimeoutRef.current = window.setTimeout(() => {
-      console.log('Watchdog: No interaction for 5 minutes, reloading page...');
+      console.log(`Watchdog: No interaction for ${watchdogTimeoutMs / 1000}s, reloading page...`);
       window.location.reload();
-    }, WATCHDOG_RELOAD_MS);
-  }, []);
+    }, watchdogTimeoutMs);
+  }, [watchdogTimeoutMs]);
 
   useEffect(() => {
     resetWatchdog();

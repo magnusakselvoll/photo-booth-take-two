@@ -45,6 +45,34 @@ public sealed class EventsEndpointsTests
     }
 
     [TestMethod]
+    public async Task EventStream_ReceivesHeartbeatComment_WithinConfiguredInterval()
+    {
+        using var factory = new WebApplicationFactory<Program>()
+            .WithWebHostBuilder(builder =>
+            {
+                builder.UseSetting("Watchdog:SseHeartbeatIntervalSeconds", "1");
+            });
+        using var client = factory.CreateClient();
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/events");
+        using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+        using var stream = await response.Content.ReadAsStreamAsync();
+        using var reader = new StreamReader(stream);
+
+        // Skip the connected event (event line + data line + blank line)
+        await reader.ReadLineAsync(); // event: connected
+        await reader.ReadLineAsync(); // data: ...
+        await reader.ReadLineAsync(); // blank line
+
+        // Wait for heartbeat comment (interval is 1s, allow 5s timeout)
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var line = await reader.ReadLineAsync(cts.Token);
+
+        Assert.IsNotNull(line);
+        Assert.AreEqual(":heartbeat", line);
+    }
+
+    [TestMethod]
     public async Task EventStream_ReceivesBroadcastedEvent()
     {
         using var factory = new WebApplicationFactory<Program>();
