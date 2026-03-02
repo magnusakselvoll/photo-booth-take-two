@@ -52,6 +52,34 @@ public class OpenCvImageResizer : IImageResizer
         return resized;
     }
 
+    public async Task PreGenerateAllSizesAsync(Guid photoId, CancellationToken ct)
+    {
+        var originalData = await _photoRepository.GetImageDataAsync(photoId, ct);
+        if (originalData is null)
+        {
+            _logger.LogDebug("PreGenerateAllSizesAsync: photo {PhotoId} not found, skipping", photoId);
+            return;
+        }
+
+        int originalWidth;
+        using (var src = Mat.FromImageData(originalData, ImreadModes.Color))
+        {
+            originalWidth = src.Width;
+        }
+
+        var sizesToGenerate = IImageResizer.AllowedWidths.Where(w => w < originalWidth).ToArray();
+        var skipped = IImageResizer.AllowedWidths.Length - sizesToGenerate.Length;
+
+        _logger.LogDebug(
+            "PreGenerateAllSizesAsync: photo {PhotoId} is {Width}px wide, generating {Count} sizes, skipping {Skipped}",
+            photoId, originalWidth, sizesToGenerate.Length, skipped);
+
+        foreach (var width in sizesToGenerate)
+        {
+            await GetResizedImageAsync(photoId, width, ct);
+        }
+    }
+
     private byte[] ResizeImage(byte[] originalData, int targetWidth, Guid photoId)
     {
         using var src = Mat.FromImageData(originalData, ImreadModes.Color);

@@ -124,6 +124,56 @@ public sealed class OpenCvImageResizerTests
         Assert.AreEqual(100, mat.Width);
     }
 
+    [TestMethod]
+    public async Task PreGenerateAllSizesAsync_WhenPhotoDoesNotExist_GeneratesNoFiles()
+    {
+        await _resizer.PreGenerateAllSizesAsync(Guid.NewGuid(), CancellationToken.None);
+
+        var cacheFiles = Directory.GetFiles(_cacheDirectory);
+        Assert.IsEmpty(cacheFiles);
+    }
+
+    [TestMethod]
+    public async Task PreGenerateAllSizesAsync_WhenImageSmallerThanAllAllowedWidths_GeneratesNoThumbnails()
+    {
+        // 150px wide — all AllowedWidths (200, 400, 800, 1200, 1920) are >= 150
+        var smallJpeg = CreateTestJpeg(width: 150, height: 100);
+        var photoId = await SaveTestPhoto(smallJpeg);
+
+        await _resizer.PreGenerateAllSizesAsync(photoId, CancellationToken.None);
+
+        var cacheFiles = Directory.GetFiles(_cacheDirectory, $"{photoId}_*.jpg");
+        Assert.IsEmpty(cacheFiles);
+    }
+
+    [TestMethod]
+    public async Task PreGenerateAllSizesAsync_WhenImageBetweenAllowedWidths_GeneratesOnlySmallerSizes()
+    {
+        // 600px wide — only 200 and 400 are strictly less than 600
+        var jpeg = CreateTestJpeg(width: 600, height: 400);
+        var photoId = await SaveTestPhoto(jpeg);
+
+        await _resizer.PreGenerateAllSizesAsync(photoId, CancellationToken.None);
+
+        var cacheFiles = Directory.GetFiles(_cacheDirectory, $"{photoId}_*.jpg");
+        Assert.HasCount(2, cacheFiles);
+        Assert.IsTrue(cacheFiles.Any(f => f.Contains("_200.jpg")), "200px thumbnail should exist");
+        Assert.IsTrue(cacheFiles.Any(f => f.Contains("_400.jpg")), "400px thumbnail should exist");
+    }
+
+    [TestMethod]
+    public async Task PreGenerateAllSizesAsync_WhenImageLargerThanAllAllowedWidths_GeneratesAllSizes()
+    {
+        // 4000px wide — all AllowedWidths (200, 400, 800, 1200, 1920) are strictly less than 4000
+        var largeJpeg = CreateTestJpeg(width: 4000, height: 3000);
+        var photoId = await SaveTestPhoto(largeJpeg);
+
+        await _resizer.PreGenerateAllSizesAsync(photoId, CancellationToken.None);
+
+        var cacheFiles = Directory.GetFiles(_cacheDirectory, $"{photoId}_*.jpg");
+        Assert.HasCount(IImageResizer.AllowedWidths.Length, cacheFiles);
+    }
+
     private async Task<Guid> SaveTestPhoto(byte[] jpegData)
     {
         var photo = new Photo
