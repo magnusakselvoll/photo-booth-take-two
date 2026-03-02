@@ -73,4 +73,18 @@ public class InMemoryPhotoRepository : IPhotoRepository
                 _photos.OrderBy(p => int.TryParse(p.Code, out var code) ? code : int.MaxValue).ToList());
         }
     }
+
+    public Task<IReadOnlyList<Photo>> GetPageAsync(int limit, string? cursor = null, CancellationToken cancellationToken = default)
+    {
+        lock (_lock)
+        {
+            var cursorValue = cursor is not null && int.TryParse(cursor, out var c) ? c : int.MaxValue;
+            var page = _photos
+                .Where(p => int.TryParse(p.Code, out var code) && code < cursorValue)
+                .OrderByDescending(p => int.Parse(p.Code))
+                .Take(limit)
+                .ToList();
+            return Task.FromResult<IReadOnlyList<Photo>>(page);
+        }
+    }
 }

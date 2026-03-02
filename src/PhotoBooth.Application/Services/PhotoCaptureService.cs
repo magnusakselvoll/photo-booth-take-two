@@ -81,4 +81,25 @@ public class PhotoCaptureService : IPhotoCaptureService
         var photos = await _photoRepository.GetAllAsync(cancellationToken);
         return photos.Select(p => new PhotoDto(p.Id, p.Code, p.CapturedAt)).ToList();
     }
+
+    public async Task<PhotoPageDto> GetPageAsync(int limit, string? cursor = null, CancellationToken cancellationToken = default)
+    {
+        _logger.LogDebug("Retrieving photo page: limit={Limit}, cursor={Cursor}", limit, cursor);
+        var photos = await _photoRepository.GetPageAsync(limit + 1, cursor, cancellationToken);
+
+        string? nextCursor = null;
+        IReadOnlyList<PhotoDto> page;
+
+        if (photos.Count > limit)
+        {
+            page = photos.Take(limit).Select(p => new PhotoDto(p.Id, p.Code, p.CapturedAt)).ToList();
+            nextCursor = photos[limit - 1].Code;
+        }
+        else
+        {
+            page = photos.Select(p => new PhotoDto(p.Id, p.Code, p.CapturedAt)).ToList();
+        }
+
+        return new PhotoPageDto(page, nextCursor);
+    }
 }

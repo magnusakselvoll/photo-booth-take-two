@@ -1,4 +1,4 @@
-import type { ClientConfigDto, PhotoDto, SlideshowPhotoDto, TriggerResponse } from './types';
+import type { ClientConfigDto, PhotoDto, PhotoPageDto, SlideshowPhotoDto, TriggerResponse } from './types';
 
 const API_BASE = '/api';
 
@@ -63,6 +63,18 @@ export async function getClientConfig(): Promise<ClientConfigDto> {
 
 export async function getAllPhotos(): Promise<PhotoDto[]> {
   const response = await fetch(`${API_BASE}/photos`);
+
+  if (!response.ok) {
+    throw new Error(`Failed to get photos: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+export async function getPhotosPage(limit: number, cursor?: string): Promise<PhotoPageDto> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (cursor) params.set('cursor', cursor);
+  const response = await fetch(`${API_BASE}/photos?${params}`);
 
   if (!response.ok) {
     throw new Error(`Failed to get photos: ${response.statusText}`);

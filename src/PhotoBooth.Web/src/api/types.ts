@@ -4,6 +4,11 @@ export interface PhotoDto {
   capturedAt: string;
 }
 
+export interface PhotoPageDto {
+  photos: PhotoDto[];
+  nextCursor: string | null;
+}
+
 export interface SlideshowPhotoDto {
   id: string;
   code: string;
