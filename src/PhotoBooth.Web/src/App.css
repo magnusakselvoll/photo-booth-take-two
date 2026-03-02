@@ -426,6 +426,66 @@ body {
   opacity: 0.7;
 }
 
+.action-button:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.action-button.loading svg {
+  animation: spin 0.8s linear infinite;
+}
+
+/* Speed Dial */
+.speed-dial {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.speed-dial-items {
+  position: absolute;
+  bottom: calc(100% + 0.75rem);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  pointer-events: none;
+}
+
+.speed-dial.open .speed-dial-items {
+  pointer-events: auto;
+}
+
+.speed-dial-item {
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.speed-dial.open .speed-dial-item:nth-last-child(1) {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 0s;
+}
+
+.speed-dial.open .speed-dial-item:nth-last-child(2) {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 0.05s;
+}
+
+.action-button.speed-dial-trigger.open {
+  background: #2d2d2d;
+}
+
 /* Gamepad Debug Overlay */
 .gamepad-debug {
   position: fixed;
