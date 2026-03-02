@@ -40,8 +40,10 @@ export function useTranslation() {
     window.history.replaceState({}, '', url.toString());
   }, []);
 
+  const tFn = useCallback((key: TranslationKey) => t[key], [t]);
+
   return {
-    t: (key: TranslationKey) => t[key],
+    t: tFn,
     language,
     setLanguage,
   };
