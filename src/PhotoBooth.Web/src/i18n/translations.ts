@@ -5,6 +5,7 @@ export const translations = {
     searching: 'Searching...',
     findPhoto: 'Find Photo',
     photoNotFound: 'Photo not found. Please check your code.',
+    getPhoto: 'Get Photo',
     downloadPhoto: 'Download Photo',
     sharePhoto: 'Share Photo',
 
@@ -30,6 +31,7 @@ export const translations = {
     searching: 'Buscando...',
     findPhoto: 'Buscar Foto',
     photoNotFound: 'Foto no encontrada. Por favor verifica el código.',
+    getPhoto: 'Obtener Foto',
     downloadPhoto: 'Descargar Foto',
     sharePhoto: 'Compartir Foto',
 

@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getPhotoByCode, getPhotoImageUrl, sharePhoto, getAllPhotos } from '../api/client';
+import { getPhotoByCode, getPhotoImageUrl, getAllPhotos } from '../api/client';
 import type { PhotoDto } from '../api/types';
-import { ChevronLeftIcon, DownloadIcon, ShareIcon } from '../components/Icons';
+import { ChevronLeftIcon, DownloadIcon, ShareIcon, DotsVerticalIcon, SpinnerIcon } from '../components/Icons';
 import { useTranslation } from '../i18n/useTranslation';
 import { useSwipeNavigation } from '../hooks/useSwipeNavigation';
+
+type PhotoAction = 'idle' | 'loading' | 'expanded';
 
 export function PhotoDetailPage() {
   const { code } = useParams<{ code: string }>();
@@ -14,6 +16,9 @@ export function PhotoDetailPage() {
   const [loading, setLoading] = useState(!!code);
   const [error, setError] = useState<string | null>(code ? null : t('photoNotFoundError'));
   const [allCodes, setAllCodes] = useState<string[]>([]);
+  const [photoAction, setPhotoAction] = useState<PhotoAction>('idle');
+  const cachedBlob = useRef<Blob | null>(null);
+  const speedDialRef = useRef<HTMLDivElement>(null);
   const canShare = !!(navigator.canShare && navigator.canShare({ files: [new File([''], 'test.jpg', { type: 'image/jpeg' })] }));
   const pageRef = useRef<HTMLDivElement>(null);
 
@@ -46,6 +51,28 @@ export function PhotoDetailPage() {
     }
   }, [code]);
 
+  // Reset speed dial state when navigating to a different photo
+  useEffect(() => {
+    setPhotoAction('idle');
+    cachedBlob.current = null;
+  }, [code]);
+
+  // Collapse speed dial when tapping outside it
+  useEffect(() => {
+    if (photoAction !== 'expanded') return;
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      if (speedDialRef.current && !speedDialRef.current.contains(e.target as Node)) {
+        setPhotoAction('idle');
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [photoAction]);
+
   const currentIndex = allCodes.indexOf(code ?? '');
   const prevCode = currentIndex > 0 ? allCodes[currentIndex - 1] : null;
   const nextCode = currentIndex >= 0 && currentIndex < allCodes.length - 1 ? allCodes[currentIndex + 1] : null;
@@ -60,20 +87,47 @@ export function PhotoDetailPage() {
 
   useSwipeNavigation({ onSwipeLeft: handleSwipeLeft, onSwipeRight: handleSwipeRight, elementRef: pageRef });
 
-  const handleDownload = () => {
+  const handleToggle = async () => {
+    if (photoAction === 'expanded') {
+      setPhotoAction('idle');
+      return;
+    }
+    if (cachedBlob.current) {
+      setPhotoAction('expanded');
+      return;
+    }
     if (!photo) return;
+    setPhotoAction('loading');
+    try {
+      const response = await fetch(getPhotoImageUrl(photo.id));
+      if (!response.ok) throw new Error('Failed to fetch photo');
+      cachedBlob.current = await response.blob();
+      setPhotoAction('expanded');
+    } catch {
+      setPhotoAction('idle');
+    }
+  };
 
+  const handleDownload = () => {
+    if (!photo || !cachedBlob.current) return;
+    const url = URL.createObjectURL(cachedBlob.current);
     const link = document.createElement('a');
-    link.href = getPhotoImageUrl(photo.id);
+    link.href = url;
     link.download = `photo-${photo.code}.jpg`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   const handleShare = async () => {
-    if (!photo) return;
-    await sharePhoto(photo.id, photo.code);
+    if (!photo || !cachedBlob.current) return;
+    const file = new File([cachedBlob.current], `photo-${photo.code}.jpg`, { type: 'image/jpeg' });
+    try {
+      await navigator.share({ files: [file] });
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') return;
+    }
   };
 
   const handleBack = () => {
@@ -119,14 +173,26 @@ export function PhotoDetailPage() {
         />
       </div>
       <div className="photo-detail-actions">
-        <button onClick={handleDownload} className="action-button" aria-label={t('downloadPhoto')}>
-          <DownloadIcon size={24} />
-        </button>
-        {canShare && (
-          <button onClick={handleShare} className="action-button" aria-label={t('sharePhoto')}>
-            <ShareIcon size={24} />
+        <div className={`speed-dial${photoAction === 'expanded' ? ' open' : ''}`} ref={speedDialRef}>
+          <div className="speed-dial-items" aria-hidden={photoAction !== 'expanded'}>
+            {canShare && (
+              <button onClick={handleShare} className="action-button speed-dial-item" aria-label={t('sharePhoto')}>
+                <ShareIcon size={24} />
+              </button>
+            )}
+            <button onClick={handleDownload} className="action-button speed-dial-item" aria-label={t('downloadPhoto')}>
+              <DownloadIcon size={24} />
+            </button>
+          </div>
+          <button
+            onClick={photoAction !== 'loading' ? handleToggle : undefined}
+            className={`action-button speed-dial-trigger${photoAction === 'expanded' ? ' open' : ''}${photoAction === 'loading' ? ' loading' : ''}`}
+            aria-label={t('getPhoto')}
+            disabled={photoAction === 'loading'}
+          >
+            {photoAction === 'loading' ? <SpinnerIcon size={24} /> : <DotsVerticalIcon size={24} />}
           </button>
-        )}
+        </div>
       </div>
     </div>
   );
