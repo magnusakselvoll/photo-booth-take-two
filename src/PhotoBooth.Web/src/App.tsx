@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { BoothPage } from './pages/BoothPage';
 import { DownloadPage } from './pages/DownloadPage';
 import { PhotoDetailPage } from './pages/PhotoDetailPage';
+import { NotFoundPage } from './pages/NotFoundPage';
 import { getClientConfig } from './api/client';
 import type { GamepadConfig } from './api/types';
 import './App.css';
@@ -37,6 +38,7 @@ function App() {
           <Route path="/" element={<BoothPage qrCodeBaseUrl={qrCodeBaseUrl} swirlEffect={swirlEffect} slideshowIntervalMs={slideshowIntervalMs} gamepadConfig={gamepadConfig} watchdogTimeoutMs={watchdogTimeoutMs} />} />
           <Route path="/download" element={<DownloadPage />} />
           <Route path="/photo/:code" element={<PhotoDetailPage />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </div>
     </BrowserRouter>

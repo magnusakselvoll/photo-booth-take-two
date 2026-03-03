@@ -24,6 +24,10 @@ export const translations = {
 
     // Slideshow
     noPhotosToShow: 'No photos to show yet',
+
+    // Not found page
+    pageNotFound: 'Page not found',
+    goToGallery: 'Go to Gallery',
   },
   es: {
     // Download page
@@ -50,6 +54,10 @@ export const translations = {
 
     // Slideshow
     noPhotosToShow: 'Aún no hay fotos para mostrar',
+
+    // Not found page
+    pageNotFound: 'Pagina no encontrada',
+    goToGallery: 'Ir a la Galeria',
   },
 } as const;
 
