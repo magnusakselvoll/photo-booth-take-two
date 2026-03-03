@@ -5,11 +5,13 @@ namespace PhotoBooth.Server.Filters;
 public class LocalhostOnlyFilter : IEndpointFilter
 {
     private readonly bool _enabled;
+    private readonly string _endpointName;
     private readonly ILogger<LocalhostOnlyFilter> _logger;
 
-    public LocalhostOnlyFilter(bool enabled, ILogger<LocalhostOnlyFilter> logger)
+    public LocalhostOnlyFilter(bool enabled, string endpointName, ILogger<LocalhostOnlyFilter> logger)
     {
         _enabled = enabled;
+        _endpointName = endpointName;
         _logger = logger;
     }
 
@@ -24,7 +26,7 @@ public class LocalhostOnlyFilter : IEndpointFilter
 
         if (!IsLocalhost(remoteIp))
         {
-            _logger.LogWarning("Blocked trigger request from non-localhost IP: {RemoteIp}", remoteIp);
+            _logger.LogWarning("Blocked {EndpointName} request from non-localhost IP: {RemoteIp}", _endpointName, remoteIp);
             return Results.Forbid();
         }
 
