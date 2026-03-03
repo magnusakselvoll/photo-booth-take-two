@@ -124,7 +124,7 @@ public class CaptureWorkflowService : ICaptureWorkflowService
         {
             _logger.LogError(ex, "Capture failed");
             await _eventBroadcaster.BroadcastAsync(
-                new CaptureFailedEvent(ex.Message),
+                new CaptureFailedEvent("Photo capture failed"),
                 CancellationToken.None);
         }
     }
