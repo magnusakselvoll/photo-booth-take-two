@@ -99,6 +99,15 @@ Avoid: niche libraries, multiple libraries solving the same problem, dependencie
 - Throw domain-specific exceptions inheriting from `PhotoBoothException`
 - Tests use MSTest with descriptive method names
 
+## Test Classification
+
+CI runs `dotnet test --filter "TestCategory!=Integration"`, so every new test class **must** be correctly classified:
+
+- **Unit tests** (no attribute): Pure in-process tests using fakes/mocks. These run in CI.
+- **Integration tests** (`[TestCategory("Integration")]`): Tests that require external hardware (camera, Android device via ADB), a real OS-level resource unavailable in CI (e.g. `Console.KeyAvailable` loop with real input), or long-running real-world scenarios. These are skipped in CI.
+
+When writing a new test class, explicitly decide which category it belongs to and apply `[TestCategory("Integration")]` when appropriate. Do not add the attribute to tests that are actually unit tests just because they touch Infrastructure code.
+
 ## Camera Provider Configuration
 
 The application supports camera providers configured via `Camera:Provider` in appsettings.json. Provider-specific settings are in subsections (`Camera:OpenCv`, `Camera:Android`), each with their own `CaptureLatencyMs`.
