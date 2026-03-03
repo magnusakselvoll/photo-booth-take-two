@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using PhotoBooth.Application.DTOs;
@@ -302,6 +303,10 @@ public sealed class PhotoEndpointsTests
 
         // Assert
         Assert.AreEqual(HttpStatusCode.InternalServerError, response.StatusCode);
+        Assert.AreEqual("application/json", response.Content.Headers.ContentType?.MediaType);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.AreEqual("An unexpected error occurred", body.GetProperty("title").GetString());
+        Assert.AreEqual(500, body.GetProperty("status").GetInt32());
     }
 }
 
