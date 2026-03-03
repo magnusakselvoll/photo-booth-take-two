@@ -1,4 +1,4 @@
-using System.Net;
+using PhotoBooth.Server.Utilities;
 
 namespace PhotoBooth.Server.Middleware;
 
@@ -15,7 +15,7 @@ public sealed class BoothRedirectMiddleware
 
     public Task InvokeAsync(HttpContext context)
     {
-        if (_enabled && IsRootPath(context.Request.Path) && !IsLocalhost(context.Connection.RemoteIpAddress))
+        if (_enabled && IsRootPath(context.Request.Path) && !NetworkUtilities.IsLocalhost(context.Connection.RemoteIpAddress))
         {
             context.Response.Redirect("/download", permanent: false);
             return Task.CompletedTask;
@@ -27,27 +27,5 @@ public sealed class BoothRedirectMiddleware
     private static bool IsRootPath(PathString path)
     {
         return !path.HasValue || path == "/";
-    }
-
-    private static bool IsLocalhost(IPAddress? ipAddress)
-    {
-        if (ipAddress is null)
-        {
-            return false;
-        }
-
-        // Check for IPv4 loopback (127.0.0.1) or IPv6 loopback (::1)
-        if (IPAddress.IsLoopback(ipAddress))
-        {
-            return true;
-        }
-
-        // Check for IPv4-mapped IPv6 loopback (::ffff:127.0.0.1)
-        if (ipAddress.IsIPv4MappedToIPv6 && IPAddress.IsLoopback(ipAddress.MapToIPv4()))
-        {
-            return true;
-        }
-
-        return false;
     }
 }
