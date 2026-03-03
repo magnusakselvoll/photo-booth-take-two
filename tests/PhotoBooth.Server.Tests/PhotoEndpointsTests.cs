@@ -267,9 +267,56 @@ public sealed class PhotoEndpointsTests
         Assert.HasCount(2, page.Photos);
         Assert.IsNull(page.NextCursor);
     }
+
+    [TestMethod]
+    public async Task CapturePhoto_WhenUnexpectedExceptionThrown_Returns500()
+    {
+        // Arrange
+        await using var factory = new WebApplicationFactory<Program>()
+            .WithWebHostBuilder(builder =>
+            {
+                builder.ConfigureServices(services =>
+                {
+                    var cameraDescriptor = services.FirstOrDefault(d => d.ServiceType == typeof(ICameraProvider));
+                    if (cameraDescriptor != null)
+                        services.Remove(cameraDescriptor);
+
+                    var repoDescriptor = services.FirstOrDefault(d => d.ServiceType == typeof(IPhotoRepository));
+                    if (repoDescriptor != null)
+                        services.Remove(repoDescriptor);
+
+                    var resizerDescriptor = services.FirstOrDefault(d => d.ServiceType == typeof(IImageResizer));
+                    if (resizerDescriptor != null)
+                        services.Remove(resizerDescriptor);
+
+                    services.AddSingleton<ICameraProvider, ThrowingCameraProvider>();
+                    services.AddSingleton<IPhotoRepository, InMemoryPhotoRepository>();
+                    services.AddSingleton<IImageResizer, PassThroughImageResizer>();
+                });
+            });
+
+        using var client = factory.CreateClient();
+
+        // Act
+        var response = await client.PostAsync("/api/photos/capture", null);
+
+        // Assert
+        Assert.AreEqual(HttpStatusCode.InternalServerError, response.StatusCode);
+    }
 }
 
 file record PhotoPageDto(List<PhotoDto> Photos, string? NextCursor);
+
+file sealed class ThrowingCameraProvider : ICameraProvider
+{
+    public TimeSpan CaptureLatency => TimeSpan.Zero;
+
+    public Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)
+        => Task.FromResult(true);
+
+    public Task<byte[]> CaptureAsync(CancellationToken cancellationToken = default)
+        => throw new InvalidOperationException("Simulated unexpected camera failure");
+}
 
 /// <summary>
 /// Test implementation that passes through to IPhotoRepository without actual resizing.
