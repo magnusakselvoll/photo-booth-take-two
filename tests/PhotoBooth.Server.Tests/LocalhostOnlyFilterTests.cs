@@ -20,7 +20,7 @@ public sealed class LocalhostOnlyFilterTests
     public async Task InvokeAsync_WhenDisabled_AllowsAllRequests()
     {
         // Arrange
-        var filter = new LocalhostOnlyFilter(enabled: false, _logger);
+        var filter = new LocalhostOnlyFilter(enabled: false, "test", _logger);
         var context = CreateContext(IPAddress.Parse("192.168.1.100"));
         var nextCalled = false;
 
@@ -39,7 +39,7 @@ public sealed class LocalhostOnlyFilterTests
     public async Task InvokeAsync_WhenEnabled_AllowsIPv4Localhost()
     {
         // Arrange
-        var filter = new LocalhostOnlyFilter(enabled: true, _logger);
+        var filter = new LocalhostOnlyFilter(enabled: true, "test", _logger);
         var context = CreateContext(IPAddress.Loopback); // 127.0.0.1
         var nextCalled = false;
 
@@ -58,7 +58,7 @@ public sealed class LocalhostOnlyFilterTests
     public async Task InvokeAsync_WhenEnabled_AllowsIPv6Localhost()
     {
         // Arrange
-        var filter = new LocalhostOnlyFilter(enabled: true, _logger);
+        var filter = new LocalhostOnlyFilter(enabled: true, "test", _logger);
         var context = CreateContext(IPAddress.IPv6Loopback); // ::1
         var nextCalled = false;
 
@@ -77,7 +77,7 @@ public sealed class LocalhostOnlyFilterTests
     public async Task InvokeAsync_WhenEnabled_AllowsIPv4MappedLoopback()
     {
         // Arrange
-        var filter = new LocalhostOnlyFilter(enabled: true, _logger);
+        var filter = new LocalhostOnlyFilter(enabled: true, "test", _logger);
         var context = CreateContext(IPAddress.Loopback.MapToIPv6()); // ::ffff:127.0.0.1
         var nextCalled = false;
 
@@ -96,7 +96,7 @@ public sealed class LocalhostOnlyFilterTests
     public async Task InvokeAsync_WhenEnabled_BlocksExternalIPv4()
     {
         // Arrange
-        var filter = new LocalhostOnlyFilter(enabled: true, _logger);
+        var filter = new LocalhostOnlyFilter(enabled: true, "test", _logger);
         var context = CreateContext(IPAddress.Parse("192.168.1.100"));
         var nextCalled = false;
 
@@ -116,7 +116,7 @@ public sealed class LocalhostOnlyFilterTests
     public async Task InvokeAsync_WhenEnabled_BlocksExternalIPv6()
     {
         // Arrange
-        var filter = new LocalhostOnlyFilter(enabled: true, _logger);
+        var filter = new LocalhostOnlyFilter(enabled: true, "test", _logger);
         var context = CreateContext(IPAddress.Parse("2001:db8::1"));
         var nextCalled = false;
 
@@ -135,7 +135,7 @@ public sealed class LocalhostOnlyFilterTests
     public async Task InvokeAsync_WhenEnabled_BlocksNullIP()
     {
         // Arrange
-        var filter = new LocalhostOnlyFilter(enabled: true, _logger);
+        var filter = new LocalhostOnlyFilter(enabled: true, "test", _logger);
         var context = CreateContext(null);
         var nextCalled = false;
 

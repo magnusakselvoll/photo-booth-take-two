@@ -205,12 +205,20 @@ app.UseStaticFiles();
 
 // Create localhost-only filter for trigger endpoint
 var restrictTriggerToLocalhost = builder.Configuration.GetValue<bool?>("Trigger:RestrictToLocalhost") ?? true;
-var localhostFilter = new LocalhostOnlyFilter(
+var triggerLocalhostFilter = new LocalhostOnlyFilter(
     restrictTriggerToLocalhost,
+    "trigger",
+    app.Services.GetRequiredService<ILogger<LocalhostOnlyFilter>>());
+
+// Create localhost-only filter for capture endpoint
+var restrictCaptureToLocalhost = builder.Configuration.GetValue<bool?>("Capture:RestrictToLocalhost") ?? true;
+var captureLocalhostFilter = new LocalhostOnlyFilter(
+    restrictCaptureToLocalhost,
+    "capture",
     app.Services.GetRequiredService<ILogger<LocalhostOnlyFilter>>());
 
 // Map endpoints
-app.MapPhotoEndpoints(localhostFilter);
+app.MapPhotoEndpoints(triggerLocalhostFilter, captureLocalhostFilter);
 app.MapSlideshowEndpoints();
 app.MapCameraEndpoints();
 app.MapEventsEndpoints();
