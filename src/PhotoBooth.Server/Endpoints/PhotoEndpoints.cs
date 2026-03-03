@@ -33,11 +33,18 @@ public static class PhotoEndpoints
             .WithName("GetPhotoImage");
     }
 
+    private const int MaxDurationMs = 60_000;
+
     private static async Task<IResult> TriggerCapture(
         ICaptureWorkflowService workflowService,
         int? durationMs,
         CancellationToken cancellationToken)
     {
+        if (durationMs.HasValue && (durationMs.Value <= 0 || durationMs.Value > MaxDurationMs))
+        {
+            return Results.BadRequest($"durationMs must be between 1 and {MaxDurationMs}.");
+        }
+
         var effectiveDuration = durationMs ?? workflowService.CountdownDurationMs;
         await workflowService.TriggerCaptureAsync("web-ui", durationMs, cancellationToken);
 

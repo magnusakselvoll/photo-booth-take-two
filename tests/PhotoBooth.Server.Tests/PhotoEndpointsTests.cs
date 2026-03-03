@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using PhotoBooth.Application.DTOs;
 using PhotoBooth.Application.Services;
@@ -23,6 +24,13 @@ public sealed class PhotoEndpointsTests
         _factory = new WebApplicationFactory<Program>()
             .WithWebHostBuilder(builder =>
             {
+                builder.ConfigureAppConfiguration((_, config) =>
+                {
+                    config.AddInMemoryCollection(new Dictionary<string, string?>
+                    {
+                        ["Trigger:RestrictToLocalhost"] = "false"
+                    });
+                });
                 builder.ConfigureServices(services =>
                 {
                     // Remove existing registrations
@@ -266,6 +274,36 @@ public sealed class PhotoEndpointsTests
         Assert.IsNotNull(page);
         Assert.HasCount(2, page.Photos);
         Assert.IsNull(page.NextCursor);
+    }
+
+    [TestMethod]
+    public async Task TriggerCapture_WhenDurationMsExceedsMax_ReturnsBadRequest()
+    {
+        // Act
+        var response = await _client.PostAsync("/api/photos/trigger?durationMs=60001", null);
+
+        // Assert
+        Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [TestMethod]
+    public async Task TriggerCapture_WhenDurationMsIsNegative_ReturnsBadRequest()
+    {
+        // Act
+        var response = await _client.PostAsync("/api/photos/trigger?durationMs=-1", null);
+
+        // Assert
+        Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [TestMethod]
+    public async Task TriggerCapture_WhenDurationMsIsZero_ReturnsBadRequest()
+    {
+        // Act
+        var response = await _client.PostAsync("/api/photos/trigger?durationMs=0", null);
+
+        // Assert
+        Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [TestMethod]
