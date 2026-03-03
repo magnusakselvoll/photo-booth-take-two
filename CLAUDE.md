@@ -21,7 +21,8 @@ Always use GitHub Flow when working on issues:
 
 2. **Commit** changes with descriptive messages:
    - Write commit messages as plain double-quoted strings — no heredocs, no `$()` substitution
-   - For multi-line messages use separate `-m` flags: `git -C .claude/worktrees/6-enhance-look-and-feel commit -m "title" -m "body"`
+   - Each `-m` value must be a single line — newlines inside a `-m` string cause a "quoted characters in flag names" error
+   - For multi-line messages use separate `-m` flags, one per line: `git -C .claude/worktrees/6-enhance-look-and-feel commit -m "title" -m "body line"`
 
 3. **Push** the branch and **create a PR**:
    - Push using `-C`: `git -C .claude/worktrees/6-enhance-look-and-feel push -u origin 6-enhance-look-and-feel`
@@ -29,6 +30,7 @@ Always use GitHub Flow when working on issues:
    - PR title should be descriptive of the change
    - Reference the issue in the PR body with `Closes #<issue-number>` to auto-close on merge
    - Pass `--title` and `--body` as plain strings to `gh pr create` — no heredocs, no command substitution, and no backticks (backticks in strings trigger a command substitution approval prompt even when used as markdown formatting)
+   - Always pass `--head <branch-name> --base main` to `gh pr create` — without these, `gh` picks up the main repo context and fails with "head branch is the same as base branch"
 
 4. **Merge** after review (squash merge preferred for clean history)
 
