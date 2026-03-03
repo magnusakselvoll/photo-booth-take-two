@@ -10,20 +10,29 @@ Issues are tracked in GitHub. Use `gh issue list` to see open issues and `gh iss
 
 Always use GitHub Flow when working on issues:
 
-1. **Create a feature branch** from `main` before starting work:
+1. **Create a worktree** for each feature branch:
    - First fetch and checkout latest main: `git fetch origin && git checkout main && git pull`
    - Branch name format: `<issue-number>-<short-description>` (e.g., `6-enhance-look-and-feel`)
-   - Example: `git checkout -b 6-enhance-look-and-feel`
+   - Create a worktree: `git worktree add .claude/worktrees/6-enhance-look-and-feel -b 6-enhance-look-and-feel`
+   - Work within the worktree directory (`.claude/worktrees/<branch-name>`)
+   - This allows multiple issues to be in progress simultaneously
 
-2. **Commit** changes with descriptive messages
+2. **Commit** changes with descriptive messages:
+   - Write commit messages as plain double-quoted strings — no heredocs, no `$()` substitution
+   - For multi-line messages use separate `-m` flags: `git commit -m "title" -m "body"`
 
 3. **Push** the branch and **create a PR**:
    - **Ask before creating the PR** - the user may have feedback based on the console output or code
    - PR title should be descriptive of the change
    - Reference the issue in the PR body with `Closes #<issue-number>` to auto-close on merge
-   - Use `gh pr create` for convenience
+   - Pass `--title` and `--body` as plain strings to `gh pr create` — no heredocs or command substitution
 
 4. **Merge** after review (squash merge preferred for clean history)
+
+5. **Clean up** after the user confirms a PR is merged:
+   - `git fetch origin && git checkout main && git pull`
+   - `git worktree remove .claude/worktrees/<branch-name>`
+   - `git branch -d <branch-name>`
 
 ## Documentation Updates
 
