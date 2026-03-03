@@ -10,29 +10,33 @@ Issues are tracked in GitHub. Use `gh issue list` to see open issues and `gh iss
 
 Always use GitHub Flow when working on issues:
 
-1. **Create a worktree** for each feature branch:
+1. **Create a worktree** for each feature branch **before making any file edits**:
    - First fetch and checkout latest main: `git fetch origin && git checkout main && git pull`
    - Branch name format: `<issue-number>-<short-description>` (e.g., `6-enhance-look-and-feel`)
    - Create a worktree: `git worktree add .claude/worktrees/6-enhance-look-and-feel -b 6-enhance-look-and-feel`
-   - Work within the worktree directory (`.claude/worktrees/<branch-name>`)
+   - All file reads/edits/writes must use the full worktree path, e.g. `.claude/worktrees/<branch-name>/src/...`
+   - Run all git commands in the worktree using `-C`: `git -C .claude/worktrees/<branch-name> <command>`
+   - Do NOT use `cd .claude/worktrees/<branch-name> && git ...` — compound `cd` + `git` commands require special approval
    - This allows multiple issues to be in progress simultaneously
 
 2. **Commit** changes with descriptive messages:
    - Write commit messages as plain double-quoted strings — no heredocs, no `$()` substitution
-   - For multi-line messages use separate `-m` flags: `git commit -m "title" -m "body"`
+   - For multi-line messages use separate `-m` flags: `git -C .claude/worktrees/6-enhance-look-and-feel commit -m "title" -m "body"`
 
 3. **Push** the branch and **create a PR**:
+   - Push using `-C`: `git -C .claude/worktrees/6-enhance-look-and-feel push -u origin 6-enhance-look-and-feel`
    - **Ask before creating the PR** - the user may have feedback based on the console output or code
    - PR title should be descriptive of the change
    - Reference the issue in the PR body with `Closes #<issue-number>` to auto-close on merge
-   - Pass `--title` and `--body` as plain strings to `gh pr create` — no heredocs or command substitution
+   - Pass `--title` and `--body` as plain strings to `gh pr create` — no heredocs, no command substitution, and no backticks (backticks in strings trigger a command substitution approval prompt even when used as markdown formatting)
 
 4. **Merge** after review (squash merge preferred for clean history)
 
 5. **Clean up** after the user confirms a PR is merged:
-   - `git fetch origin && git checkout main && git pull`
-   - `git worktree remove .claude/worktrees/<branch-name>`
-   - `git branch -d <branch-name>`
+   - All cleanup commands must use `git -C <repo-root>` (the absolute path to the main repo, e.g. `/Users/magnus/private/repos/photo-booth-take-two`) — do NOT run them from inside the worktree directory
+   - `main` is already checked out in the primary worktree, so `git checkout main` will fail; just pull: `git -C <repo-root> fetch origin && git -C <repo-root> pull`
+   - `git -C <repo-root> worktree remove .claude/worktrees/<branch-name>`
+   - `git -C <repo-root> branch -d <branch-name>`
 
 ## Documentation Updates
 
