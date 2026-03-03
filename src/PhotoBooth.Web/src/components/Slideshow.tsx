@@ -105,7 +105,7 @@ export function Slideshow({ photo, qrCodeBaseUrl, swirlEffect = true, slideshowI
         key: photoKeyRef.current,
       };
     });
-  }, [photo]);
+  }, [photo, slideshowIntervalMs]);
 
   if (!photo || !currentState) {
     return <div className="slideshow-empty">{t('noPhotosToShow')}</div>;
