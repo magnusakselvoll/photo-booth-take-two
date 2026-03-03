@@ -68,6 +68,22 @@ public sealed class CaptureWorkflowServiceTests
     }
 
     [TestMethod]
+    public async Task TriggerCaptureAsync_CallsPrepareAsync()
+    {
+        // Arrange
+        _cameraProvider.IsAvailable = true;
+
+        // Act
+        await _service.TriggerCaptureAsync("test");
+
+        // Wait for the background workflow to complete
+        await Task.Delay(1000);
+
+        // Assert
+        Assert.IsTrue(_cameraProvider.PrepareWasCalled);
+    }
+
+    [TestMethod]
     public async Task TriggerCaptureAsync_WhenCaptureFails_BroadcastsCaptureFailedEvent()
     {
         // Arrange
