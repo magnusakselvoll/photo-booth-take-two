@@ -186,6 +186,24 @@ else
     app.UseHttpsRedirection();
 }
 
+// Global exception handler — must be early in the pipeline to catch all downstream exceptions
+app.UseExceptionHandler(exceptionApp =>
+{
+    exceptionApp.Run(async context =>
+    {
+        var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+        var exceptionFeature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+        if (exceptionFeature != null)
+        {
+            logger.LogError(exceptionFeature.Error, "Unhandled exception");
+        }
+
+        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        context.Response.ContentType = "application/json";
+        await context.Response.WriteAsJsonAsync(new { title = "An unexpected error occurred", status = 500 });
+    });
+});
+
 // Security headers (before static files so headers apply to all responses)
 app.UseSecurityHeaders();
 
