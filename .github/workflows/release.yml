@@ -48,6 +48,17 @@ jobs:
         working-directory: src/PhotoBooth.Web
         run: pnpm run build
 
+      - name: Lint frontend
+        working-directory: src/PhotoBooth.Web
+        run: pnpm run lint
+
+      - name: Test frontend
+        working-directory: src/PhotoBooth.Web
+        run: pnpm run test
+
+      - name: Test .NET
+        run: dotnet test --verbosity normal --filter "TestCategory!=Integration"
+
       - name: Determine version
         id: version
         run: |
