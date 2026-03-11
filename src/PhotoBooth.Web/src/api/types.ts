@@ -16,17 +16,6 @@ export interface SlideshowPhotoDto {
   imageUrl: string;
 }
 
-export interface CaptureResultDto {
-  id: string;
-  code: string;
-  capturedAt: string;
-}
-
-export interface CameraInfoDto {
-  isAvailable: boolean;
-  captureLatencyMs: number;
-}
-
 export interface TriggerResponse {
   message: string;
   countdownDurationMs: number;
