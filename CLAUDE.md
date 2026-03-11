@@ -197,6 +197,12 @@ Example Android configuration:
 | `Booth:RestrictToLocalhost` | Redirect non-localhost users from `/` to `/download` | `true` |
 | `Trigger:RestrictToLocalhost` | Restrict `/api/photos/trigger` to localhost only | `true` |
 | `Capture:RestrictToLocalhost` | Restrict `/api/photos/capture` to localhost only | `true` |
+| `Input:EnableKeyboard` | Enable spacebar to trigger capture | `false` |
+| `NetworkSecurity:BlockOutboundRequests` | Block outbound HTTP requests | `true` |
+| `PhotoStorage:Path` | Where photos are saved | OS-specific app data |
+| `Watchdog:ServerInactivityMinutes` | Restart server after inactivity (0 to disable) | `30` |
+| `Watchdog:ClientTimeoutMs` | Client-side watchdog timeout in ms | `300000` |
+| `Watchdog:SseHeartbeatIntervalSeconds` | SSE heartbeat interval in seconds | `30` |
 
 ## Security
 

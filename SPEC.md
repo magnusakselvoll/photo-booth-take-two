@@ -152,6 +152,17 @@ Key configurable parameters:
 | `QrCode:BaseUrl` | Base URL for QR codes | Request origin |
 | `RateLimiting:PermitLimit` | Max requests per rate limit window | `5` |
 | `RateLimiting:WindowSeconds` | Rate limit window in seconds | `10` |
+| `Capture:BufferTimeoutHighLatencyMs` | Hard timeout buffer for high-latency cameras | `45000` |
+| `Capture:BufferTimeoutLowLatencyMs` | Hard timeout buffer for low-latency cameras | `12000` |
+| `Capture:RestrictToLocalhost` | Restrict capture API to localhost | `true` |
+| `Booth:RestrictToLocalhost` | Redirect non-localhost from `/` to `/download` | `true` |
+| `Trigger:RestrictToLocalhost` | Restrict trigger API to localhost | `true` |
+| `Input:EnableKeyboard` | Enable spacebar to trigger capture | `false` |
+| `NetworkSecurity:BlockOutboundRequests` | Block outbound HTTP requests | `true` |
+| `Thumbnails:JpegQuality` | JPEG quality for server-side thumbnails | `80` |
+| `Watchdog:ServerInactivityMinutes` | Restart server after inactivity (0 to disable) | `30` |
+| `Watchdog:ClientTimeoutMs` | Client-side watchdog timeout in ms | `300000` |
+| `Watchdog:SseHeartbeatIntervalSeconds` | SSE heartbeat interval in seconds | `30` |
 
 ## Internationalization (i18n)
 
