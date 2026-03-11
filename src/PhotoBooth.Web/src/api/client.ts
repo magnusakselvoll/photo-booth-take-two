@@ -1,4 +1,4 @@
-import type { ClientConfigDto, PhotoDto, PhotoPageDto, SlideshowPhotoDto, TriggerResponse } from './types';
+import type { ClientConfigDto, PhotoDto, PhotoPageDto, TriggerResponse } from './types';
 
 const API_BASE = '/api';
 
@@ -35,20 +35,6 @@ export async function getPhotoByCode(code: string): Promise<PhotoDto | null> {
 export function getPhotoImageUrl(photoId: string, width?: number): string {
   const base = `${API_BASE}/photos/${photoId}/image`;
   return width !== undefined ? `${base}?width=${width}` : base;
-}
-
-export async function getNextSlideshowPhoto(): Promise<SlideshowPhotoDto | null> {
-  const response = await fetch(`${API_BASE}/slideshow/next`);
-
-  if (response.status === 404) {
-    return null;
-  }
-
-  if (!response.ok) {
-    throw new Error(`Failed to get slideshow photo: ${response.statusText}`);
-  }
-
-  return response.json();
 }
 
 export async function getClientConfig(): Promise<ClientConfigDto> {

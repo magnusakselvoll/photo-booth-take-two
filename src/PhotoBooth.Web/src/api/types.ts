@@ -9,13 +9,6 @@ export interface PhotoPageDto {
   nextCursor: string | null;
 }
 
-export interface SlideshowPhotoDto {
-  id: string;
-  code: string;
-  capturedAt: string;
-  imageUrl: string;
-}
-
 export interface CaptureResultDto {
   id: string;
   code: string;

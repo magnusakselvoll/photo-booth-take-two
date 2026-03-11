@@ -43,20 +43,6 @@ public class InMemoryPhotoRepository : IPhotoRepository
         }
     }
 
-    public Task<Photo?> GetRandomAsync(CancellationToken cancellationToken = default)
-    {
-        lock (_lock)
-        {
-            if (_photos.Count == 0)
-            {
-                return Task.FromResult<Photo?>(null);
-            }
-
-            var index = Random.Shared.Next(_photos.Count);
-            return Task.FromResult<Photo?>(_photos[index]);
-        }
-    }
-
     public Task<int> GetCountAsync(CancellationToken cancellationToken = default)
     {
         lock (_lock)
