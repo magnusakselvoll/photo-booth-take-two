@@ -59,10 +59,14 @@ Configuration is done via `appsettings.json` in the Server project. You can dele
       "CaptureLockTimeoutSeconds": 5
     }
   },
+  "Booth": {
+    "RestrictToLocalhost": true
+  },
   "Capture": {
     "CountdownDurationMs": 7000,
     "BufferTimeoutHighLatencyMs": 45000,
-    "BufferTimeoutLowLatencyMs": 12000
+    "BufferTimeoutLowLatencyMs": 12000,
+    "RestrictToLocalhost": true
   },
   "Input": {
     "EnableKeyboard": false
@@ -70,8 +74,16 @@ Configuration is done via `appsettings.json` in the Server project. You can dele
   "PhotoStorage": {
     "Path": ""
   },
+  "Thumbnails": {
+    "JpegQuality": 80
+  },
   "Trigger": {
     "RestrictToLocalhost": true
+  },
+  "Watchdog": {
+    "ServerInactivityMinutes": 30,
+    "ClientTimeoutMs": 300000,
+    "SseHeartbeatIntervalSeconds": 30
   },
   "NetworkSecurity": {
     "BlockOutboundRequests": true
@@ -130,11 +142,18 @@ Requires [ADB](https://developer.android.com/tools/adb) installed and an Android
 
 ### Other Options
 
+- `Booth.RestrictToLocalhost`: Redirect non-localhost users from `/` to `/download` (default: true)
 - `Capture.CountdownDurationMs`: Countdown duration in ms before photo is taken (default: 7000)
 - `Capture.BufferTimeoutHighLatencyMs`: Hard timeout buffer in ms for high-latency cameras (default: 45000)
 - `Capture.BufferTimeoutLowLatencyMs`: Hard timeout buffer in ms for low-latency cameras (default: 12000)
+- `Capture.RestrictToLocalhost`: Restrict capture API to localhost (default: true)
 - `Input.EnableKeyboard`: Enable spacebar key to trigger capture (default: false)
+- `PhotoStorage.Path`: Where photos are saved (defaults to OS-specific app data)
+- `Thumbnails.JpegQuality`: JPEG quality for server-side thumbnails, 0-100 (default: 80)
 - `Trigger.RestrictToLocalhost`: Only allow trigger API from localhost (default: true)
+- `Watchdog.ServerInactivityMinutes`: Restart server after inactivity in minutes, 0 to disable (default: 30)
+- `Watchdog.ClientTimeoutMs`: Client-side watchdog timeout in ms (default: 300000)
+- `Watchdog.SseHeartbeatIntervalSeconds`: SSE heartbeat interval in seconds (default: 30)
 - `NetworkSecurity.BlockOutboundRequests`: Block outbound network requests (default: true)
 - `QrCode.BaseUrl`: Base URL for QR codes (defaults to request origin)
 - `Event.Name`: Event name used as storage subfolder (defaults to current date)
