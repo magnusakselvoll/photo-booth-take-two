@@ -77,7 +77,7 @@ Keyboard shortcuts are disabled during the countdown overlay to prevent accident
 
 ### Countdown
 
-- Configurable duration (default: 3 seconds)
+- Configurable duration (default: 7 seconds)
 - Visual countdown displayed prominently
 - Audio feedback (beeps) — future enhancement
 - Countdown cancellation — future enhancement
