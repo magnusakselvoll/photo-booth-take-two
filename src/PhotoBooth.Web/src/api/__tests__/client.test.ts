@@ -3,7 +3,6 @@ import {
   triggerCapture,
   getPhotoByCode,
   getPhotoImageUrl,
-  getNextSlideshowPhoto,
   getClientConfig,
   getAllPhotos,
 } from '../client';
@@ -87,32 +86,6 @@ describe('API client', () => {
 
       expect(url).toBe('/api/photos/photo-abc/image');
       expect(fetch).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('getNextSlideshowPhoto', () => {
-    it('sends GET to /api/slideshow/next', async () => {
-      const photo = { id: 'abc', code: '1', capturedAt: '2025-01-01', imageUrl: '/img' };
-      mockFetch(200, photo);
-
-      const result = await getNextSlideshowPhoto();
-
-      expect(fetch).toHaveBeenCalledWith('/api/slideshow/next');
-      expect(result).toEqual(photo);
-    });
-
-    it('returns null on 404', async () => {
-      mockFetch(404);
-
-      const result = await getNextSlideshowPhoto();
-
-      expect(result).toBeNull();
-    });
-
-    it('throws on non-ok response', async () => {
-      mockFetch(500);
-
-      await expect(getNextSlideshowPhoto()).rejects.toThrow('Failed to get slideshow photo');
     });
   });
 

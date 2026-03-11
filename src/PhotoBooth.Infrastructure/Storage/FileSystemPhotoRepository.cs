@@ -70,18 +70,6 @@ public class FileSystemPhotoRepository : IPhotoRepository
         return await File.ReadAllBytesAsync(photo.FilePath, cancellationToken);
     }
 
-    public async Task<Photo?> GetRandomAsync(CancellationToken cancellationToken = default)
-    {
-        var photos = await GetPhotosAsync(cancellationToken);
-        if (photos.Count == 0)
-        {
-            return null;
-        }
-
-        var index = Random.Shared.Next(photos.Count);
-        return photos[index];
-    }
-
     public async Task<int> GetCountAsync(CancellationToken cancellationToken = default)
     {
         var photos = await GetPhotosAsync(cancellationToken);

@@ -84,7 +84,6 @@ Clean architecture with four layers:
 
 - `PhotoCaptureService`: Orchestrates photo capture and storage
 - `CaptureWorkflowService`: Manages countdown + capture + event broadcasting workflow
-- `SlideshowService`: Manages slideshow photo selection
 
 ### Code Generation
 

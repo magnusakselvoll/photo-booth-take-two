@@ -105,12 +105,6 @@ builder.Services.AddSingleton<IImageResizer>(sp =>
 
 // Register application services
 builder.Services.AddSingleton<IPhotoCaptureService, PhotoCaptureService>();
-builder.Services.AddSingleton<ISlideshowService>(sp =>
-{
-    var repository = sp.GetRequiredService<IPhotoRepository>();
-    var logger = sp.GetRequiredService<ILogger<SlideshowService>>();
-    return new SlideshowService(repository, logger);
-});
 
 // Register capture workflow service
 var countdownDurationMs = builder.Configuration.GetValue<int?>("Capture:CountdownDurationMs") ?? 7000;
@@ -238,7 +232,6 @@ var captureLocalhostFilter = new LocalhostOnlyFilter(
 
 // Map endpoints
 app.MapPhotoEndpoints(triggerLocalhostFilter, captureLocalhostFilter);
-app.MapSlideshowEndpoints();
 app.MapCameraEndpoints();
 app.MapEventsEndpoints();
 app.MapConfigEndpoints(builder.Configuration);

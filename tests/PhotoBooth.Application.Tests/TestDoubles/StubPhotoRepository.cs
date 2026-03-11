@@ -8,7 +8,6 @@ public sealed class StubPhotoRepository : IPhotoRepository
     private readonly Dictionary<Guid, (Photo Photo, byte[] ImageData)> _photos = new();
 
     public Photo? PhotoToReturnByCode { get; set; }
-    public Photo? PhotoToReturnRandom { get; set; }
     public byte[]? ImageDataToReturn { get; set; }
 
     public List<Photo> SavedPhotos { get; } = [];
@@ -28,9 +27,6 @@ public sealed class StubPhotoRepository : IPhotoRepository
 
     public Task<byte[]?> GetImageDataAsync(Guid id, CancellationToken cancellationToken = default)
         => Task.FromResult(ImageDataToReturn);
-
-    public Task<Photo?> GetRandomAsync(CancellationToken cancellationToken = default)
-        => Task.FromResult(PhotoToReturnRandom);
 
     public Task<int> GetCountAsync(CancellationToken cancellationToken = default)
         => Task.FromResult(_photos.Count);

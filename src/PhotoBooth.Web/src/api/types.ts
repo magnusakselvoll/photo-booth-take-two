@@ -9,11 +9,15 @@ export interface PhotoPageDto {
   nextCursor: string | null;
 }
 
-export interface SlideshowPhotoDto {
+export interface CaptureResultDto {
   id: string;
   code: string;
   capturedAt: string;
-  imageUrl: string;
+}
+
+export interface CameraInfoDto {
+  isAvailable: boolean;
+  captureLatencyMs: number;
 }
 
 export interface TriggerResponse {
