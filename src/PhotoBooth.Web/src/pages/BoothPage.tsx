@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { Slideshow } from '../components/Slideshow';
 import { CaptureOverlay } from '../components/CaptureOverlay';
 import { PhotoDisplay, type KenBurnsConfig } from '../components/PhotoDisplay';
+import { generateKenBurnsConfig } from '../utils/kenBurns';
 import { useEventStream } from '../api/events';
 import { triggerCapture } from '../api/client';
 import { useSlideshowNavigation } from '../hooks/useSlideshowNavigation';
@@ -22,52 +23,6 @@ interface BoothPageProps {
   slideshowIntervalMs?: number;
   gamepadConfig?: GamepadConfig | null;
   watchdogTimeoutMs?: number;
-}
-
-function randomInRange(min: number, max: number): number {
-  return min + Math.random() * (max - min);
-}
-
-function generateKenBurnsConfig(intervalMs: number): KenBurnsConfig {
-  const zoomIn = Math.random() > 0.5;
-  const scaleSmall = randomInRange(1.08, 1.12);
-  const scaleLarge = randomInRange(1.18, 1.28);
-  const panAmount = randomInRange(3, 6);
-  const panDirections = [
-    { x: panAmount, y: 0 },
-    { x: -panAmount, y: 0 },
-    { x: 0, y: panAmount },
-    { x: 0, y: -panAmount },
-    { x: panAmount * 0.7, y: panAmount * 0.7 },
-    { x: -panAmount * 0.7, y: panAmount * 0.7 },
-    { x: panAmount * 0.7, y: -panAmount * 0.7 },
-    { x: -panAmount * 0.7, y: -panAmount * 0.7 },
-  ];
-  const pan = panDirections[Math.floor(Math.random() * panDirections.length)];
-  // Duration slightly overshoots the slideshow interval to avoid freezing at the end
-  const duration = intervalMs / 1000;
-
-  if (zoomIn) {
-    return {
-      scaleFrom: scaleSmall,
-      scaleTo: scaleLarge,
-      xFrom: '0%',
-      yFrom: '0%',
-      xTo: `${pan.x}%`,
-      yTo: `${pan.y}%`,
-      duration: `${duration.toFixed(1)}s`,
-    };
-  } else {
-    return {
-      scaleFrom: scaleLarge,
-      scaleTo: scaleSmall,
-      xFrom: '0%',
-      yFrom: '0%',
-      xTo: `${pan.x}%`,
-      yTo: `${pan.y}%`,
-      duration: `${duration.toFixed(1)}s`,
-    };
-  }
 }
 
 interface DisplayPhoto {
