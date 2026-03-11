@@ -25,19 +25,3 @@ public class CameraNotAvailableException : PhotoBoothException
     {
     }
 }
-
-public class PhotoNotFoundException : PhotoBoothException
-{
-    public PhotoNotFoundException(string code) : base($"Photo with code '{code}' not found")
-    {
-        Code = code;
-    }
-
-    public PhotoNotFoundException(Guid id) : base($"Photo with id '{id}' not found")
-    {
-        PhotoId = id;
-    }
-
-    public string? Code { get; }
-    public Guid? PhotoId { get; }
-}
