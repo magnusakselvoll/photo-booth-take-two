@@ -14,6 +14,7 @@ public class CaptureWorkflowService : ICaptureWorkflowService
     private readonly ILogger<CaptureWorkflowService> _logger;
     private readonly int _bufferTimeoutHighLatencyMs;
     private readonly int _bufferTimeoutLowLatencyMs;
+    private readonly CancellationToken _shutdownToken;
 
     public int CountdownDurationMs { get; }
 
@@ -25,7 +26,8 @@ public class CaptureWorkflowService : ICaptureWorkflowService
         ILogger<CaptureWorkflowService> logger,
         int countdownDurationMs = 3000,
         int bufferTimeoutHighLatencyMs = 45000,
-        int bufferTimeoutLowLatencyMs = 12000)
+        int bufferTimeoutLowLatencyMs = 12000,
+        CancellationToken shutdownToken = default)
     {
         _captureService = captureService;
         _cameraProvider = cameraProvider;
@@ -35,6 +37,7 @@ public class CaptureWorkflowService : ICaptureWorkflowService
         CountdownDurationMs = countdownDurationMs;
         _bufferTimeoutHighLatencyMs = bufferTimeoutHighLatencyMs;
         _bufferTimeoutLowLatencyMs = bufferTimeoutLowLatencyMs;
+        _shutdownToken = shutdownToken;
     }
 
     public async Task TriggerCaptureAsync(string triggerSource, int? durationOverrideMs = null, CancellationToken cancellationToken = default)
@@ -45,15 +48,15 @@ public class CaptureWorkflowService : ICaptureWorkflowService
         // Broadcast countdown started immediately
         await _eventBroadcaster.BroadcastAsync(
             new CountdownStartedEvent(effectiveDuration, triggerSource),
-            CancellationToken.None);
+            _shutdownToken);
 
         // Run the capture workflow in the background (fire and forget)
         // This allows the HTTP request to return immediately
         // Multiple workflows can run in parallel
-        _ = RunCaptureWorkflowAsync(triggerSource, effectiveDuration);
+        _ = RunCaptureWorkflowAsync(triggerSource, effectiveDuration, _shutdownToken);
     }
 
-    private async Task RunCaptureWorkflowAsync(string triggerSource, int countdownDurationMs)
+    private async Task RunCaptureWorkflowAsync(string triggerSource, int countdownDurationMs, CancellationToken cancellationToken)
     {
         // Use a hard timeout that will forcefully complete this task
         // even if the camera hangs on synchronous operations.
@@ -63,7 +66,7 @@ public class CaptureWorkflowService : ICaptureWorkflowService
         var bufferMs = captureLatencyMs >= 1000 ? _bufferTimeoutHighLatencyMs : _bufferTimeoutLowLatencyMs;
         var maxWorkflowTimeoutMs = countdownDurationMs + bufferMs;
 
-        var workflowTask = RunCaptureWorkflowCoreAsync(triggerSource, countdownDurationMs);
+        var workflowTask = RunCaptureWorkflowCoreAsync(triggerSource, countdownDurationMs, cancellationToken);
         var timeoutTask = Task.Delay(maxWorkflowTimeoutMs);
 
         var completedTask = await Task.WhenAny(workflowTask, timeoutTask);
@@ -75,7 +78,7 @@ public class CaptureWorkflowService : ICaptureWorkflowService
             {
                 await _eventBroadcaster.BroadcastAsync(
                     new CaptureFailedEvent("Capture timed out"),
-                    CancellationToken.None);
+                    cancellationToken);
             }
             catch (Exception ex)
             {
@@ -86,7 +89,7 @@ public class CaptureWorkflowService : ICaptureWorkflowService
         _logger.LogInformation("Capture workflow completed for trigger from {Source}", triggerSource);
     }
 
-    private async Task RunCaptureWorkflowCoreAsync(string triggerSource, int countdownDurationMs)
+    private async Task RunCaptureWorkflowCoreAsync(string triggerSource, int countdownDurationMs, CancellationToken cancellationToken)
     {
         try
         {
@@ -103,29 +106,34 @@ public class CaptureWorkflowService : ICaptureWorkflowService
 
             // Start camera preparation concurrently with countdown delay.
             // This allows slow setup (e.g., waking Android device) to overlap with the countdown.
-            var prepareTask = _cameraProvider.PrepareAsync(CancellationToken.None);
-            var delayTask = Task.Delay(delayMs);
+            var prepareTask = _cameraProvider.PrepareAsync(cancellationToken);
+            var delayTask = Task.Delay(delayMs, cancellationToken);
             await Task.WhenAll(prepareTask, delayTask);
 
             // Perform the actual capture
-            var result = await _captureService.CaptureAsync(CancellationToken.None);
+            var result = await _captureService.CaptureAsync(cancellationToken);
 
             _logger.LogInformation("Photo captured: {Code}", result.Code);
 
             // Broadcast photo captured
             await _eventBroadcaster.BroadcastAsync(
                 new PhotoCapturedEvent(result.Id, result.Code, $"/api/photos/{result.Id}/image"),
-                CancellationToken.None);
+                cancellationToken);
 
             // Pre-generate thumbnails in the background (fire-and-forget)
-            _ = _imageResizer.PreGenerateAllSizesAsync(result.Id, CancellationToken.None);
+            _ = _imageResizer.PreGenerateAllSizesAsync(result.Id, cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            _logger.LogInformation("Capture workflow cancelled during shutdown for trigger from {Source}", triggerSource);
+            throw;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Capture failed");
             await _eventBroadcaster.BroadcastAsync(
                 new CaptureFailedEvent("Photo capture failed"),
-                CancellationToken.None);
+                cancellationToken);
         }
     }
 }
