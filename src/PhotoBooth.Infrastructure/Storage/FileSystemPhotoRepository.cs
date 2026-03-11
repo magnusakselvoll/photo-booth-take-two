@@ -32,14 +32,14 @@ public class FileSystemPhotoRepository : IPhotoRepository
         {
             var paddedCode = photo.Code.PadLeft(5, '0');
             var fileName = $"{paddedCode}-{photo.Id}.jpg";
-            photo.FilePath = Path.Combine(_storagePath, fileName);
+            var updatedPhoto = photo with { FilePath = Path.Combine(_storagePath, fileName) };
 
-            await File.WriteAllBytesAsync(photo.FilePath, imageData, cancellationToken);
+            await File.WriteAllBytesAsync(updatedPhoto.FilePath, imageData, cancellationToken);
 
             // Add to cache if it exists
-            _photosCache?.Add(photo);
+            _photosCache?.Add(updatedPhoto);
 
-            return photo;
+            return updatedPhoto;
         }
         finally
         {
