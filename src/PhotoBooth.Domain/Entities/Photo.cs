@@ -1,9 +1,9 @@
 namespace PhotoBooth.Domain.Entities;
 
-public class Photo
+public record Photo
 {
-    public Guid Id { get; set; }
-    public string Code { get; set; } = string.Empty;
-    public string FilePath { get; set; } = string.Empty;
-    public DateTime CapturedAt { get; set; }
+    public Guid Id { get; init; }
+    public string Code { get; init; } = string.Empty;
+    public string FilePath { get; init; } = string.Empty;
+    public DateTime CapturedAt { get; init; }
 }
