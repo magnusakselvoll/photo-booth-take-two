@@ -47,8 +47,8 @@ describe('useTranslation', () => {
     const { result } = renderHook(() => useTranslation());
 
     expect(result.current.t('enterPhotoCode')).toBe('Photo code');
-    expect(result.current.t('searching')).toBe('Searching...');
-    expect(result.current.t('tapToTakePhoto')).toBe('Tap anywhere to take a photo');
+    expect(result.current.t('loading')).toBe('Loading...');
+    expect(result.current.t('pageNotFound')).toBe('Page not found');
   });
 
   it('setLanguage changes the language and updates URL', () => {
