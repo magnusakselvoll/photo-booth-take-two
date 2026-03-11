@@ -123,7 +123,8 @@ builder.Services.AddSingleton<ICaptureWorkflowService>(sp =>
     var eventBroadcaster = sp.GetRequiredService<IEventBroadcaster>();
     var imageResizer = sp.GetRequiredService<IImageResizer>();
     var logger = sp.GetRequiredService<ILogger<CaptureWorkflowService>>();
-    return new CaptureWorkflowService(captureService, cameraProvider, eventBroadcaster, imageResizer, logger, countdownDurationMs, bufferTimeoutHighLatencyMs, bufferTimeoutLowLatencyMs);
+    var applicationLifetime = sp.GetRequiredService<IHostApplicationLifetime>();
+    return new CaptureWorkflowService(captureService, cameraProvider, eventBroadcaster, imageResizer, logger, countdownDurationMs, bufferTimeoutHighLatencyMs, bufferTimeoutLowLatencyMs, applicationLifetime.ApplicationStopping);
 });
 
 // Register thumbnail warmup service

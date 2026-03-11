@@ -104,4 +104,31 @@ public sealed class CaptureWorkflowServiceTests
         Assert.IsNotNull(failedEvent);
         Assert.AreEqual("Photo capture failed", failedEvent.Error);
     }
+
+    [TestMethod]
+    public async Task TriggerCaptureAsync_WhenShutdownTokenCancelled_WorkflowStopsWithoutCapture()
+    {
+        // Arrange
+        using var cts = new CancellationTokenSource();
+        var serviceWithShutdown = new CaptureWorkflowService(
+            _captureService,
+            _cameraProvider,
+            _eventBroadcaster,
+            _imageResizer,
+            NullLogger<CaptureWorkflowService>.Instance,
+            countdownDurationMs: 500,
+            shutdownToken: cts.Token);
+
+        // Act - trigger and cancel before workflow completes
+        await serviceWithShutdown.TriggerCaptureAsync("test");
+        await cts.CancelAsync();
+
+        // Wait briefly for the background task to observe cancellation
+        await Task.Delay(200);
+
+        // Assert - only the initial countdown event should have been broadcast; no photo capture
+        Assert.HasCount(1, _eventBroadcaster.BroadcastedEvents);
+        Assert.IsInstanceOfType<CountdownStartedEvent>(_eventBroadcaster.BroadcastedEvents[0]);
+        Assert.IsFalse(_captureService.CaptureWasCalled);
+    }
 }

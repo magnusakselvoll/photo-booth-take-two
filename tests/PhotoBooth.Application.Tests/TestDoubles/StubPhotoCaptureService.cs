@@ -6,11 +6,14 @@ namespace PhotoBooth.Application.Tests.TestDoubles;
 public sealed class StubPhotoCaptureService : IPhotoCaptureService
 {
     public bool ShouldThrow { get; set; }
+    public bool CaptureWasCalled { get; private set; }
     public Exception ExceptionToThrow { get; set; } = new InvalidOperationException("Test exception");
     public CaptureResultDto ResultToReturn { get; set; } = new(Guid.NewGuid(), "123", DateTime.UtcNow);
 
     public Task<CaptureResultDto> CaptureAsync(CancellationToken cancellationToken = default)
     {
+        CaptureWasCalled = true;
+
         if (ShouldThrow)
         {
             throw ExceptionToThrow;
