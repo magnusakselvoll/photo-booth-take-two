@@ -106,11 +106,11 @@ Optional QR code overlay on slideshow photos:
 
 ### Download Interface
 
-Separate web page for photo retrieval with a gallery-first approach:
-- All event photos displayed in a responsive grid with infinite scroll pagination
-- Code entry field for direct photo lookup, redirecting to the photo detail page
-- **Photo detail page**: Full-size photo view with download and share (Web Share API) functionality
-- **Swipe navigation**: Swipe left/right to browse between photos on the detail page
+Separate web page (or section) for photo retrieval:
+- Guest enters their download code
+- Photo displayed with download button
+- **Photo grid view**: Shows all photos matching the code with download options
+- Option to download original quality
 - Works on mobile browsers
 
 ## Web Interface
@@ -127,11 +127,8 @@ The entire UI is web-based, served by the application server.
 ### Download Page
 
 - Simple, mobile-friendly design
-- Photo gallery grid with infinite scroll pagination
-- Code entry field for direct photo lookup
-- Photo detail view with download and share options
-- Swipe navigation between photos
-- Bilingual support (English/Spanish)
+- Code entry field
+- Photo preview and download
 
 ### Admin Interface (Future)
 
