@@ -15,6 +15,7 @@ A photo booth application for events. Runs unattended with slideshow display, ph
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download)
 - [Node.js 20+](https://nodejs.org/) (for web UI development)
+- [pnpm](https://pnpm.io/) (for web UI dependencies)
 - Windows (primary target), macOS/Linux (partial support)
 
 ## Quick Start
