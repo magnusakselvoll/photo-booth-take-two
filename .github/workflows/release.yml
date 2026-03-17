@@ -62,11 +62,12 @@ jobs:
       - name: Determine version
         id: version
         run: |
-          VERSION="${{ github.event.release.tag_name }}"
-          # Strip leading 'v' and any leading dots (e.g. v.0.0.1 -> 0.0.1)
-          VERSION="${VERSION#v}"
-          VERSION="${VERSION#.}"
-          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          TAG="${{ github.event.release.tag_name }}"
+          TAG="${TAG#v}"
+          TAG="${TAG#.}"
+          MSI_VERSION=$(echo "$TAG" | grep -oP '^\d+\.\d+\.\d+')
+          echo "version=${TAG}" >> $GITHUB_OUTPUT
+          echo "msi_version=${MSI_VERSION}" >> $GITHUB_OUTPUT
 
       - name: Publish for Windows x64
         run: |
@@ -83,10 +84,25 @@ jobs:
           cd publish/win-x64
           zip -r ../../PhotoBooth-${{ steps.version.outputs.version }}-win-x64.zip .
 
+      - name: Install WiX toolset
+        run: dotnet tool install --global wix
+
+      - name: Add WiX UI extension
+        run: wix extension add WixToolset.UI.wixext
+
+      - name: Build MSI installer
+        run: |
+          wix build installer/PhotoBooth.wxs \
+            -ext WixToolset.UI.wixext \
+            -d ProductVersion=${{ steps.version.outputs.msi_version }} \
+            -d PublishDir=publish/win-x64 \
+            -o PhotoBooth-${{ steps.version.outputs.version }}-win-x64.msi
+
       - name: Upload release assets
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release upload ${{ github.event.release.tag_name }} \
             PhotoBooth-${{ steps.version.outputs.version }}-win-x64.zip \
+            PhotoBooth-${{ steps.version.outputs.version }}-win-x64.msi \
             --clobber
