@@ -9,7 +9,11 @@ permissions:
 
 jobs:
   build-and-release:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
+
+    defaults:
+      run:
+        shell: bash
 
     steps:
       - uses: actions/checkout@v4
@@ -82,13 +86,13 @@ jobs:
       - name: Create release archive
         run: |
           cd publish/win-x64
-          zip -r ../../PhotoBooth-${{ steps.version.outputs.version }}-win-x64.zip .
+          7z a -tzip ../../PhotoBooth-${{ steps.version.outputs.version }}-win-x64.zip .
 
       - name: Install WiX toolset
-        run: dotnet tool install --global wix
+        run: dotnet tool install --global wix --version 5.0.2
 
       - name: Add WiX UI extension
-        run: wix extension add WixToolset.UI.wixext
+        run: wix extension add WixToolset.UI.wixext/5.0.2
 
       - name: Build MSI installer
         run: |
