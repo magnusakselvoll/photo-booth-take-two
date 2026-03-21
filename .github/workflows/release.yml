@@ -11,26 +11,21 @@ jobs:
   build-and-release:
     runs-on: windows-latest
 
-    defaults:
-      run:
-        shell: bash
-
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: "10.0.x"
-          dotnet-quality: "preview"
 
       - name: Cache NuGet packages
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.nuget/packages
-          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Packages.props') }}
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/*.wixproj', 'Directory.Packages.props') }}
           restore-keys: |
-            nuget-${{ runner.os }}-
+            ${{ runner.os }}-nuget-
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -63,50 +58,46 @@ jobs:
       - name: Test .NET
         run: dotnet test --verbosity normal --filter "TestCategory!=Integration"
 
-      - name: Determine version
+      - name: Extract version from tag
         id: version
         run: |
-          TAG="${{ github.event.release.tag_name }}"
-          TAG="${TAG#v}"
-          TAG="${TAG#.}"
-          MSI_VERSION=$(echo "$TAG" | grep -oP '^\d+\.\d+\.\d+')
-          echo "version=${TAG}" >> $GITHUB_OUTPUT
-          echo "msi_version=${MSI_VERSION}" >> $GITHUB_OUTPUT
+          $version = $env:GITHUB_REF_NAME -replace '^v',''
+          $msiVersion = $version -replace '[-+].*$',''
+          echo "version=$version" >> $env:GITHUB_OUTPUT
+          echo "msi_version=$msiVersion" >> $env:GITHUB_OUTPUT
 
       - name: Publish for Windows x64
-        run: |
-          dotnet publish src/PhotoBooth.Server/PhotoBooth.Server.csproj \
-            -c Release \
-            -r win-x64 \
-            --self-contained true \
-            -p:PublishSingleFile=true \
-            -p:IncludeNativeLibrariesForSelfExtract=true \
-            -o publish/win-x64
+        run: >
+          dotnet publish src/PhotoBooth.Server/PhotoBooth.Server.csproj
+          -c Release
+          -r win-x64
+          --self-contained true
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -o publish/win-x64
 
       - name: Create release archive
-        run: |
-          cd publish/win-x64
-          7z a -tzip ../../PhotoBooth-${{ steps.version.outputs.version }}-win-x64.zip .
+        run: Compress-Archive -Path publish/win-x64/* -DestinationPath PhotoBooth-${{ steps.version.outputs.version }}-win-x64.zip
 
-      - name: Install WiX toolset
-        run: dotnet tool install --global wix --version 5.0.2
-
-      - name: Add WiX UI extension
-        run: wix extension add WixToolset.UI.wixext/5.0.2
+      - name: Restore WiX installer
+        run: dotnet restore installer/PhotoBooth.Installer/PhotoBooth.Installer.wixproj
 
       - name: Build MSI installer
-        run: |
-          wix build installer/PhotoBooth.wxs \
-            -ext WixToolset.UI.wixext \
-            -d ProductVersion=${{ steps.version.outputs.msi_version }} \
-            -d PublishDir=publish/win-x64 \
-            -o PhotoBooth-${{ steps.version.outputs.version }}-win-x64.msi
+        run: >
+          dotnet build installer/PhotoBooth.Installer/PhotoBooth.Installer.wixproj
+          --configuration Release
+          -p:InstallerVersion=${{ steps.version.outputs.msi_version }}
+          "-p:PublishDir=${{ github.workspace }}\publish\win-x64\"
 
-      - name: Upload release assets
+      - name: Stage MSI for upload
+        run: Copy-Item (Get-ChildItem -Path installer\PhotoBooth.Installer\bin -Filter *.msi -Recurse | Select-Object -First 1).FullName PhotoBooth-${{ steps.version.outputs.version }}-win-x64.msi
+
+      - name: Upload zip asset
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release upload ${{ github.event.release.tag_name }} \
-            PhotoBooth-${{ steps.version.outputs.version }}-win-x64.zip \
-            PhotoBooth-${{ steps.version.outputs.version }}-win-x64.msi \
-            --clobber
+        run: gh release upload ${{ github.event.release.tag_name }} PhotoBooth-${{ steps.version.outputs.version }}-win-x64.zip --clobber
+
+      - name: Upload MSI asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload ${{ github.event.release.tag_name }} PhotoBooth-${{ steps.version.outputs.version }}-win-x64.msi --clobber

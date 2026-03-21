@@ -1,5 +1,7 @@
 <Project>
   <ItemGroup>
+    <!-- WiX Installer -->
+    <PackageVersion Include="WixToolset.UI.wixext" Version="5.0.2" />
     <!-- Camera -->
     <PackageVersion Include="OpenCvSharp4" Version="4.13.0.20260228" />
     <PackageVersion Include="OpenCvSharp4.runtime.osx_arm64" Version="4.8.1-rc" />
