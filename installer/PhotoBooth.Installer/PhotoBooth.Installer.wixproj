@@ -7,6 +7,6 @@
     <SuppressIces>ICE40;ICE61;ICE91</SuppressIces>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="WixToolset.UI.wixext" />
+    <PackageReference Include="WixToolset.UI.wixext" Version="5.0.2" />
   </ItemGroup>
 </Project>
