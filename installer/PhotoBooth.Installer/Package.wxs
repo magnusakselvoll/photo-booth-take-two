@@ -17,8 +17,10 @@
     <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
     <Property Id="REINSTALLMODE" Value="amus" />
 
-    <Property Id="WIXUI_EXITDIALOGOPTIONALTEXT"
-              Value="PhotoBooth has been installed. To get started:&#xA;&#xA;Run PhotoBooth.Server.exe from [INSTALLFOLDER]&#xA;&#xA;Settings file (auto-created on first run): [INSTALLFOLDER]appsettings.json&#xA;Log files: [INSTALLFOLDER]logs\&#xA;Photo storage: %LOCALAPPDATA%\PhotoBooth\Photos" />
+    <SetProperty Id="WIXUI_EXITDIALOGOPTIONALTEXT"
+                 Before="ExecuteAction"
+                 Sequence="ui"
+                 Value="PhotoBooth has been installed. To get started:&#xA;&#xA;Run PhotoBooth.Server.exe from [INSTALLFOLDER]&#xA;&#xA;Settings file (auto-created on first run): [INSTALLFOLDER]appsettings.json&#xA;Log files: [INSTALLFOLDER]logs\&#xA;Photo storage: %LOCALAPPDATA%\PhotoBooth\Photos" />
 
     <WixVariable Id="WixUILicenseRtf" Value="$(sys.CURRENTDIR)License.rtf" />
 
@@ -43,6 +45,15 @@
 
   <Fragment>
     <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
+      <!--
+        ICE64: RemoveFolder ensures the install directory is cleaned up on uninstall.
+        HKCU registry KeyPath follows per-user install best practice (see arcade-cabinet pattern).
+      -->
+      <Component Id="InstallFolderCleanup" Guid="F1E2D3C4-B5A6-4978-8A9B-0C1D2E3F4A5B">
+        <RegistryValue Root="HKCU" Key="Software\magnusakselvoll\PhotoBooth" Name="InstallFolder" Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="RemoveINSTALLFOLDER" On="uninstall" />
+      </Component>
+
       <Files Include="$(PublishDir)\**" />
     </ComponentGroup>
 
