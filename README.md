@@ -11,6 +11,15 @@ A photo booth application for events. Runs unattended with slideshow display, ph
 - **Multiple camera support**: Webcam (via OpenCV), Android phone (via ADB over USB)
 - **Internationalization**: English and Spanish language support with automatic detection and URL override (`?lang=es`)
 
+## Installation (Windows)
+
+Download from [GitHub Releases](https://github.com/magnusakselvoll/photo-booth-take-two/releases):
+
+- **MSI installer** (recommended): No admin rights required — installs per-user to `%LOCALAPPDATA%\PhotoBooth` and adds a Start Menu shortcut. Run the MSI and follow the wizard.
+- **Standalone zip**: Extract and run `PhotoBooth.Server.exe` directly.
+
+After first run, `appsettings.json` is created in the install folder. Logs go to `logs\`, photos to `%LOCALAPPDATA%\PhotoBooth\Photos` (configurable via `PhotoStorage:Path`).
+
 ## Prerequisites
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download)
@@ -174,6 +183,8 @@ tests/
   PhotoBooth.Application.Tests/
   PhotoBooth.Infrastructure.Tests/
   PhotoBooth.Server.Tests/
+installer/
+  PhotoBooth.Installer/     # WiX MSI installer (per-user, no elevation)
 ```
 
 ## Acknowledgments

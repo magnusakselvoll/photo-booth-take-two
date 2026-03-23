@@ -184,6 +184,18 @@ The application runs unattended, so reliability is critical:
 3. **Logging**: Comprehensive logging for post-event debugging
 4. **Watchdog**: Consider self-restart capability if application becomes unresponsive
 
+## Distribution / Installation
+
+Two release formats are published to GitHub Releases for each version:
+
+- **MSI installer** (`PhotoBooth-<version>-win-x64.msi`): Recommended for end users. Installs per-user with no administrator privileges or UAC elevation required. Installs to `%LOCALAPPDATA%\PhotoBooth` and creates a Start Menu shortcut. Supports in-place upgrades — installing a newer version replaces the existing one automatically.
+- **Standalone zip** (`PhotoBooth-<version>-win-x64.zip`): Self-contained executable, extract and run `PhotoBooth.Server.exe` directly.
+
+After installation via MSI:
+- `appsettings.json` is auto-created in the install folder on first run
+- Logs are written to `<install folder>\logs\`
+- Photos are stored in `%LOCALAPPDATA%\PhotoBooth\Photos` (unless overridden via `PhotoStorage:Path`)
+
 ## Non-Goals (Explicitly Out of Scope)
 
 - Cloud storage or sync

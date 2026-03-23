@@ -226,13 +226,31 @@ The `/api/photos/capture` and `/api/photos/trigger` endpoints are rate-limited u
 GitHub Actions workflows in `.github/workflows/`:
 
 - **ci.yml**: Runs on PRs and pushes to main. Builds .NET and frontend, runs tests, and lints.
-- **release.yml**: Triggered when a release is published via the GitHub UI. Builds and uploads the Windows x64 executable to the release.
+- **release.yml**: Triggered when a release is published via the GitHub UI. Builds and uploads the Windows x64 standalone zip and MSI installer to the release.
 
 ### Creating a Release
 
 1. Create a release in the GitHub UI (with tag like `v1.0.0`)
 2. The release workflow automatically triggers on publish
-3. The Windows executable is built and uploaded to the release as an asset
+3. Two artifacts are built and uploaded: a standalone zip and an MSI installer (both for Windows x64)
+
+## Installer
+
+The WiX-based MSI installer is in `installer/PhotoBooth.Installer/`.
+
+- **Technology**: WiX Toolset v5.0.2
+- **Install scope**: Per-user (`Scope="perUser"`) — no administrator privileges or UAC elevation required
+- **Install path**: `%LOCALAPPDATA%\PhotoBooth`
+- **Start Menu**: Creates a shortcut under the user's Start Menu
+- **Upgrades**: Major upgrade; installing a newer version replaces the existing one (same-version reinstall also supported)
+- **Suppressed ICEs**: ICE38, ICE40, ICE61, ICE64, ICE91 — required for the per-user install pattern
+
+Build the MSI manually (after publishing the server):
+```bash
+dotnet build installer/PhotoBooth.Installer/PhotoBooth.Installer.wixproj --configuration Release -p:InstallerVersion=1.2.3 "-p:PublishDir=publish\win-x64\"
+```
+
+The version is extracted from the git tag in the release workflow (strips `v` prefix and any semver prerelease/build metadata for the MSI version field).
 
 ## Reference
 
