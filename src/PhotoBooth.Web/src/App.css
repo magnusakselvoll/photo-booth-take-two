@@ -25,6 +25,7 @@ body {
   justify-content: center;
   cursor: pointer;
   position: relative;
+  overflow: hidden;
 }
 
 /* Slideshow */
@@ -34,6 +35,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
   overflow: hidden;
 }
 
