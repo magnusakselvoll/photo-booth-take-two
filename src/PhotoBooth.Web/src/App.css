@@ -28,6 +28,11 @@ body {
   overflow: hidden;
 }
 
+.booth-page.cursor-hidden,
+.booth-page.cursor-hidden * {
+  cursor: none !important;
+}
+
 /* Slideshow */
 .slideshow {
   width: 100%;

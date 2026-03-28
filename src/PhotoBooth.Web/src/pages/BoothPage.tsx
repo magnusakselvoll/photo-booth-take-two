@@ -387,7 +387,7 @@ export function BoothPage({ qrCodeBaseUrl, swirlEffect = true, slideshowInterval
   const showError = errorMessage !== null;
 
   return (
-    <div className="booth-page" onClick={handleClick}>
+    <div className={`booth-page${showSlideshow ? ' cursor-hidden' : ''}`} onClick={handleClick}>
       {/* Show slideshow when not showing captured photos */}
       {showSlideshow && <Slideshow photo={slideshowPhoto} qrCodeBaseUrl={qrCodeBaseUrl} swirlEffect={swirlEffect} slideshowIntervalMs={slideshowIntervalMs} />}
 
