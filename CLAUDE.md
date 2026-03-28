@@ -10,22 +10,19 @@ Issues are tracked in GitHub. Use `gh issue list` to see open issues and `gh iss
 
 Always use GitHub Flow when working on issues:
 
-1. **Create a worktree** for each feature branch **before making any file edits**:
+1. **Create a feature branch** before making any file edits — no exceptions:
    - First fetch and checkout latest main: `git fetch origin && git checkout main && git pull`
    - Branch name format: `<issue-number>-<short-description>` (e.g., `6-enhance-look-and-feel`)
-   - Create a worktree: `git worktree add .claude/worktrees/6-enhance-look-and-feel -b 6-enhance-look-and-feel`
-   - All file reads/edits/writes must use the full worktree path, e.g. `.claude/worktrees/<branch-name>/src/...`
-   - Run all git commands in the worktree using `-C`: `git -C .claude/worktrees/<branch-name> <command>`
-   - Do NOT use `cd .claude/worktrees/<branch-name> && git ...` — compound `cd` + `git` commands require special approval
-   - This allows multiple issues to be in progress simultaneously
+   - Create and checkout the branch: `git checkout -b 6-enhance-look-and-feel`
+   - **Do not read or edit any files until the branch is created.** This prevents accidentally committing to main (direct pushes to main are blocked).
+   - **Only use worktrees** when explicitly asked (e.g., "use a worktree", "work on several issues in parallel")
 
 2. **Commit** changes with descriptive messages:
    - Write commit messages as plain double-quoted strings — no heredocs, no `$()` substitution
    - Each `-m` value must be a single line — newlines inside a `-m` string cause a "quoted characters in flag names" error
-   - For multi-line messages use separate `-m` flags, one per line: `git -C .claude/worktrees/6-enhance-look-and-feel commit -m "title" -m "body line"`
+   - For multi-line messages use separate `-m` flags, one per line: `git commit -m "title" -m "body line"`
 
 3. **Push** the branch and **create a PR**:
-   - Push using `-C`: `git -C .claude/worktrees/6-enhance-look-and-feel push -u origin 6-enhance-look-and-feel`
    - **Ask before creating the PR** - the user may have feedback based on the console output or code
    - PR title should be descriptive of the change
    - Reference the issue in the PR body with `Closes #<issue-number>` to auto-close on merge
@@ -35,10 +32,17 @@ Always use GitHub Flow when working on issues:
 4. **Merge** after review (squash merge preferred for clean history)
 
 5. **Clean up** after the user confirms a PR is merged:
-   - All cleanup commands must use `git -C <repo-root>` (the absolute path to the main repo, e.g. `/Users/magnus/private/repos/photo-booth-take-two`) — do NOT run them from inside the worktree directory
-   - `main` is already checked out in the primary worktree, so `git checkout main` will fail; just pull: `git -C <repo-root> fetch origin && git -C <repo-root> pull`
-   - `git -C <repo-root> worktree remove .claude/worktrees/<branch-name>`
-   - `git -C <repo-root> branch -d <branch-name>`
+   - `git fetch origin && git checkout main && git pull`
+   - `git branch -d <branch-name>`
+
+### Worktree usage (only when explicitly requested)
+
+When the user asks to use a worktree or work on multiple issues in parallel:
+   - Create a worktree: `git worktree add .claude/worktrees/6-enhance-look-and-feel -b 6-enhance-look-and-feel`
+   - All file reads/edits/writes must use the full worktree path, e.g. `.claude/worktrees/<branch-name>/src/...`
+   - Run all git commands in the worktree using `-C`: `git -C .claude/worktrees/<branch-name> <command>`
+   - Do NOT use `cd .claude/worktrees/<branch-name> && git ...` — compound `cd` + `git` commands require special approval
+   - Cleanup: `git -C <repo-root> worktree remove .claude/worktrees/<branch-name>` then `git -C <repo-root> branch -d <branch-name>`
 
 ## Documentation Updates
 
