@@ -203,6 +203,14 @@ Example Android configuration:
 | `Watchdog:ClientTimeoutMs` | Client-side watchdog timeout in ms | `300000` |
 | `Watchdog:SseHeartbeatIntervalSeconds` | SSE heartbeat interval in seconds | `30` |
 
+## User Configuration
+
+`appsettings.json` is overwritten by the MSI installer on every upgrade. To persist customizations across upgrades, users create `appsettings.User.json` in the same directory. It is loaded after `appsettings.json` and overrides any values it contains — only include the settings you want to change.
+
+Loading is handled by `UserSettingsLoader.AddUserSettings` (called in `Program.cs` after `CreateBuilder`). The file is optional; its absence is not an error. A startup log message is emitted when the file is present.
+
+`appsettings.User.json` is excluded from the installer (not part of publish output) and from source control (`.gitignore`).
+
 ## Security
 
 ### HTTP Security Headers

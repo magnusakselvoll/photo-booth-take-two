@@ -50,7 +50,22 @@ dotnet run --project src/PhotoBooth.Server
 
 ## Configuration
 
-Configuration is done via `appsettings.json` in the Server project. You can delete `appsettings.json` to revert all settings to their defaults.
+Settings are stored in `appsettings.json` in the install folder (`%LOCALAPPDATA%\PhotoBooth` for MSI installs). This file is **overwritten on every upgrade**, so do not edit it directly.
+
+To customize settings that survive upgrades, create `appsettings.User.json` in the same folder. Include only the settings you want to change — they are merged on top of the defaults. Example:
+
+```json
+{
+  "Camera": {
+    "Provider": "Android"
+  },
+  "Event": {
+    "Name": "Wedding2026"
+  }
+}
+```
+
+You can delete `appsettings.json` to restore defaults on next startup, or delete `appsettings.User.json` to remove all customizations.
 
 ```json
 {

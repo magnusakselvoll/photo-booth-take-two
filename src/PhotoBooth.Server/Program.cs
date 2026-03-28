@@ -25,6 +25,10 @@ Log.Logger = new LoggerConfiguration()
 DefaultSettingsRestorer.EnsureSettingsExist(AppContext.BaseDirectory);
 
 var builder = WebApplication.CreateBuilder(args);
+
+if (UserSettingsLoader.AddUserSettings(builder.Configuration, AppContext.BaseDirectory))
+    Log.Information("Loaded user configuration from {Path}", Path.Combine(AppContext.BaseDirectory, "appsettings.User.json"));
+
 builder.Host.UseSerilog();
 
 // Add services to the container.
