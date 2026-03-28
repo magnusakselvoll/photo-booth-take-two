@@ -8,6 +8,7 @@ import { triggerCapture } from '../api/client';
 import { useSlideshowNavigation } from '../hooks/useSlideshowNavigation';
 import { useKeyboardNavigation } from '../hooks/useKeyboardNavigation';
 import { useGamepadNavigation } from '../hooks/useGamepadNavigation';
+import { useIdleCursor } from '../hooks/useIdleCursor';
 import type { GamepadDebugEvent } from '../hooks/useGamepadNavigation';
 import type { PhotoBoothEvent, QueuedPhoto, GamepadConfig } from '../api/types';
 
@@ -64,6 +65,8 @@ export function BoothPage({ qrCodeBaseUrl, swirlEffect = true, slideshowInterval
   const showSlideshow = currentDisplay === null;
   const showCountdown = activeCountdowns > 0;
   const slideshowPaused = showCountdown || !showSlideshow;
+
+  const cursorHidden = useIdleCursor({ enabled: showSlideshow });
 
   const {
     currentPhoto: slideshowPhoto,
@@ -387,7 +390,7 @@ export function BoothPage({ qrCodeBaseUrl, swirlEffect = true, slideshowInterval
   const showError = errorMessage !== null;
 
   return (
-    <div className="booth-page" onClick={handleClick}>
+    <div className={`booth-page${cursorHidden ? ' cursor-hidden' : ''}`} onClick={handleClick}>
       {/* Show slideshow when not showing captured photos */}
       {showSlideshow && <Slideshow photo={slideshowPhoto} qrCodeBaseUrl={qrCodeBaseUrl} swirlEffect={swirlEffect} slideshowIntervalMs={slideshowIntervalMs} />}
 
