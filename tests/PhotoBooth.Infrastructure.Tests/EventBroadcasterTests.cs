@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 using PhotoBooth.Application.Events;
 using PhotoBooth.Infrastructure.Events;
@@ -18,6 +19,14 @@ public class EventBroadcasterTests
             builder.SetMinimumLevel(LogLevel.Debug);
         });
         _logger = loggerFactory.CreateLogger<EventBroadcaster>();
+    }
+
+    private static async Task WaitForSubscribers(EventBroadcaster broadcaster, int expected, int timeoutMs = 2000)
+    {
+        var sw = Stopwatch.StartNew();
+        while (broadcaster.SubscriberCount < expected && sw.ElapsedMilliseconds < timeoutMs)
+            await Task.Delay(10);
+        Assert.AreEqual(expected, broadcaster.SubscriberCount, "Subscribers did not connect in time");
     }
 
     [TestMethod]
@@ -48,8 +57,7 @@ public class EventBroadcasterTests
             }
         });
 
-        // Give the subscriber time to connect
-        await Task.Delay(50);
+        await WaitForSubscribers(broadcaster, 1);
 
         // Broadcast
         await broadcaster.BroadcastAsync(evt);
@@ -92,7 +100,7 @@ public class EventBroadcasterTests
             }
         });
 
-        await Task.Delay(50);
+        await WaitForSubscribers(broadcaster, 2);
 
         await broadcaster.BroadcastAsync(evt);
 
@@ -131,8 +139,7 @@ public class EventBroadcasterTests
             subscriptionEnded.SetResult();
         });
 
-        // Give the subscriber time to connect
-        await Task.Delay(50);
+        await WaitForSubscribers(broadcaster, 1);
 
         // Cancel and verify cleanup
         cts.Cancel();
