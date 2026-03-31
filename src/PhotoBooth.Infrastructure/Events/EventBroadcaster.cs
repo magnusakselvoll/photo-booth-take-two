@@ -15,6 +15,8 @@ public class EventBroadcaster : IEventBroadcaster
         _logger = logger;
     }
 
+    public int SubscriberCount { get { lock (_lock) { return _subscribers.Count; } } }
+
     public Task BroadcastAsync(PhotoBoothEvent evt, CancellationToken cancellationToken = default)
     {
         List<Channel<PhotoBoothEvent>> subscribers;
