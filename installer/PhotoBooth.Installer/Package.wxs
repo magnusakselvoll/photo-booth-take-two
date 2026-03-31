@@ -20,7 +20,7 @@
     <SetProperty Id="WIXUI_EXITDIALOGOPTIONALTEXT"
                  Before="ExecuteAction"
                  Sequence="ui"
-                 Value="PhotoBooth has been installed. To get started:&#xA;&#xA;Run PhotoBooth.Server.exe from [INSTALLFOLDER]&#xA;&#xA;Settings (overwritten on upgrade): [INSTALLFOLDER]appsettings.json&#xA;Custom settings (preserved on upgrade): [INSTALLFOLDER]appsettings.User.json&#xA;Log files: [INSTALLFOLDER]logs\&#xA;Photo storage: %LOCALAPPDATA%\PhotoBooth\Photos" />
+                 Value="PhotoBooth has been installed.&#xA;&#xA;Run PhotoBooth.Server.exe from the install folder.&#xA;&#xA;Custom settings (preserved on upgrade): appsettings.User.json&#xA;Photos: %LOCALAPPDATA%\PhotoBooth\Photos" />
 
     <WixVariable Id="WixUILicenseRtf" Value="$(sys.CURRENTDIR)License.rtf" />
 
