@@ -1,0 +1,16 @@
+# Build output
+**/bin/
+**/obj/
+**/TestResults/
+src/PhotoBooth.Server/wwwroot/
+
+# Dependencies and lock files
+node_modules/
+pnpm-lock.yaml
+
+# Runtime
+src/PhotoBooth.Server/logs/
+
+# OS and IDE
+.DS_Store
+.vs/

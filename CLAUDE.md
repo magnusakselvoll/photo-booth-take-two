@@ -116,6 +116,10 @@ Avoid: niche libraries, multiple libraries solving the same problem, dependencie
 - Use `CancellationToken` for async operations
 - Throw domain-specific exceptions inheriting from `PhotoBoothException`
 - Tests use MSTest with descriptive method names
+- MSTest analyzers enforce strict assertion methods (MSTEST0037 is an error, not a warning):
+  - Use `Assert.HasCount(expected, collection)` not `Assert.AreEqual(expected, collection.Count)`
+  - Use `Assert.IsEmpty(collection)` not `Assert.AreEqual(0, collection.Count)`
+  - Use `Assert.Contains(substring, value)` not `Assert.IsTrue(value.Contains(substring))` — note: substring is first arg
 
 ## Test Classification
 
@@ -126,112 +130,19 @@ CI runs `dotnet test --filter "TestCategory!=Integration"`, so every new test cl
 
 When writing a new test class, explicitly decide which category it belongs to and apply `[TestCategory("Integration")]` when appropriate. Do not add the attribute to tests that are actually unit tests just because they touch Infrastructure code.
 
-## Camera Provider Configuration
+## Configuration
 
-The application supports camera providers configured via `Camera:Provider` in appsettings.json. Provider-specific settings are in subsections (`Camera:OpenCv`, `Camera:Android`), each with their own `CaptureLatencyMs`.
-
-| Provider | Value | Description |
-|----------|-------|-------------|
-| OpenCV | `"OpenCv"` | Default. Uses OpenCvSharp4 for cross-platform capture. |
-| Android | `"Android"` | Uses Android phone via ADB over USB. Based on [android-photo-booth-camera](https://github.com/magnusakselvoll/android-photo-booth-camera). |
-| Mock | `"Mock"` | For testing without a camera. |
-
-Example OpenCV configuration:
-```jsonc
-{
-  "Camera": {
-    "Provider": "OpenCv",
-    "OpenCv": {
-      "CaptureLatencyMs": 100,
-      "DeviceIndex": 0,
-      "FramesToSkip": 5,
-      "FlipVertical": false,
-      "JpegQuality": 90,
-      "PreferredWidth": 1920,
-      "PreferredHeight": 1080,
-      "InitializationWarmupMs": 500,
-      "CaptureLockTimeoutSeconds": 5
-    }
-  }
-}
-```
-
-Example Android configuration:
-```jsonc
-{
-  "Camera": {
-    "Provider": "Android",
-    "Android": {
-      "CaptureLatencyMs": 100,
-      "AdbPath": "adb",
-      "DeviceImageFolder": "/sdcard/DCIM/Camera",
-      "PinCode": null,
-      "CameraAction": "STILL_IMAGE_CAMERA",
-      "FocusKeepaliveIntervalSeconds": 15,
-      "FocusKeepaliveMaxDurationSeconds": 180,
-      "DeleteAfterDownload": true,
-      "FileSelectionRegex": "^.*\\.jpg$",
-      "CaptureTimeoutMs": 15000,
-      "FileStabilityDelayMs": 200,
-      "CapturePollingIntervalMs": 500,
-      "AdbCommandTimeoutMs": 10000,
-      "CameraOpenTimeoutSeconds": 30,
-      "MaxCaptureRetries": 1,
-      "CaptureLockTimeoutSeconds": 5
-    }
-  }
-}
-```
-
-## Additional Configuration
-
-| Key | Description | Default |
-|-----|-------------|---------|
-| `Capture:CountdownDurationMs` | Countdown duration in ms before photo is taken | `7000` |
-| `Capture:BufferTimeoutHighLatencyMs` | Hard timeout buffer for high-latency cameras | `45000` |
-| `Capture:BufferTimeoutLowLatencyMs` | Hard timeout buffer for low-latency cameras | `12000` |
-| `Slideshow:SwirlEffect` | Enable swirl animation effect on slideshow | `true` |
-| `Slideshow:IntervalMs` | Interval in ms between slideshow transitions | `30000` |
-| `Event:Name` | Event name (used as storage subfolder) | Current date |
-| `QrCode:BaseUrl` | Base URL for QR code links | Request origin |
-| `RateLimiting:PermitLimit` | Max requests per rate limit window | `5` |
-| `RateLimiting:WindowSeconds` | Rate limit window duration in seconds | `10` |
-| `Thumbnails:JpegQuality` | JPEG quality (0-100) for server-side resized thumbnails | `80` |
-| `Booth:RestrictToLocalhost` | Redirect non-localhost users from `/` to `/download` | `true` |
-| `Trigger:RestrictToLocalhost` | Restrict `/api/photos/trigger` to localhost only | `true` |
-| `Capture:RestrictToLocalhost` | Restrict `/api/photos/capture` to localhost only | `true` |
-| `Input:EnableKeyboard` | Enable spacebar to trigger capture | `false` |
-| `NetworkSecurity:BlockOutboundRequests` | Block outbound HTTP requests | `true` |
-| `PhotoStorage:Path` | Where photos are saved | OS-specific app data |
-| `Watchdog:ServerInactivityMinutes` | Restart server after inactivity (0 to disable) | `30` |
-| `Watchdog:ClientTimeoutMs` | Client-side watchdog timeout in ms | `300000` |
-| `Watchdog:SseHeartbeatIntervalSeconds` | SSE heartbeat interval in seconds | `30` |
-
-## User Configuration
-
-`appsettings.json` is overwritten by the MSI installer on every upgrade. To persist customizations across upgrades, users create `appsettings.User.json` in the same directory. It is loaded after `appsettings.json` and overrides any values it contains — only include the settings you want to change.
-
-Loading is handled by `UserSettingsLoader.AddUserSettings` (called in `Program.cs` after `CreateBuilder`). The file is optional; its absence is not an error. A startup log message is emitted when the file is present.
-
-`appsettings.User.json` is excluded from the installer (not part of publish output) and from source control (`.gitignore`).
+See README.md for camera provider configuration, all appsettings.json keys and defaults, and user configuration (`appsettings.User.json`).
 
 ## Security
 
 ### HTTP Security Headers
 
-All responses (including static files) include security headers added by `SecurityHeadersMiddleware`:
-
-- **X-Content-Type-Options**: `nosniff` — prevents MIME-type sniffing
-- **X-Frame-Options**: `DENY` — prevents clickjacking
-- **Referrer-Policy**: `strict-origin-when-cross-origin` — limits referrer leakage
-- **Permissions-Policy**: Disables camera, microphone, geolocation, payment browser APIs
-- **Content-Security-Policy**: Restricts resource loading to `'self'` with exceptions for Google Fonts and inline styles (required by React)
-
-No HSTS header — inappropriate for a local-network app with dynamic IPs.
+All responses include security headers added by `SecurityHeadersMiddleware` (CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy). No HSTS — inappropriate for a local-network app with dynamic IPs.
 
 ### Rate Limiting
 
-The `/api/photos/capture` and `/api/photos/trigger` endpoints are rate-limited using ASP.NET Core's built-in rate limiter. Defaults: 5 requests per 10-second fixed window (configurable via `RateLimiting:PermitLimit` and `RateLimiting:WindowSeconds`). Returns HTTP 429 when exceeded.
+`/api/photos/capture` and `/api/photos/trigger` are rate-limited (default: 5 requests per 10-second fixed window, configurable via `RateLimiting:PermitLimit` and `RateLimiting:WindowSeconds`). Returns HTTP 429 when exceeded.
 
 ## CI/CD
 
@@ -248,21 +159,14 @@ GitHub Actions workflows in `.github/workflows/`:
 
 ## Installer
 
-The WiX-based MSI installer is in `installer/PhotoBooth.Installer/`.
+WiX v5 MSI installer in `installer/PhotoBooth.Installer/`. Per-user install (`Scope="perUser"`, no admin/UAC) to `%LOCALAPPDATA%\PhotoBooth`. Major upgrade; installing a newer version replaces the existing one.
 
-- **Technology**: WiX Toolset v5.0.2
-- **Install scope**: Per-user (`Scope="perUser"`) — no administrator privileges or UAC elevation required
-- **Install path**: `%LOCALAPPDATA%\PhotoBooth`
-- **Start Menu**: Creates a shortcut under the user's Start Menu
-- **Upgrades**: Major upgrade; installing a newer version replaces the existing one (same-version reinstall also supported)
-- **Suppressed ICEs**: ICE38, ICE40, ICE61, ICE64, ICE91 — required for the per-user install pattern
-
-Build the MSI manually (after publishing the server):
+Build manually (after publishing the server):
 ```bash
 dotnet build installer/PhotoBooth.Installer/PhotoBooth.Installer.wixproj --configuration Release -p:InstallerVersion=1.2.3 "-p:PublishDir=publish\win-x64\"
 ```
 
-The version is extracted from the git tag in the release workflow (strips `v` prefix and any semver prerelease/build metadata for the MSI version field).
+The version is extracted from the git tag in the release workflow (strips `v` prefix and semver prerelease/build metadata).
 
 ## Reference
 
