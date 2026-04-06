@@ -9,11 +9,9 @@ public static class UrlPrefixGenerator
 
     public static string Generate(string eventName, string salt, int length = 10)
     {
-        // Hash the salt text to get a fixed-size binary salt
-        var saltBytes = SHA256.HashData(Encoding.UTF8.GetBytes(salt ?? ""));
-
-        // Concatenate event name bytes + binary salt, then hash
+        // Concatenate event name and salt bytes, then hash once
         var eventBytes = Encoding.UTF8.GetBytes(eventName ?? "");
+        var saltBytes = Encoding.UTF8.GetBytes(salt ?? "");
         var combined = new byte[eventBytes.Length + saltBytes.Length];
         eventBytes.CopyTo(combined, 0);
         saltBytes.CopyTo(combined, eventBytes.Length);

@@ -108,7 +108,7 @@ Optional QR code overlay on slideshow photos:
 
 Guest-facing routes (`/download`, `/photo/:code`) are served under a short URL prefix derived from the event name and a configurable salt:
 
-- The prefix is 10 lowercase alphanumeric characters, computed as `SHA256(eventName + SHA256(salt))`.
+- The prefix is 10 lowercase alphanumeric characters, computed as `SHA256(eventName + salt)`.
 - When the event name or salt changes, the prefix changes and old URLs stop working. This prevents attendees from accidentally accessing photos from a different event using a bookmarked URL.
 - This is a convenience measure, not a security boundary.
 - The prefix is included in QR codes and all navigation links.

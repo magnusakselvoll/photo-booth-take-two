@@ -183,7 +183,7 @@ Requires [ADB](https://developer.android.com/tools/adb) installed and an Android
 - `Watchdog.SseHeartbeatIntervalSeconds`: SSE heartbeat interval in seconds (default: 30)
 - `NetworkSecurity.BlockOutboundRequests`: Block outbound network requests (default: true)
 - `QrCode.BaseUrl`: Base URL for QR codes (defaults to request origin)
-- `UrlPrefix.Salt`: Salt text for URL prefix generation. The prefix is derived from `SHA256(eventName + SHA256(salt))` and prefixes guest-facing routes (e.g., `/{prefix}/download`). Changing the salt or event name invalidates old URLs. An empty salt still produces a deterministic prefix.
+- `UrlPrefix.Salt`: Salt text for URL prefix generation. The prefix is derived from `SHA256(eventName + salt)` and prefixes guest-facing routes (e.g., `/{prefix}/download`). Changing the salt or event name invalidates old URLs. An empty salt still produces a deterministic prefix.
 - `Event.Name`: Event name used as storage subfolder (defaults to current date)
 - `Slideshow.SwirlEffect`: Enable swirl animation effect on slideshow (default: true)
 - `Slideshow.IntervalMs`: Interval in ms between slideshow transitions (default: 30000)
