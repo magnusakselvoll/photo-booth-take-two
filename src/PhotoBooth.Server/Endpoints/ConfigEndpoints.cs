@@ -4,13 +4,13 @@ namespace PhotoBooth.Server.Endpoints;
 
 public static class ConfigEndpoints
 {
-    public static void MapConfigEndpoints(this IEndpointRouteBuilder app, IConfiguration configuration)
+    public static void MapConfigEndpoints(this IEndpointRouteBuilder app, IConfiguration configuration, string urlPrefix)
     {
-        app.MapGet("/api/config", () => GetConfig(configuration))
+        app.MapGet("/api/config", () => GetConfig(configuration, urlPrefix))
             .WithName("GetConfig");
     }
 
-    private static IResult GetConfig(IConfiguration configuration)
+    private static IResult GetConfig(IConfiguration configuration, string urlPrefix)
     {
         var qrCodeBaseUrl = configuration.GetValue<string>("QrCode:BaseUrl");
         var swirlEffect = configuration.GetValue<bool>("Slideshow:SwirlEffect", true);
@@ -39,7 +39,7 @@ public static class ConfigEndpoints
 
         var watchdogTimeoutMs = configuration.GetValue<int?>("Watchdog:ClientTimeoutMs") ?? 300000;
 
-        var config = new ClientConfigDto(qrCodeBaseUrl, swirlEffect, slideshowIntervalMs, gamepad, watchdogTimeoutMs);
+        var config = new ClientConfigDto(qrCodeBaseUrl, swirlEffect, slideshowIntervalMs, gamepad, watchdogTimeoutMs, urlPrefix);
         return Results.Ok(config);
     }
 }

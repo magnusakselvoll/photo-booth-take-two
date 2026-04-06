@@ -11,7 +11,7 @@ public sealed class BoothRedirectMiddlewareTests
     public async Task InvokeAsync_WhenDisabled_PassesThroughForNonLocalhostRoot()
     {
         // Arrange
-        var middleware = new BoothRedirectMiddleware(enabled: false, next: _ => Task.CompletedTask);
+        var middleware = new BoothRedirectMiddleware(enabled: false, urlPrefix: "abc1234567", next: _ => Task.CompletedTask);
         var context = CreateContext(IPAddress.Parse("192.168.1.100"), "/");
 
         // Act
@@ -26,7 +26,7 @@ public sealed class BoothRedirectMiddlewareTests
     {
         // Arrange
         var nextCalled = false;
-        var middleware = new BoothRedirectMiddleware(enabled: true, next: _ =>
+        var middleware = new BoothRedirectMiddleware(enabled: true, urlPrefix: "abc1234567", next: _ =>
         {
             nextCalled = true;
             return Task.CompletedTask;
@@ -39,7 +39,7 @@ public sealed class BoothRedirectMiddlewareTests
         // Assert
         Assert.IsFalse(nextCalled, "Next delegate should not be called for non-localhost root request");
         Assert.AreEqual(StatusCodes.Status302Found, context.Response.StatusCode);
-        Assert.AreEqual("/download", context.Response.Headers.Location.ToString());
+        Assert.AreEqual("/abc1234567/download", context.Response.Headers.Location.ToString());
     }
 
     [TestMethod]
@@ -47,7 +47,7 @@ public sealed class BoothRedirectMiddlewareTests
     {
         // Arrange
         var nextCalled = false;
-        var middleware = new BoothRedirectMiddleware(enabled: true, next: _ =>
+        var middleware = new BoothRedirectMiddleware(enabled: true, urlPrefix: "abc1234567", next: _ =>
         {
             nextCalled = true;
             return Task.CompletedTask;
@@ -66,7 +66,7 @@ public sealed class BoothRedirectMiddlewareTests
     {
         // Arrange
         var nextCalled = false;
-        var middleware = new BoothRedirectMiddleware(enabled: true, next: _ =>
+        var middleware = new BoothRedirectMiddleware(enabled: true, urlPrefix: "abc1234567", next: _ =>
         {
             nextCalled = true;
             return Task.CompletedTask;
@@ -85,7 +85,7 @@ public sealed class BoothRedirectMiddlewareTests
     {
         // Arrange
         var nextCalled = false;
-        var middleware = new BoothRedirectMiddleware(enabled: true, next: _ =>
+        var middleware = new BoothRedirectMiddleware(enabled: true, urlPrefix: "abc1234567", next: _ =>
         {
             nextCalled = true;
             return Task.CompletedTask;
@@ -104,12 +104,12 @@ public sealed class BoothRedirectMiddlewareTests
     {
         // Arrange
         var nextCalled = false;
-        var middleware = new BoothRedirectMiddleware(enabled: true, next: _ =>
+        var middleware = new BoothRedirectMiddleware(enabled: true, urlPrefix: "abc1234567", next: _ =>
         {
             nextCalled = true;
             return Task.CompletedTask;
         });
-        var context = CreateContext(IPAddress.Parse("192.168.1.100"), "/download");
+        var context = CreateContext(IPAddress.Parse("192.168.1.100"), "/abc1234567/download");
 
         // Act
         await middleware.InvokeAsync(context);
@@ -123,7 +123,7 @@ public sealed class BoothRedirectMiddlewareTests
     {
         // Arrange
         var nextCalled = false;
-        var middleware = new BoothRedirectMiddleware(enabled: true, next: _ =>
+        var middleware = new BoothRedirectMiddleware(enabled: true, urlPrefix: "abc1234567", next: _ =>
         {
             nextCalled = true;
             return Task.CompletedTask;
@@ -142,7 +142,7 @@ public sealed class BoothRedirectMiddlewareTests
     {
         // Arrange
         var nextCalled = false;
-        var middleware = new BoothRedirectMiddleware(enabled: true, next: _ =>
+        var middleware = new BoothRedirectMiddleware(enabled: true, urlPrefix: "abc1234567", next: _ =>
         {
             nextCalled = true;
             return Task.CompletedTask;
@@ -155,6 +155,7 @@ public sealed class BoothRedirectMiddlewareTests
         // Assert
         Assert.IsFalse(nextCalled, "Next delegate should not be called when IP is null (fail-secure)");
         Assert.AreEqual(StatusCodes.Status302Found, context.Response.StatusCode);
+        Assert.AreEqual("/abc1234567/download", context.Response.Headers.Location.ToString());
     }
 
     private static HttpContext CreateContext(IPAddress? remoteIp, string path)
