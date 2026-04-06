@@ -19,6 +19,7 @@ const GAMEPAD_DEBUG_DISPLAY_MS = 3000;
 
 interface BoothPageProps {
   qrCodeBaseUrl?: string;
+  urlPrefix?: string;
   swirlEffect?: boolean;
   slideshowIntervalMs?: number;
   gamepadConfig?: GamepadConfig | null;
@@ -32,7 +33,7 @@ interface DisplayPhoto {
   fromQueue: boolean; // true if from queue, false if newly captured
 }
 
-export function BoothPage({ qrCodeBaseUrl, swirlEffect = true, slideshowIntervalMs = DEFAULT_SLIDESHOW_INTERVAL_MS, gamepadConfig, watchdogTimeoutMs = DEFAULT_WATCHDOG_TIMEOUT_MS }: BoothPageProps) {
+export function BoothPage({ qrCodeBaseUrl, urlPrefix = '', swirlEffect = true, slideshowIntervalMs = DEFAULT_SLIDESHOW_INTERVAL_MS, gamepadConfig, watchdogTimeoutMs = DEFAULT_WATCHDOG_TIMEOUT_MS }: BoothPageProps) {
   // Queue of interrupted photos waiting to be displayed
   const [photoQueue, setPhotoQueue] = useState<QueuedPhoto[]>([]);
   // Current index within the queue
@@ -389,7 +390,7 @@ export function BoothPage({ qrCodeBaseUrl, swirlEffect = true, slideshowInterval
   return (
     <div className={`booth-page${showSlideshow ? ' cursor-hidden' : ''}`} onClick={handleClick}>
       {/* Show slideshow when not showing captured photos */}
-      {showSlideshow && <Slideshow photo={slideshowPhoto} qrCodeBaseUrl={qrCodeBaseUrl} swirlEffect={swirlEffect} slideshowIntervalMs={slideshowIntervalMs} />}
+      {showSlideshow && <Slideshow photo={slideshowPhoto} qrCodeBaseUrl={qrCodeBaseUrl} urlPrefix={urlPrefix} swirlEffect={swirlEffect} slideshowIntervalMs={slideshowIntervalMs} />}
 
       {/* Show captured photo with same Ken Burns effect as slideshow */}
       {showCapturedPhoto && (
@@ -401,6 +402,7 @@ export function BoothPage({ qrCodeBaseUrl, swirlEffect = true, slideshowInterval
               code={previousDisplay.photo.code}
               kenBurns={previousDisplay.kenBurns}
               qrCodeBaseUrl={qrCodeBaseUrl}
+              urlPrefix={urlPrefix}
               swirlEffect={swirlEffect}
               fadingOut
             />
@@ -411,6 +413,7 @@ export function BoothPage({ qrCodeBaseUrl, swirlEffect = true, slideshowInterval
             code={currentDisplay.photo.code}
             kenBurns={currentDisplay.kenBurns}
             qrCodeBaseUrl={qrCodeBaseUrl}
+            urlPrefix={urlPrefix}
             swirlEffect={swirlEffect}
           />
         </div>

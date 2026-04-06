@@ -66,26 +66,26 @@ describe('PhotoDetailPage', () => {
   it('shows loading indicator while photo is being fetched', () => {
     mockGetPhotoByCode.mockReturnValue(new Promise(() => {}));
     mockGetAllPhotos.mockReturnValue(new Promise(() => {}));
-    render(<PhotoDetailPage />);
+    render(<PhotoDetailPage urlPrefix="testprefix" />);
     expect(screen.getByText('Loading...')).toBeInTheDocument();
   });
 
   it('shows error when no code parameter is provided', () => {
     mockUseParams.mockReturnValue({ code: undefined });
-    render(<PhotoDetailPage />);
+    render(<PhotoDetailPage urlPrefix="testprefix" />);
     expect(screen.getByText('Photo not found')).toBeInTheDocument();
   });
 
   it('shows error when photo not found', async () => {
     mockGetPhotoByCode.mockResolvedValue(null);
-    render(<PhotoDetailPage />);
+    render(<PhotoDetailPage urlPrefix="testprefix" />);
     await waitFor(() => {
       expect(screen.getByText('Photo not found')).toBeInTheDocument();
     });
   });
 
   it('renders photo image with correct src on success', async () => {
-    render(<PhotoDetailPage />);
+    render(<PhotoDetailPage urlPrefix="testprefix" />);
     await waitFor(() => {
       const img = screen.getByRole('img');
       expect(img).toHaveAttribute('src', '/api/photos/photo-abc/image?width=1200');
@@ -93,7 +93,7 @@ describe('PhotoDetailPage', () => {
   });
 
   it('displays the photo code in nav bar', async () => {
-    render(<PhotoDetailPage />);
+    render(<PhotoDetailPage urlPrefix="testprefix" />);
     await waitFor(() => {
       const codeEl = document.querySelector('.photo-detail-code');
       expect(codeEl).toHaveTextContent('42');
@@ -101,14 +101,14 @@ describe('PhotoDetailPage', () => {
   });
 
   it('navigates to /download when back button is clicked', async () => {
-    render(<PhotoDetailPage />);
+    render(<PhotoDetailPage urlPrefix="testprefix" />);
     await waitFor(() => expect(screen.queryByText('Loading...')).not.toBeInTheDocument());
     fireEvent.click(screen.getByRole('button', { name: 'Back to Gallery' }));
-    expect(mockNavigate).toHaveBeenCalledWith('/download');
+    expect(mockNavigate).toHaveBeenCalledWith('/testprefix/download');
   });
 
   it('shows speed dial trigger button', async () => {
-    render(<PhotoDetailPage />);
+    render(<PhotoDetailPage urlPrefix="testprefix" />);
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'Get Photo' })).toBeInTheDocument();
     });
@@ -120,7 +120,7 @@ describe('PhotoDetailPage', () => {
       blob: () => Promise.resolve(new Blob(['image data'], { type: 'image/jpeg' })),
     } as Response));
 
-    render(<PhotoDetailPage />);
+    render(<PhotoDetailPage urlPrefix="testprefix" />);
     await waitFor(() => expect(screen.queryByText('Loading...')).not.toBeInTheDocument());
 
     await act(async () => {
@@ -138,7 +138,7 @@ describe('PhotoDetailPage', () => {
       blob: () => Promise.resolve(new Blob(['image data'], { type: 'image/jpeg' })),
     } as Response));
 
-    render(<PhotoDetailPage />);
+    render(<PhotoDetailPage urlPrefix="testprefix" />);
     await waitFor(() => expect(screen.queryByText('Loading...')).not.toBeInTheDocument());
 
     await act(async () => {
@@ -161,7 +161,7 @@ describe('PhotoDetailPage', () => {
       blob: () => Promise.resolve(new Blob(['image data'], { type: 'image/jpeg' })),
     } as Response));
 
-    render(<PhotoDetailPage />);
+    render(<PhotoDetailPage urlPrefix="testprefix" />);
     await waitFor(() => expect(screen.queryByText('Loading...')).not.toBeInTheDocument());
 
     await act(async () => {
@@ -184,7 +184,7 @@ describe('PhotoDetailPage', () => {
       blob: () => Promise.resolve(new Blob(['image data'], { type: 'image/jpeg' })),
     } as Response));
 
-    render(<PhotoDetailPage />);
+    render(<PhotoDetailPage urlPrefix="testprefix" />);
     await waitFor(() => expect(screen.queryByText('Loading...')).not.toBeInTheDocument());
 
     await act(async () => {

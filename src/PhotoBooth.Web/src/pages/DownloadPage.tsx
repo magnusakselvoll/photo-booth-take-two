@@ -4,7 +4,11 @@ import { PhotoGrid } from '../components/PhotoGrid';
 import { SearchIcon } from '../components/Icons';
 import { useTranslation } from '../i18n/useTranslation';
 
-export function DownloadPage() {
+interface DownloadPageProps {
+  urlPrefix: string;
+}
+
+export function DownloadPage({ urlPrefix }: DownloadPageProps) {
   const navigate = useNavigate();
   const { t, language, setLanguage } = useTranslation();
   const [code, setCode] = useState('');
@@ -13,12 +17,12 @@ export function DownloadPage() {
     e.preventDefault();
     const trimmed = code.trim();
     if (trimmed) {
-      navigate(`/photo/${trimmed}`);
+      navigate(`/${urlPrefix}/photo/${trimmed}`);
     }
   };
 
   const handlePhotoClick = (photoCode: string) => {
-    navigate(`/photo/${photoCode}`);
+    navigate(`/${urlPrefix}/photo/${photoCode}`);
   };
 
   return (

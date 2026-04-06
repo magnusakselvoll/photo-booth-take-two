@@ -3,10 +3,11 @@ import QRCode from 'react-qr-code';
 interface QRCodeOverlayProps {
   code: string;
   baseUrl: string;
+  urlPrefix: string;
 }
 
-export function QRCodeOverlay({ code, baseUrl }: QRCodeOverlayProps) {
-  const downloadUrl = `${baseUrl.replace(/\/$/, '')}/photo/${code}`;
+export function QRCodeOverlay({ code, baseUrl, urlPrefix }: QRCodeOverlayProps) {
+  const downloadUrl = `${baseUrl.replace(/\/$/, '')}/${urlPrefix}/photo/${code}`;
 
   return (
     <div className="qr-code-container">

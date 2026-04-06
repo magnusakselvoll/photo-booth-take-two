@@ -18,12 +18,13 @@ interface PhotoDisplayProps {
   showCode?: boolean;
   showQrCode?: boolean;
   qrCodeBaseUrl?: string;
+  urlPrefix?: string;
   kenBurns?: KenBurnsConfig;
   swirlEffect?: boolean;
   fadingOut?: boolean;
 }
 
-export function PhotoDisplay({ photoId, code, showCode = true, showQrCode = true, qrCodeBaseUrl, kenBurns, swirlEffect = true, fadingOut = false }: PhotoDisplayProps) {
+export function PhotoDisplay({ photoId, code, showCode = true, showQrCode = true, qrCodeBaseUrl, urlPrefix = '', kenBurns, swirlEffect = true, fadingOut = false }: PhotoDisplayProps) {
   const imageUrl = getPhotoImageUrl(photoId);
   const baseUrl = qrCodeBaseUrl || window.location.origin;
 
@@ -54,7 +55,7 @@ export function PhotoDisplay({ photoId, code, showCode = true, showQrCode = true
       {showCode && !fadingOut && (
         <div className="photo-code-overlay">
           <div className="photo-code">{code}</div>
-          {showQrCode && <QRCodeOverlay code={code} baseUrl={baseUrl} />}
+          {showQrCode && <QRCodeOverlay code={code} baseUrl={baseUrl} urlPrefix={urlPrefix} />}
         </div>
       )}
     </div>

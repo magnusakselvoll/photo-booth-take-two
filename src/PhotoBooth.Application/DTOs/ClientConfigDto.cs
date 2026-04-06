@@ -20,4 +20,5 @@ public record ClientConfigDto(
     bool SwirlEffect,
     int SlideshowIntervalMs,
     GamepadConfigDto Gamepad,
-    int WatchdogTimeoutMs);
+    int WatchdogTimeoutMs,
+    string UrlPrefix);

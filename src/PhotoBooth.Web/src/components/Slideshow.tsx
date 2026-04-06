@@ -8,6 +8,7 @@ import { generateKenBurnsConfig } from '../utils/kenBurns';
 interface SlideshowProps {
   photo: SlideshowPhoto | null;
   qrCodeBaseUrl?: string;
+  urlPrefix?: string;
   swirlEffect?: boolean;
   slideshowIntervalMs?: number;
 }
@@ -20,7 +21,7 @@ interface PhotoState {
   key: number;
 }
 
-export function Slideshow({ photo, qrCodeBaseUrl, swirlEffect = true, slideshowIntervalMs = 30000 }: SlideshowProps) {
+export function Slideshow({ photo, qrCodeBaseUrl, urlPrefix = '', swirlEffect = true, slideshowIntervalMs = 30000 }: SlideshowProps) {
   const { t } = useTranslation();
   const [currentState, setCurrentState] = useState<PhotoState | null>(null);
   const [previousState, setPreviousState] = useState<PhotoState | null>(null);
@@ -69,6 +70,7 @@ export function Slideshow({ photo, qrCodeBaseUrl, swirlEffect = true, slideshowI
           code={previousState.photo.code}
           kenBurns={previousState.kenBurns}
           qrCodeBaseUrl={qrCodeBaseUrl}
+          urlPrefix={urlPrefix}
           swirlEffect={swirlEffect}
           fadingOut
         />
@@ -79,6 +81,7 @@ export function Slideshow({ photo, qrCodeBaseUrl, swirlEffect = true, slideshowI
         code={currentState.photo.code}
         kenBurns={currentState.kenBurns}
         qrCodeBaseUrl={qrCodeBaseUrl}
+        urlPrefix={urlPrefix}
         swirlEffect={swirlEffect}
       />
     </div>

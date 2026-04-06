@@ -14,6 +14,7 @@ function App() {
   const [slideshowIntervalMs, setSlideshowIntervalMs] = useState(30000);
   const [gamepadConfig, setGamepadConfig] = useState<GamepadConfig | null>(null);
   const [watchdogTimeoutMs, setWatchdogTimeoutMs] = useState(300000);
+  const [urlPrefix, setUrlPrefix] = useState<string | null>(null);
 
   useEffect(() => {
     getClientConfig()
@@ -25,19 +26,25 @@ function App() {
         setSlideshowIntervalMs(config.slideshowIntervalMs);
         setGamepadConfig(config.gamepad);
         setWatchdogTimeoutMs(config.watchdogTimeoutMs);
+        setUrlPrefix(config.urlPrefix);
       })
       .catch(err => {
         console.error('Failed to load client config:', err);
+        setUrlPrefix('');
       });
   }, []);
+
+  if (urlPrefix === null) {
+    return null;
+  }
 
   return (
     <BrowserRouter>
       <div className="app">
         <Routes>
-          <Route path="/" element={<BoothPage qrCodeBaseUrl={qrCodeBaseUrl} swirlEffect={swirlEffect} slideshowIntervalMs={slideshowIntervalMs} gamepadConfig={gamepadConfig} watchdogTimeoutMs={watchdogTimeoutMs} />} />
-          <Route path="/download" element={<DownloadPage />} />
-          <Route path="/photo/:code" element={<PhotoDetailPage />} />
+          <Route path="/" element={<BoothPage qrCodeBaseUrl={qrCodeBaseUrl} urlPrefix={urlPrefix} swirlEffect={swirlEffect} slideshowIntervalMs={slideshowIntervalMs} gamepadConfig={gamepadConfig} watchdogTimeoutMs={watchdogTimeoutMs} />} />
+          <Route path={`/${urlPrefix}/download`} element={<DownloadPage urlPrefix={urlPrefix} />} />
+          <Route path={`/${urlPrefix}/photo/:code`} element={<PhotoDetailPage urlPrefix={urlPrefix} />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </div>

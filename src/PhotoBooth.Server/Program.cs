@@ -45,6 +45,9 @@ var basePath = string.IsNullOrWhiteSpace(configuredPath)
     : configuredPath;
 
 var eventName = builder.Configuration.GetValue<string>("Event:Name") ?? DateTime.Now.ToString("yyyy-MM-dd");
+var urlPrefixSalt = builder.Configuration.GetValue<string>("UrlPrefix:Salt") ?? "";
+var urlPrefix = UrlPrefixGenerator.Generate(eventName, urlPrefixSalt);
+Log.Information("URL prefix for event '{EventName}': {UrlPrefix}", eventName, urlPrefix);
 
 // Register event broadcasting
 builder.Services.AddSingleton<IEventBroadcaster, EventBroadcaster>();
@@ -211,7 +214,7 @@ app.UseActivityTracking();
 
 // Redirect non-localhost users from / to /download (gallery)
 var restrictBoothToLocalhost = builder.Configuration.GetValue<bool?>("Booth:RestrictToLocalhost") ?? true;
-app.UseBoothRedirect(restrictBoothToLocalhost);
+app.UseBoothRedirect(restrictBoothToLocalhost, urlPrefix);
 
 // Rate limiting
 app.UseRateLimiter();
@@ -238,10 +241,16 @@ var captureLocalhostFilter = new LocalhostOnlyFilter(
 app.MapPhotoEndpoints(triggerLocalhostFilter, captureLocalhostFilter);
 app.MapCameraEndpoints();
 app.MapEventsEndpoints();
-app.MapConfigEndpoints(builder.Configuration);
+app.MapConfigEndpoints(builder.Configuration, urlPrefix);
 
-// SPA fallback for client-side routing
-app.MapFallbackToFile("index.html");
+// SPA fallback — only serve index.html for paths under the URL prefix.
+// Root / is served by UseDefaultFiles + UseStaticFiles. All other paths return 404.
+app.MapFallback($"{urlPrefix}/{{**path}}", async context =>
+{
+    context.Response.ContentType = "text/html";
+    await context.Response.SendFileAsync(
+        app.Environment.WebRootFileProvider.GetFileInfo("index.html"));
+});
 
 app.Run();
 

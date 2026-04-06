@@ -86,4 +86,5 @@ export interface ClientConfigDto {
   slideshowIntervalMs: number;
   gamepad: GamepadConfig;
   watchdogTimeoutMs: number;
+  urlPrefix: string;
 }

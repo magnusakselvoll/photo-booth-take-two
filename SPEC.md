@@ -104,6 +104,16 @@ Optional QR code overlay on slideshow photos:
 - Guests scan with phone camera
 - No app required - opens in browser
 
+### URL Prefix
+
+Guest-facing routes (`/download`, `/photo/:code`) are served under a short URL prefix derived from the event name and a configurable salt:
+
+- The prefix is 10 lowercase alphanumeric characters, computed as `SHA256(eventName + SHA256(salt))`.
+- When the event name or salt changes, the prefix changes and old URLs stop working. This prevents attendees from accidentally accessing photos from a different event using a bookmarked URL.
+- This is a convenience measure, not a security boundary.
+- The prefix is included in QR codes and all navigation links.
+- The booth operator route (`/`) and API routes (`/api/...`) are not prefixed.
+
 ### Download Interface
 
 Separate web page for photo retrieval with a gallery-first approach:
@@ -152,6 +162,7 @@ Key configurable parameters:
 | `Slideshow:SwirlEffect` | Enable swirl effect on slideshow | `true` |
 | `Slideshow:IntervalMs` | Interval in ms between slideshow transitions | `30000` |
 | `Event:Name` | Event name (used for storage folder) | Current date |
+| `UrlPrefix:Salt` | Salt text for URL prefix generation | `""` (empty) |
 | `QrCode:BaseUrl` | Base URL for QR codes | Request origin |
 | `RateLimiting:PermitLimit` | Max requests per rate limit window | `5` |
 | `RateLimiting:WindowSeconds` | Rate limit window in seconds | `10` |

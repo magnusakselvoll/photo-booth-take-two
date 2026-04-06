@@ -8,7 +8,11 @@ import { useSwipeNavigation } from '../hooks/useSwipeNavigation';
 
 type PhotoAction = 'idle' | 'loading' | 'expanded';
 
-export function PhotoDetailPage() {
+interface PhotoDetailPageProps {
+  urlPrefix: string;
+}
+
+export function PhotoDetailPage({ urlPrefix }: PhotoDetailPageProps) {
   const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -78,12 +82,12 @@ export function PhotoDetailPage() {
   const nextCode = currentIndex >= 0 && currentIndex < allCodes.length - 1 ? allCodes[currentIndex + 1] : null;
 
   const handleSwipeLeft = useCallback(() => {
-    if (nextCode) navigate(`/photo/${nextCode}`);
-  }, [nextCode, navigate]);
+    if (nextCode) navigate(`/${urlPrefix}/photo/${nextCode}`);
+  }, [nextCode, navigate, urlPrefix]);
 
   const handleSwipeRight = useCallback(() => {
-    if (prevCode) navigate(`/photo/${prevCode}`);
-  }, [prevCode, navigate]);
+    if (prevCode) navigate(`/${urlPrefix}/photo/${prevCode}`);
+  }, [prevCode, navigate, urlPrefix]);
 
   useSwipeNavigation({ onSwipeLeft: handleSwipeLeft, onSwipeRight: handleSwipeRight, elementRef: pageRef });
 
@@ -131,7 +135,7 @@ export function PhotoDetailPage() {
   };
 
   const handleBack = () => {
-    navigate('/download');
+    navigate(`/${urlPrefix}/download`);
   };
 
   const navBar = (
