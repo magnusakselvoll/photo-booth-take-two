@@ -247,9 +247,44 @@ app.MapConfigEndpoints(builder.Configuration, urlPrefix);
 // Root / is served by UseDefaultFiles + UseStaticFiles. All other paths return 404.
 app.MapFallback($"{urlPrefix}/{{**path}}", async context =>
 {
+    var fileInfo = app.Environment.WebRootFileProvider.GetFileInfo("index.html");
+    if (!fileInfo.Exists)
+    {
+        context.Response.StatusCode = StatusCodes.Status404NotFound;
+        context.Response.ContentType = "text/plain";
+        await context.Response.WriteAsync("index.html not found. Has the frontend been built?");
+        return;
+    }
     context.Response.ContentType = "text/html";
-    await context.Response.SendFileAsync(
-        app.Environment.WebRootFileProvider.GetFileInfo("index.html"));
+    await context.Response.SendFileAsync(fileInfo);
+});
+
+// Global catch-all fallback — return a proper 404 page for any unmatched route.
+// Without this, ASP.NET Core returns HTTP 200 with an empty body and no Content-Type,
+// which causes browsers to offer an empty file download (worsened by X-Content-Type-Options: nosniff).
+app.MapFallback(context =>
+{
+    context.Response.StatusCode = StatusCodes.Status404NotFound;
+    context.Response.ContentType = "text/html";
+    return context.Response.WriteAsync("""
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="utf-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1" />
+            <title>404 - Not Found</title>
+            <style>
+                body { font-family: system-ui, -apple-system, sans-serif; background: #1a1a1a; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100dvh; margin: 0; }
+                .code { font-size: 8rem; font-weight: 700; color: #666; line-height: 1; }
+                .message { font-size: 1.25rem; }
+            </style>
+        </head>
+        <body>
+            <span class="code">404</span>
+            <p class="message">Page not found</p>
+        </body>
+        </html>
+        """);
 });
 
 app.Run();
