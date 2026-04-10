@@ -17,7 +17,7 @@ public sealed class BoothRedirectMiddleware
 
     public Task InvokeAsync(HttpContext context)
     {
-        if (_enabled && IsRootPath(context.Request.Path) && !NetworkUtilities.IsLocalhost(context.Connection.RemoteIpAddress))
+        if (_enabled && IsRootPath(context.Request.Path) && !NetworkUtilities.IsLocalhost(context))
         {
             context.Response.Redirect($"/{_urlPrefix}/download", permanent: false);
             return Task.CompletedTask;
