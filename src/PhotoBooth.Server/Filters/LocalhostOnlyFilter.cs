@@ -25,10 +25,7 @@ public class LocalhostOnlyFilter : IEndpointFilter
 
         if (!NetworkUtilities.IsLocalhost(context.HttpContext))
         {
-            _logger.LogWarning("Blocked {EndpointName} request from non-localhost IP: {RemoteIp}, Host: {Host}",
-                _endpointName,
-                context.HttpContext.Connection.RemoteIpAddress,
-                context.HttpContext.Request.Host);
+            _logger.LogWarning("Blocked {EndpointName} request from non-localhost IP: {RemoteIp}", _endpointName, context.HttpContext.Connection.RemoteIpAddress);
             return Results.Forbid();
         }
 
