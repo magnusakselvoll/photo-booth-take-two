@@ -20,6 +20,10 @@ public sealed class FallbackRouteTests
         _factory = new WebApplicationFactory<Program>()
             .WithWebHostBuilder(builder =>
             {
+                // Disable booth redirect so test requests (which have no RemoteIpAddress)
+                // reach the fallback handlers rather than being redirected to the gallery.
+                builder.UseSetting("Booth:RestrictToLocalhost", "false");
+
                 builder.ConfigureServices(services =>
                 {
                     var cameraDescriptor = services.FirstOrDefault(d => d.ServiceType == typeof(ICameraProvider));
@@ -90,5 +94,18 @@ public sealed class FallbackRouteTests
         var response = await _client.GetAsync($"/{urlPrefix}/photo/1");
 
         Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [TestMethod]
+    public async Task RootPathWithMissingIndexHtml_Returns404WithDiagnosticMessage()
+    {
+        // When index.html is absent, requesting / should return 404 with a diagnostic
+        // plain-text message rather than the generic styled 404 HTML page.
+        var response = await _client.GetAsync("/");
+
+        Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.AreEqual("text/plain", response.Content.Headers.ContentType?.MediaType);
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.Contains("index.html not found", body);
     }
 }

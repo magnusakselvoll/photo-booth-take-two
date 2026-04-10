@@ -223,6 +223,11 @@ app.UseRateLimiter();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
+// Log web root for diagnostics (missing index.html causes / to 404)
+var webRootPath = app.Environment.WebRootPath;
+var indexExists = app.Environment.WebRootFileProvider.GetFileInfo("index.html").Exists;
+Log.Information("Web root path: {WebRootPath}, index.html exists: {IndexExists}", webRootPath, indexExists);
+
 // Create localhost-only filter for trigger endpoint
 var restrictTriggerToLocalhost = builder.Configuration.GetValue<bool?>("Trigger:RestrictToLocalhost") ?? true;
 var triggerLocalhostFilter = new LocalhostOnlyFilter(
@@ -269,11 +274,30 @@ app.MapFallback($"{urlPrefix}/{{**path}}", async context =>
 // Global catch-all fallback — return a proper 404 page for any unmatched route.
 // Without this, ASP.NET Core returns HTTP 200 with an empty body and no Content-Type,
 // which causes browsers to offer an empty file download (worsened by X-Content-Type-Options: nosniff).
-app.MapFallback(context =>
+app.MapFallback(async context =>
 {
+    // Root path: UseDefaultFiles/UseStaticFiles didn't serve index.html (likely missing from
+    // wwwroot), so handle it the same way as the SPA fallback — serve the file or explain
+    // what's missing.
+    if (context.Request.Path == "/" || !context.Request.Path.HasValue)
+    {
+        var fileInfo = app.Environment.WebRootFileProvider.GetFileInfo("index.html");
+        if (fileInfo.Exists)
+        {
+            context.Response.ContentType = "text/html";
+            await context.Response.SendFileAsync(fileInfo);
+            return;
+        }
+
+        context.Response.StatusCode = StatusCodes.Status404NotFound;
+        context.Response.ContentType = "text/plain";
+        await context.Response.WriteAsync("index.html not found. Has the frontend been built?");
+        return;
+    }
+
     context.Response.StatusCode = StatusCodes.Status404NotFound;
     context.Response.ContentType = "text/html";
-    return context.Response.WriteAsync("""
+    await context.Response.WriteAsync("""
         <!DOCTYPE html>
         <html lang="en">
         <head>
