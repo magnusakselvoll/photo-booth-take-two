@@ -158,11 +158,35 @@ public sealed class BoothRedirectMiddlewareTests
         Assert.AreEqual("/abc1234567/download", context.Response.Headers.Location.ToString());
     }
 
-    private static HttpContext CreateContext(IPAddress? remoteIp, string path)
+    [TestMethod]
+    public async Task InvokeAsync_WhenEnabled_RedirectsReverseProxiedRequestFromRoot()
+    {
+        // Arrange — Tailscale Serve / local reverse proxy scenario:
+        // RemoteIpAddress is 127.0.0.1 (proxy connects locally) but Host header reveals
+        // the original external domain, so the request must still be treated as remote.
+        var nextCalled = false;
+        var middleware = new BoothRedirectMiddleware(enabled: true, urlPrefix: "abc1234567", next: _ =>
+        {
+            nextCalled = true;
+            return Task.CompletedTask;
+        });
+        var context = CreateContext(IPAddress.Loopback, "/", host: "xxx.tailxxxx.ts.net");
+
+        // Act
+        await middleware.InvokeAsync(context);
+
+        // Assert
+        Assert.IsFalse(nextCalled, "Next delegate should not be called for reverse-proxied request with external Host");
+        Assert.AreEqual(StatusCodes.Status302Found, context.Response.StatusCode);
+        Assert.AreEqual("/abc1234567/download", context.Response.Headers.Location.ToString());
+    }
+
+    private static HttpContext CreateContext(IPAddress? remoteIp, string path, string host = "localhost")
     {
         var httpContext = new DefaultHttpContext();
         httpContext.Connection.RemoteIpAddress = remoteIp;
         httpContext.Request.Path = path;
+        httpContext.Request.Host = new HostString(host);
         return httpContext;
     }
 }

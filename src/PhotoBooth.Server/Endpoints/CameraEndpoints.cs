@@ -5,12 +5,17 @@ namespace PhotoBooth.Server.Endpoints;
 
 public static class CameraEndpoints
 {
-    public static void MapCameraEndpoints(this IEndpointRouteBuilder app)
+    public static void MapCameraEndpoints(this IEndpointRouteBuilder app, IEndpointFilter? cameraFilter = null)
     {
         var group = app.MapGroup("/api/camera");
 
-        group.MapGet("/info", GetCameraInfo)
+        var infoEndpoint = group.MapGet("/info", GetCameraInfo)
             .WithName("GetCameraInfo");
+
+        if (cameraFilter is not null)
+        {
+            infoEndpoint.AddEndpointFilter(cameraFilter);
+        }
     }
 
     private static async Task<IResult> GetCameraInfo(

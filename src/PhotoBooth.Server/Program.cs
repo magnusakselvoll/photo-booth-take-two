@@ -237,9 +237,16 @@ var captureLocalhostFilter = new LocalhostOnlyFilter(
     "capture",
     app.Services.GetRequiredService<ILogger<LocalhostOnlyFilter>>());
 
+// Create localhost-only filter for camera endpoint
+var restrictCameraToLocalhost = builder.Configuration.GetValue<bool?>("Camera:RestrictToLocalhost") ?? true;
+var cameraLocalhostFilter = new LocalhostOnlyFilter(
+    restrictCameraToLocalhost,
+    "camera",
+    app.Services.GetRequiredService<ILogger<LocalhostOnlyFilter>>());
+
 // Map endpoints
 app.MapPhotoEndpoints(triggerLocalhostFilter, captureLocalhostFilter);
-app.MapCameraEndpoints();
+app.MapCameraEndpoints(cameraLocalhostFilter);
 app.MapEventsEndpoints();
 app.MapConfigEndpoints(builder.Configuration, urlPrefix);
 

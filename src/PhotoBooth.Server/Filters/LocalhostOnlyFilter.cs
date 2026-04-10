@@ -23,11 +23,12 @@ public class LocalhostOnlyFilter : IEndpointFilter
             return await next(context);
         }
 
-        var remoteIp = context.HttpContext.Connection.RemoteIpAddress;
-
-        if (!NetworkUtilities.IsLocalhost(remoteIp))
+        if (!NetworkUtilities.IsLocalhost(context.HttpContext))
         {
-            _logger.LogWarning("Blocked {EndpointName} request from non-localhost IP: {RemoteIp}", _endpointName, remoteIp);
+            _logger.LogWarning("Blocked {EndpointName} request from non-localhost IP: {RemoteIp}, Host: {Host}",
+                _endpointName,
+                context.HttpContext.Connection.RemoteIpAddress,
+                context.HttpContext.Request.Host);
             return Results.Forbid();
         }
 

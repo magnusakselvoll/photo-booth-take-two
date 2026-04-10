@@ -150,10 +150,31 @@ public sealed class LocalhostOnlyFilterTests
         Assert.IsFalse(nextCalled, "Next delegate should not be called when IP is null (fail-secure)");
     }
 
-    private static EndpointFilterInvocationContext CreateContext(IPAddress? remoteIp)
+    [TestMethod]
+    public async Task InvokeAsync_WhenEnabled_BlocksReverseProxiedRequest()
+    {
+        // Arrange — Tailscale Serve / local reverse proxy scenario:
+        // RemoteIpAddress is 127.0.0.1 but Host header is an external domain.
+        var filter = new LocalhostOnlyFilter(enabled: true, "test", _logger);
+        var context = CreateContext(IPAddress.Loopback, host: "xxx.tailxxxx.ts.net");
+        var nextCalled = false;
+
+        // Act
+        var result = await filter.InvokeAsync(context, _ =>
+        {
+            nextCalled = true;
+            return ValueTask.FromResult<object?>(Results.Ok());
+        });
+
+        // Assert
+        Assert.IsFalse(nextCalled, "Next delegate should not be called for reverse-proxied request with external Host");
+    }
+
+    private static EndpointFilterInvocationContext CreateContext(IPAddress? remoteIp, string host = "localhost")
     {
         var httpContext = new DefaultHttpContext();
         httpContext.Connection.RemoteIpAddress = remoteIp;
+        httpContext.Request.Host = new HostString(host);
         return new DefaultEndpointFilterInvocationContext(httpContext);
     }
 }
