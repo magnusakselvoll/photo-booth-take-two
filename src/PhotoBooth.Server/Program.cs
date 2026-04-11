@@ -212,6 +212,10 @@ app.UseSecurityHeaders();
 // Activity tracking (records API calls for inactivity watchdog)
 app.UseActivityTracking();
 
+// Restrict booth page (/) to localhost only (returns 403 for non-localhost)
+var restrictBoothToLocalhost = builder.Configuration.GetValue<bool?>("Booth:RestrictToLocalhost") ?? true;
+app.UseBoothLocalhost(restrictBoothToLocalhost);
+
 // Rate limiting
 app.UseRateLimiter();
 

@@ -109,11 +109,53 @@ public sealed class NetworkUtilitiesTests
         Assert.IsFalse(NetworkUtilities.IsLocalhost(CreateContext(IPAddress.Loopback, "")));
     }
 
-    private static HttpContext CreateContext(IPAddress? remoteIp, string host, int? port = null)
+    // Tests for isRemote query parameter
+
+    [TestMethod]
+    public void IsLocalhostContext_WhenIsRemoteTrue_ReturnsFalse()
+    {
+        var context = CreateContext(IPAddress.Loopback, "localhost", queryString: "?isRemote=true");
+        Assert.IsFalse(NetworkUtilities.IsLocalhost(context));
+    }
+
+    [TestMethod]
+    public void IsLocalhostContext_WhenIsRemoteTrueCaseInsensitive_ReturnsFalse()
+    {
+        var context = CreateContext(IPAddress.Loopback, "localhost", queryString: "?isRemote=TRUE");
+        Assert.IsFalse(NetworkUtilities.IsLocalhost(context));
+    }
+
+    [TestMethod]
+    public void IsLocalhostContext_WhenIsRemoteFalseOnLocalhost_ReturnsTrue()
+    {
+        // isRemote=false is ignored — parameter cannot force localhost
+        var context = CreateContext(IPAddress.Loopback, "localhost", queryString: "?isRemote=false");
+        Assert.IsTrue(NetworkUtilities.IsLocalhost(context));
+    }
+
+    [TestMethod]
+    public void IsLocalhostContext_WhenIsRemoteFalseOnNonLocalhost_ReturnsFalse()
+    {
+        // isRemote=false is ignored — external IP still means non-localhost
+        var context = CreateContext(IPAddress.Parse("192.168.1.100"), "192.168.1.50", queryString: "?isRemote=false");
+        Assert.IsFalse(NetworkUtilities.IsLocalhost(context));
+    }
+
+    [TestMethod]
+    public void IsLocalhostContext_WhenIsRemoteEmpty_ReturnsNormalBehavior()
+    {
+        // Empty value is not "true", so normal IP/Host check applies
+        var context = CreateContext(IPAddress.Loopback, "localhost", queryString: "?isRemote=");
+        Assert.IsTrue(NetworkUtilities.IsLocalhost(context));
+    }
+
+    private static HttpContext CreateContext(IPAddress? remoteIp, string host, int? port = null, string? queryString = null)
     {
         var httpContext = new DefaultHttpContext();
         httpContext.Connection.RemoteIpAddress = remoteIp;
         httpContext.Request.Host = port.HasValue ? new HostString(host, port.Value) : new HostString(host);
+        if (queryString != null)
+            httpContext.Request.QueryString = new QueryString(queryString);
         return httpContext;
     }
 }

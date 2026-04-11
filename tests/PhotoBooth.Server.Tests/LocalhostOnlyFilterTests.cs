@@ -170,11 +170,32 @@ public sealed class LocalhostOnlyFilterTests
         Assert.IsFalse(nextCalled, "Next delegate should not be called for reverse-proxied request with external Host");
     }
 
-    private static EndpointFilterInvocationContext CreateContext(IPAddress? remoteIp, string host = "localhost")
+    [TestMethod]
+    public async Task InvokeAsync_WhenEnabled_BlocksLocalhostWithIsRemoteTrue()
+    {
+        // Arrange — localhost IP and host, but isRemote=true forces non-localhost treatment
+        var filter = new LocalhostOnlyFilter(enabled: true, "test", _logger);
+        var context = CreateContext(IPAddress.Loopback, queryString: "?isRemote=true");
+        var nextCalled = false;
+
+        // Act
+        var result = await filter.InvokeAsync(context, _ =>
+        {
+            nextCalled = true;
+            return ValueTask.FromResult<object?>(Results.Ok());
+        });
+
+        // Assert
+        Assert.IsFalse(nextCalled, "Next delegate should not be called when isRemote=true");
+    }
+
+    private static EndpointFilterInvocationContext CreateContext(IPAddress? remoteIp, string host = "localhost", string? queryString = null)
     {
         var httpContext = new DefaultHttpContext();
         httpContext.Connection.RemoteIpAddress = remoteIp;
         httpContext.Request.Host = new HostString(host);
+        if (queryString != null)
+            httpContext.Request.QueryString = new QueryString(queryString);
         return new DefaultEndpointFilterInvocationContext(httpContext);
     }
 }
