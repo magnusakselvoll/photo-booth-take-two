@@ -20,6 +20,10 @@ public sealed class FallbackRouteTests
         _factory = new WebApplicationFactory<Program>()
             .WithWebHostBuilder(builder =>
             {
+                // Disable booth localhost restriction so test requests (which have no RemoteIpAddress)
+                // reach the fallback handlers rather than being blocked with 403.
+                builder.UseSetting("Booth:RestrictToLocalhost", "false");
+
                 builder.ConfigureServices(services =>
                 {
                     var cameraDescriptor = services.FirstOrDefault(d => d.ServiceType == typeof(ICameraProvider));
