@@ -169,7 +169,6 @@ Requires [ADB](https://developer.android.com/tools/adb) installed and an Android
 
 ### Other Options
 
-- `Booth.RestrictToLocalhost`: Redirect non-localhost users from `/` to `/download` (default: true)
 - `Capture.CountdownDurationMs`: Countdown duration in ms before photo is taken (default: 7000)
 - `Capture.BufferTimeoutHighLatencyMs`: Hard timeout buffer in ms for high-latency cameras (default: 45000)
 - `Capture.BufferTimeoutLowLatencyMs`: Hard timeout buffer in ms for low-latency cameras (default: 12000)

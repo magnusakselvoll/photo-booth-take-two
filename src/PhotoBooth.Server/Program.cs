@@ -212,10 +212,6 @@ app.UseSecurityHeaders();
 // Activity tracking (records API calls for inactivity watchdog)
 app.UseActivityTracking();
 
-// Redirect non-localhost users from / to /download (gallery)
-var restrictBoothToLocalhost = builder.Configuration.GetValue<bool?>("Booth:RestrictToLocalhost") ?? true;
-app.UseBoothRedirect(restrictBoothToLocalhost, urlPrefix);
-
 // Rate limiting
 app.UseRateLimiter();
 
