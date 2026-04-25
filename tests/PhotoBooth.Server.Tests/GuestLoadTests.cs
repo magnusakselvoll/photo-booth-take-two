@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using System.Text.Json;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -70,6 +71,14 @@ public sealed class GuestLoadTests
                         ["Trigger:RestrictToLocalhost"] = "false",
                         ["Watchdog:ServerInactivityMinutes"] = "0"
                     });
+                });
+                // Program.cs sets the static Serilog logger (WriteTo.Console at Info) before
+                // ConfigureAppConfiguration overrides run, so suppress it here instead.
+                builder.ConfigureLogging(logging =>
+                {
+                    logging.ClearProviders();
+                    logging.AddConsole();
+                    logging.SetMinimumLevel(LogLevel.Warning);
                 });
                 builder.ConfigureServices(services =>
                 {
