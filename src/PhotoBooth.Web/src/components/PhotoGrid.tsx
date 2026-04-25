@@ -23,6 +23,16 @@ export function PhotoGrid({ onPhotoClick }: PhotoGridProps) {
   const [error, setError] = useState<string | null>(null);
   const [nextCursor, setNextCursor] = useState<string | null | undefined>(hasCachedPhotos ? cached.nextCursor : undefined);
   const sentinelRef = useRef<HTMLDivElement>(null);
+  // Tracks scroll position continuously so the unmount cleanup reads the gallery's
+  // scroll, not the next page's (cleanup fires after DOM commit)
+  const scrollTopRef = useRef(initialScrollTop);
+
+  // Keep scrollTopRef current while the gallery is mounted
+  useEffect(() => {
+    const onScroll = () => { scrollTopRef.current = window.scrollY; };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   // Restore scroll position once after hydrating from cache, before paint
   useLayoutEffect(() => {
@@ -51,7 +61,7 @@ export function PhotoGrid({ onPhotoClick }: PhotoGridProps) {
   // the cleanup closure always captures the latest values
   useEffect(() => {
     return () => {
-      setGalleryCache(photos, nextCursor, window.scrollY);
+      setGalleryCache(photos, nextCursor, scrollTopRef.current);
     };
   }, [photos, nextCursor]);
 
