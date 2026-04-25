@@ -4,11 +4,16 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using NBomber.Contracts;
 using NBomber.Contracts.Stats;
 using NBomber.CSharp;
 using PhotoBooth.Application.DTOs;
+using PhotoBooth.Application.Services;
 using PhotoBooth.Domain.Entities;
+using PhotoBooth.Domain.Interfaces;
+using PhotoBooth.Infrastructure.Imaging;
+using PhotoBooth.Infrastructure.Storage;
 using PhotoBooth.Server.Tests.LoadTesting;
 
 namespace PhotoBooth.Server.Tests;
@@ -59,16 +64,33 @@ public sealed class GuestLoadTests
                 {
                     config.AddInMemoryCollection(new Dictionary<string, string?>
                     {
+                        // Camera and trigger overrides are read at DI-registration time so
+                        // ConfigureAppConfiguration is early enough for these.
                         ["Camera:Provider"] = "mock",
-                        ["PhotoStorage:Path"] = _seeded.BasePath,
-                        ["Event:Name"] = _seeded.EventName,
                         ["Trigger:RestrictToLocalhost"] = "false",
-                        // Prevent watchdog from shutting down the host mid-test
                         ["Watchdog:ServerInactivityMinutes"] = "0"
                     });
                 });
                 builder.ConfigureServices(services =>
                 {
+                    // PhotoStorage:Path is captured as a local variable early in Program.cs
+                    // before ConfigureAppConfiguration overrides apply, so the repository and
+                    // resizer must be replaced here where the seeded paths are used directly.
+                    RemoveService<IPhotoRepository>(services);
+                    services.AddSingleton<IPhotoRepository>(sp =>
+                        new FileSystemPhotoRepository(
+                            _seeded.BasePath,
+                            _seeded.EventName,
+                            sp.GetRequiredService<ILogger<FileSystemPhotoRepository>>()));
+
+                    RemoveService<IImageResizer>(services);
+                    services.AddSingleton<IImageResizer>(sp =>
+                        new OpenCvImageResizer(
+                            sp.GetRequiredService<IPhotoRepository>(),
+                            Path.Combine(_seeded.BasePath, ".thumbnails"),
+                            jpegQuality: 80,
+                            sp.GetRequiredService<ILogger<OpenCvImageResizer>>()));
+
                     // Photos are pre-warmed by PhotoSeeder; disable background warmup
                     // so it doesn't compete with load-test requests at startup.
                     var warmup = services.FirstOrDefault(d =>
@@ -323,6 +345,12 @@ public sealed class GuestLoadTests
             InnerHandler = _factory.Server.CreateHandler()
         };
         return new HttpClient(handler) { BaseAddress = _factory.Server.BaseAddress };
+    }
+
+    private static void RemoveService<T>(IServiceCollection services)
+    {
+        var descriptor = services.FirstOrDefault(d => d.ServiceType == typeof(T));
+        if (descriptor != null) services.Remove(descriptor);
     }
 
     private static void PrintSummary(
