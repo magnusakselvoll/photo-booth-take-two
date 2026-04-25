@@ -16,6 +16,8 @@ export const translations = {
     loading: 'Loading...',
     photoNotFoundError: 'Photo not found',
     backToGallery: 'Back to Gallery',
+    previousPhoto: 'Previous photo',
+    nextPhoto: 'Next photo',
 
     // Slideshow
     noPhotosToShow: 'No photos to show yet',
@@ -41,6 +43,8 @@ export const translations = {
     loading: 'Cargando...',
     photoNotFoundError: 'Foto no encontrada',
     backToGallery: 'Volver a la Galería',
+    previousPhoto: 'Foto anterior',
+    nextPhoto: 'Foto siguiente',
 
     // Slideshow
     noPhotosToShow: 'Aún no hay fotos para mostrar',
