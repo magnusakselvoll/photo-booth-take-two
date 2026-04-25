@@ -110,7 +110,7 @@ export function PhotoGrid({ onPhotoClick }: PhotoGridProps) {
         <div
           key={photo.id}
           className="photo-grid-item"
-          onClick={() => onPhotoClick(photo.code)}
+          onClick={() => { scrollTopRef.current = window.scrollY; onPhotoClick(photo.code); }}
         >
           <img
             src={getPhotoImageUrl(photo.id, 400)}
