@@ -31,7 +31,7 @@ class MockIntersectionObserver {
   observe = vi.fn();
   disconnect = vi.fn();
   unobserve = vi.fn();
-  constructor(_callback: IntersectionObserverCallback, _options?: IntersectionObserverInit) {}
+  constructor() {}
 }
 
 const samplePhotos: PhotoDto[] = [
