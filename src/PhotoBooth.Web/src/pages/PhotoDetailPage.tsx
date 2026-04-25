@@ -59,11 +59,13 @@ export function PhotoDetailPage({ urlPrefix }: PhotoDetailPageProps) {
       pageRef.current.style.transform = '';
     }
     transformRef.current?.resetTransform(0);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional reset on navigation, component deliberately avoids remount
     setIsZoomed(false);
   }, [code]);
 
   // Reset speed dial state when navigating to a different photo
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional reset on navigation, component deliberately avoids remount
     setPhotoAction('idle');
     cachedBlob.current = null;
   }, [code]);
