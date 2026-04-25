@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import { getPhotosPage, getPhotoImageUrl } from '../api/client';
 import type { PhotoDto } from '../api/types';
 import { useTranslation } from '../i18n/useTranslation';
+import { getGalleryCache, setGalleryCache } from './galleryCache';
 
 const PAGE_SIZE = 30;
 
@@ -11,14 +12,42 @@ interface PhotoGridProps {
 
 export function PhotoGrid({ onPhotoClick }: PhotoGridProps) {
   const { t } = useTranslation();
-  const [photos, setPhotos] = useState<PhotoDto[]>([]);
-  const [loading, setLoading] = useState(true);
+
+  const cached = getGalleryCache();
+  const hasCachedPhotos = cached.photos !== null && cached.photos.length > 0;
+  const initialScrollTop = cached.scrollTop;
+
+  const [photos, setPhotos] = useState<PhotoDto[]>(hasCachedPhotos ? cached.photos! : []);
+  const [loading, setLoading] = useState(!hasCachedPhotos);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [nextCursor, setNextCursor] = useState<string | null | undefined>(undefined);
+  const [nextCursor, setNextCursor] = useState<string | null | undefined>(hasCachedPhotos ? cached.nextCursor : undefined);
   const sentinelRef = useRef<HTMLDivElement>(null);
+  // Updated by the scroll listener while the gallery is mounted
+  const scrollTopRef = useRef(initialScrollTop);
+  // Set to true when a tile is clicked; the onClick saves to cache at that moment,
+  // so the unmount cleanup should not overwrite it (the scroll event fired during
+  // page transition can clamp window.scrollY to 0, corrupting scrollTopRef)
+  const savedViaClickRef = useRef(false);
 
   useEffect(() => {
+    const onScroll = () => { scrollTopRef.current = window.scrollY; };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  // Restore scroll position once after hydrating from cache, before paint
+  useLayoutEffect(() => {
+    if (hasCachedPhotos) {
+      window.scrollTo(0, initialScrollTop);
+    }
+    // intentionally runs only once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Initial fetch, skipped when hydrating from cache
+  useEffect(() => {
+    if (hasCachedPhotos) return;
     getPhotosPage(PAGE_SIZE)
       .then(page => {
         setPhotos(page.photos);
@@ -26,7 +55,20 @@ export function PhotoGrid({ onPhotoClick }: PhotoGridProps) {
       })
       .catch(err => setError(err instanceof Error ? err.message : t('failedToLoadPhotos')))
       .finally(() => setLoading(false));
-  }, [t]);
+    // intentionally runs only once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Save to cache on unmount, unless a tile click already saved it — in that case
+  // the click-time value is correct and scrollTopRef may have been clamped to 0
+  // by a browser scroll event fired during the page transition
+  useEffect(() => {
+    return () => {
+      if (!savedViaClickRef.current) {
+        setGalleryCache(photos, nextCursor, scrollTopRef.current);
+      }
+    };
+  }, [photos, nextCursor]);
 
   const loadMore = useCallback(() => {
     if (!nextCursor || loadingMore) return;
@@ -73,7 +115,11 @@ export function PhotoGrid({ onPhotoClick }: PhotoGridProps) {
         <div
           key={photo.id}
           className="photo-grid-item"
-          onClick={() => onPhotoClick(photo.code)}
+          onClick={() => {
+            setGalleryCache(photos, nextCursor, window.scrollY);
+            savedViaClickRef.current = true;
+            onPhotoClick(photo.code);
+          }}
         >
           <img
             src={getPhotoImageUrl(photo.id, 400)}

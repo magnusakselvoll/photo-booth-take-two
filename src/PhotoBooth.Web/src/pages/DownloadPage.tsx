@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { PhotoGrid } from '../components/PhotoGrid';
 import { SearchIcon } from '../components/Icons';
 import { useTranslation } from '../i18n/useTranslation';
+import { hasGalleryCache } from '../components/galleryCache';
 
 interface DownloadPageProps {
   urlPrefix: string;
@@ -36,7 +37,7 @@ export function DownloadPage({ urlPrefix }: DownloadPageProps) {
           className="code-input"
           maxLength={10}
           inputMode="numeric"
-          autoFocus
+          autoFocus={!hasGalleryCache()}
         />
         <button type="submit" disabled={!code.trim()} className="search-button" aria-label={t('findPhoto')}>
           <SearchIcon size={20} />
