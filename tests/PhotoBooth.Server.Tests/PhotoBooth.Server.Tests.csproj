@@ -3,6 +3,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
     <PackageReference Include="MSTest" />
+    <PackageReference Include="NBomber" />
   </ItemGroup>
 
   <ItemGroup>
