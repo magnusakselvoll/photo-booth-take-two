@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
+import type { ReactZoomPanPinchContentRef } from 'react-zoom-pan-pinch';
 import { getPhotoByCode, getPhotoImageUrl, getAllPhotos } from '../api/client';
 import type { PhotoDto } from '../api/types';
 import { ChevronLeftIcon, DownloadIcon, ShareIcon, DotsVerticalIcon, SpinnerIcon } from '../components/Icons';
@@ -21,10 +23,12 @@ export function PhotoDetailPage({ urlPrefix }: PhotoDetailPageProps) {
   const [error, setError] = useState<string | null>(code ? null : t('photoNotFoundError'));
   const [allCodes, setAllCodes] = useState<string[]>([]);
   const [photoAction, setPhotoAction] = useState<PhotoAction>('idle');
+  const [isZoomed, setIsZoomed] = useState(false);
   const cachedBlob = useRef<Blob | null>(null);
   const speedDialRef = useRef<HTMLDivElement>(null);
   const canShare = !!(navigator.canShare && navigator.canShare({ files: [new File([''], 'test.jpg', { type: 'image/jpeg' })] }));
   const pageRef = useRef<HTMLDivElement>(null);
+  const transformRef = useRef<ReactZoomPanPinchContentRef>(null);
 
   useEffect(() => {
     if (!code) return;
@@ -53,6 +57,8 @@ export function PhotoDetailPage({ urlPrefix }: PhotoDetailPageProps) {
       pageRef.current.style.transition = 'none';
       pageRef.current.style.transform = '';
     }
+    transformRef.current?.resetTransform(0);
+    setIsZoomed(false);
   }, [code]);
 
   // Reset speed dial state when navigating to a different photo
@@ -89,7 +95,7 @@ export function PhotoDetailPage({ urlPrefix }: PhotoDetailPageProps) {
     if (prevCode) navigate(`/${urlPrefix}/photo/${prevCode}`);
   }, [prevCode, navigate, urlPrefix]);
 
-  useSwipeNavigation({ onSwipeLeft: handleSwipeLeft, onSwipeRight: handleSwipeRight, elementRef: pageRef });
+  useSwipeNavigation({ onSwipeLeft: handleSwipeLeft, onSwipeRight: handleSwipeRight, elementRef: pageRef, disabled: isZoomed });
 
   const handleToggle = async () => {
     if (photoAction === 'expanded') {
@@ -170,11 +176,25 @@ export function PhotoDetailPage({ urlPrefix }: PhotoDetailPageProps) {
     <div className="photo-detail-page" ref={pageRef}>
       {navBar}
       <div className="photo-detail-content">
-        <img
-          src={getPhotoImageUrl(photo.id, 1200)}
-          alt={`Photo ${photo.code}`}
-          className="photo-detail-image"
-        />
+        <TransformWrapper
+          ref={transformRef}
+          minScale={1}
+          maxScale={4}
+          doubleClick={{ disabled: true }}
+          wheel={{ step: 0.2 }}
+          onTransform={(_ref, state) => setIsZoomed(state.scale > 1)}
+        >
+          <TransformComponent
+            wrapperClass="photo-detail-zoom-wrapper"
+            contentClass="photo-detail-zoom-content"
+          >
+            <img
+              src={getPhotoImageUrl(photo.id, 1200)}
+              alt={`Photo ${photo.code}`}
+              className="photo-detail-image"
+            />
+          </TransformComponent>
+        </TransformWrapper>
       </div>
       <div className="photo-detail-actions">
         <div className={`speed-dial${photoAction === 'expanded' ? ' open' : ''}`} ref={speedDialRef}>

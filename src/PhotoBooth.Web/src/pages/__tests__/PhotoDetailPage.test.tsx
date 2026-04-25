@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import React from 'react';
 import { render, screen, cleanup, fireEvent, waitFor, act } from '@testing-library/react';
 import { PhotoDetailPage } from '../PhotoDetailPage';
 import type { PhotoDto } from '../../api/types';
@@ -23,8 +24,14 @@ vi.mock('../../api/client', () => ({
   getAllPhotos: () => mockGetAllPhotos(),
 }));
 
+const swipeConfigSpy = vi.fn();
 vi.mock('../../hooks/useSwipeNavigation', () => ({
-  useSwipeNavigation: () => {},
+  useSwipeNavigation: (config: unknown) => swipeConfigSpy(config),
+}));
+
+vi.mock('react-zoom-pan-pinch', () => ({
+  TransformWrapper: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  TransformComponent: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
 vi.mock('../../i18n/useTranslation', () => ({
@@ -53,6 +60,7 @@ describe('PhotoDetailPage', () => {
   beforeEach(() => {
     mockUseParams.mockReturnValue({ code: '42' });
     mockNavigate.mockClear();
+    swipeConfigSpy.mockClear();
     mockGetPhotoByCode.mockResolvedValue(mockPhoto);
     mockGetAllPhotos.mockResolvedValue([mockPhoto]);
   });
@@ -171,6 +179,13 @@ describe('PhotoDetailPage', () => {
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'Share Photo' })).toBeInTheDocument();
     });
+  });
+
+  it('passes disabled: false to useSwipeNavigation on initial render', async () => {
+    render(<PhotoDetailPage urlPrefix="testprefix" />);
+    await waitFor(() => expect(screen.queryByText('Loading...')).not.toBeInTheDocument());
+    const lastCall = swipeConfigSpy.mock.calls[swipeConfigSpy.mock.calls.length - 1][0];
+    expect(lastCall.disabled).toBe(false);
   });
 
   it('hides share button when navigator.canShare is false', async () => {

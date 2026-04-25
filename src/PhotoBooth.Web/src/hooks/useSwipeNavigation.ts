@@ -7,9 +7,10 @@ export interface SwipeNavigationConfig {
   onSwipeLeft?: () => void;
   onSwipeRight?: () => void;
   elementRef: React.RefObject<HTMLElement | null>;
+  disabled?: boolean;
 }
 
-export function useSwipeNavigation({ onSwipeLeft, onSwipeRight, elementRef }: SwipeNavigationConfig): void {
+export function useSwipeNavigation({ onSwipeLeft, onSwipeRight, elementRef, disabled }: SwipeNavigationConfig): void {
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
   const isHorizontalSwipe = useRef<boolean | null>(null);
@@ -17,13 +18,17 @@ export function useSwipeNavigation({ onSwipeLeft, onSwipeRight, elementRef }: Sw
   // Use refs for callbacks so handlers don't need to be recreated when prev/next changes
   const onSwipeLeftRef = useRef(onSwipeLeft);
   const onSwipeRightRef = useRef(onSwipeRight);
+  const disabledRef = useRef(disabled);
 
   useEffect(() => {
     onSwipeLeftRef.current = onSwipeLeft;
     onSwipeRightRef.current = onSwipeRight;
-  }, [onSwipeLeft, onSwipeRight]);
+    disabledRef.current = disabled;
+  }, [onSwipeLeft, onSwipeRight, disabled]);
 
   const handleTouchStart = useCallback((event: TouchEvent) => {
+    if (disabledRef.current || event.touches.length > 1) return;
+
     const touch = event.touches[0];
     touchStartX.current = touch.clientX;
     touchStartY.current = touch.clientY;
@@ -34,6 +39,7 @@ export function useSwipeNavigation({ onSwipeLeft, onSwipeRight, elementRef }: Sw
   }, [elementRef]);
 
   const handleTouchMove = useCallback((event: TouchEvent) => {
+    if (disabledRef.current || event.touches.length > 1) return;
     if (touchStartX.current === null || touchStartY.current === null) return;
 
     const touch = event.touches[0];
@@ -57,6 +63,12 @@ export function useSwipeNavigation({ onSwipeLeft, onSwipeRight, elementRef }: Sw
   }, [elementRef]);
 
   const handleTouchEnd = useCallback((event: TouchEvent) => {
+    if (disabledRef.current) {
+      touchStartX.current = null;
+      touchStartY.current = null;
+      isHorizontalSwipe.current = null;
+      return;
+    }
     if (touchStartX.current === null || touchStartY.current === null || isHorizontalSwipe.current !== true) {
       touchStartX.current = null;
       touchStartY.current = null;
