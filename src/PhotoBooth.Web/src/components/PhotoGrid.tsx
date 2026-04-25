@@ -23,11 +23,13 @@ export function PhotoGrid({ onPhotoClick }: PhotoGridProps) {
   const [error, setError] = useState<string | null>(null);
   const [nextCursor, setNextCursor] = useState<string | null | undefined>(hasCachedPhotos ? cached.nextCursor : undefined);
   const sentinelRef = useRef<HTMLDivElement>(null);
-  // Tracks scroll position continuously so the unmount cleanup reads the gallery's
-  // scroll, not the next page's (cleanup fires after DOM commit)
+  // Updated by the scroll listener while the gallery is mounted
   const scrollTopRef = useRef(initialScrollTop);
+  // Set to true when a tile is clicked; the onClick saves to cache at that moment,
+  // so the unmount cleanup should not overwrite it (the scroll event fired during
+  // page transition can clamp window.scrollY to 0, corrupting scrollTopRef)
+  const savedViaClickRef = useRef(false);
 
-  // Keep scrollTopRef current while the gallery is mounted
   useEffect(() => {
     const onScroll = () => { scrollTopRef.current = window.scrollY; };
     window.addEventListener('scroll', onScroll, { passive: true });
@@ -57,11 +59,14 @@ export function PhotoGrid({ onPhotoClick }: PhotoGridProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Save to cache on unmount; re-registers whenever photos/nextCursor change so
-  // the cleanup closure always captures the latest values
+  // Save to cache on unmount, unless a tile click already saved it — in that case
+  // the click-time value is correct and scrollTopRef may have been clamped to 0
+  // by a browser scroll event fired during the page transition
   useEffect(() => {
     return () => {
-      setGalleryCache(photos, nextCursor, scrollTopRef.current);
+      if (!savedViaClickRef.current) {
+        setGalleryCache(photos, nextCursor, scrollTopRef.current);
+      }
     };
   }, [photos, nextCursor]);
 
@@ -110,7 +115,11 @@ export function PhotoGrid({ onPhotoClick }: PhotoGridProps) {
         <div
           key={photo.id}
           className="photo-grid-item"
-          onClick={() => { scrollTopRef.current = window.scrollY; onPhotoClick(photo.code); }}
+          onClick={() => {
+            setGalleryCache(photos, nextCursor, window.scrollY);
+            savedViaClickRef.current = true;
+            onPhotoClick(photo.code);
+          }}
         >
           <img
             src={getPhotoImageUrl(photo.id, 400)}
