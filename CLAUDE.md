@@ -168,6 +168,30 @@ dotnet build installer/PhotoBooth.Installer/PhotoBooth.Installer.wixproj --confi
 
 The version is extracted from the git tag in the release workflow (strips `v` prefix and semver prerelease/build metadata).
 
+## Load Testing
+
+`tests/PhotoBooth.Server.Tests/GuestLoadTests.cs` — marked `[TestCategory("Integration")]`, skipped in CI.
+
+Uses **NBomber 6.x** with an in-process TestServer (not real Kestrel — all server-side code runs, but Kestrel connection queuing is bypassed). Three scenarios mirror real guest behaviour: `gallery_browse` (60% of VUs), `detail_view` (30%), `download` (10%).
+
+**Run:**
+```bash
+dotnet test tests/PhotoBooth.Server.Tests \
+  --filter "FullyQualifiedName~GuestLoadTests" \
+  --logger "console;verbosity=detailed"
+```
+
+**Environment variables** (all optional):
+- `LOADTEST_TARGET_USERS` — total virtual users across all scenarios (default: 50)
+- `LOADTEST_PHOTO_COUNT` — photos seeded to a temp directory (default: 50)
+- `LOADTEST_DURATION_MIN` — hold-phase duration in minutes (default: 3)
+
+**Find the concurrent-user limit:** increase `LOADTEST_TARGET_USERS` until the `gallery_browse` p95 latency (after subtracting the 100ms simulated RTT baseline) exceeds ~2s, or the error rate exceeds 1%. The last clean value is the answer.
+
+**Bandwidth:** not simulated in-process. Use the analytic ceilings printed in the summary (e.g. at 10 Mbps client / 200 Mbps server) to cross-check results. For high-fidelity bandwidth simulation, run the server with `dotnet run` and apply OS-level shaping (`pfctl` on macOS, `tc` on Linux).
+
+**Report:** HTML and TXT written to `tests/PhotoBooth.Server.Tests/bin/Debug/net10.0/load-reports/<timestamp>/`.
+
 ## Reference
 
 - **SPEC.md**: Functional specification - describes how the application should work. Consult this for requirements and intended behavior.
