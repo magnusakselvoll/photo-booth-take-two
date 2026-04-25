@@ -1,6 +1,5 @@
 using System.Net.Http.Json;
 using System.Text.Json;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -72,16 +71,20 @@ public sealed class GuestLoadTests
                         ["Watchdog:ServerInactivityMinutes"] = "0"
                     });
                 });
-                // Program.cs sets the static Serilog logger (WriteTo.Console at Info) before
-                // ConfigureAppConfiguration overrides run, so suppress it here instead.
-                builder.ConfigureLogging(logging =>
-                {
-                    logging.ClearProviders();
-                    logging.AddConsole();
-                    logging.SetMinimumLevel(LogLevel.Warning);
-                });
                 builder.ConfigureServices(services =>
                 {
+                    // Serilog is registered on IHostBuilder (not IWebHostBuilder), so
+                    // ConfigureLogging on the web host doesn't reach it. Remove its
+                    // ILoggerFactory and replace with a Warning-level one so Info-level
+                    // request logs don't flood the load-test output.
+                    foreach (var d in services.Where(s => s.ServiceType == typeof(ILoggerFactory)).ToList())
+                        services.Remove(d);
+                    services.AddLogging(b =>
+                    {
+                        b.AddConsole();
+                        b.SetMinimumLevel(LogLevel.Warning);
+                    });
+
                     // PhotoStorage:Path is captured as a local variable early in Program.cs
                     // before ConfigureAppConfiguration overrides apply, so the repository and
                     // resizer must be replaced here where the seeded paths are used directly.
