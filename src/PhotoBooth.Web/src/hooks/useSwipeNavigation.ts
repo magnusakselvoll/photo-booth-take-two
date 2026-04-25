@@ -93,9 +93,9 @@ export function useSwipeNavigation({ onSwipeLeft, onSwipeRight, elementRef, disa
       el.style.transition = `transform ${SLIDE_DURATION_MS}ms ease`;
       el.style.transform = `translateX(${targetOffset}px)`;
       el.addEventListener('transitionend', () => {
+        callback();
         el.style.transition = 'none';
         el.style.transform = '';
-        callback();
       }, { once: true });
     } else {
       el.style.transition = `transform ${SLIDE_DURATION_MS}ms ease`;

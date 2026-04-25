@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { flushSync } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import type { ReactZoomPanPinchContentRef } from 'react-zoom-pan-pinch';
@@ -88,9 +89,11 @@ export function PhotoDetailPage({ urlPrefix }: PhotoDetailPageProps) {
   const nextCode = currentIndex >= 0 && currentIndex < allCodes.length - 1 ? allCodes[currentIndex + 1] : null;
 
   const goToPhoto = useCallback((targetCode: string) => {
-    setPhoto(null);
-    setLoading(true);
-    setError(null);
+    flushSync(() => {
+      setPhoto(null);
+      setLoading(true);
+      setError(null);
+    });
     navigate(`/${urlPrefix}/photo/${targetCode}`);
   }, [navigate, urlPrefix]);
 
