@@ -22,6 +22,10 @@ export function setGalleryCache(photos: PhotoDto[], nextCursor: string | null | 
   cache.scrollTop = scrollTop;
 }
 
+export function hasGalleryCache(): boolean {
+  return cache.photos !== null && cache.photos.length > 0;
+}
+
 export function clearGalleryCache(): void {
   cache.photos = null;
   cache.nextCursor = undefined;
