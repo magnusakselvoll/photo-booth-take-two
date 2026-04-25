@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import { getPhotosPage, getPhotoImageUrl } from '../api/client';
 import type { PhotoDto } from '../api/types';
 import { useTranslation } from '../i18n/useTranslation';
+import { getGalleryCache, setGalleryCache } from './galleryCache';
 
 const PAGE_SIZE = 30;
 
@@ -11,14 +12,30 @@ interface PhotoGridProps {
 
 export function PhotoGrid({ onPhotoClick }: PhotoGridProps) {
   const { t } = useTranslation();
-  const [photos, setPhotos] = useState<PhotoDto[]>([]);
-  const [loading, setLoading] = useState(true);
+
+  const cached = getGalleryCache();
+  const hasCachedPhotos = cached.photos !== null && cached.photos.length > 0;
+  const initialScrollTop = cached.scrollTop;
+
+  const [photos, setPhotos] = useState<PhotoDto[]>(hasCachedPhotos ? cached.photos! : []);
+  const [loading, setLoading] = useState(!hasCachedPhotos);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [nextCursor, setNextCursor] = useState<string | null | undefined>(undefined);
+  const [nextCursor, setNextCursor] = useState<string | null | undefined>(hasCachedPhotos ? cached.nextCursor : undefined);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
+  // Restore scroll position once after hydrating from cache, before paint
+  useLayoutEffect(() => {
+    if (hasCachedPhotos) {
+      window.scrollTo(0, initialScrollTop);
+    }
+    // intentionally runs only once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Initial fetch, skipped when hydrating from cache
   useEffect(() => {
+    if (hasCachedPhotos) return;
     getPhotosPage(PAGE_SIZE)
       .then(page => {
         setPhotos(page.photos);
@@ -26,7 +43,17 @@ export function PhotoGrid({ onPhotoClick }: PhotoGridProps) {
       })
       .catch(err => setError(err instanceof Error ? err.message : t('failedToLoadPhotos')))
       .finally(() => setLoading(false));
-  }, [t]);
+    // intentionally runs only once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Save to cache on unmount; re-registers whenever photos/nextCursor change so
+  // the cleanup closure always captures the latest values
+  useEffect(() => {
+    return () => {
+      setGalleryCache(photos, nextCursor, window.scrollY);
+    };
+  }, [photos, nextCursor]);
 
   const loadMore = useCallback(() => {
     if (!nextCursor || loadingMore) return;
