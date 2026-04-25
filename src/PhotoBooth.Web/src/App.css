@@ -408,6 +408,44 @@ body {
   object-fit: contain;
 }
 
+.photo-detail-nav-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.4);
+  color: #fff;
+  cursor: pointer;
+  z-index: 1;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.photo-detail-nav-arrow.prev {
+  left: 0.5rem;
+}
+
+.photo-detail-nav-arrow.next {
+  right: 0.5rem;
+}
+
+.photo-detail-nav-arrow:hover {
+  background: rgba(0, 0, 0, 0.65);
+}
+
+.photo-detail-nav-arrow:active {
+  opacity: 0.6;
+}
+
+.photo-detail-nav-arrow:focus {
+  outline: none;
+}
+
 .photo-detail-loading {
   color: #666;
   font-size: 1.25rem;

@@ -29,8 +29,14 @@ vi.mock('../../hooks/useSwipeNavigation', () => ({
   useSwipeNavigation: (config: unknown) => swipeConfigSpy(config),
 }));
 
+type OnTransformFn = (ref: unknown, state: { scale: number }) => void;
+let capturedOnTransform: OnTransformFn | undefined;
+
 vi.mock('react-zoom-pan-pinch', () => ({
-  TransformWrapper: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  TransformWrapper: ({ children, onTransform }: { children: React.ReactNode; onTransform?: OnTransformFn }) => {
+    capturedOnTransform = onTransform;
+    return <>{children}</>;
+  },
   TransformComponent: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
@@ -44,6 +50,8 @@ vi.mock('../../i18n/useTranslation', () => ({
         getPhoto: 'Get Photo',
         downloadPhoto: 'Download Photo',
         sharePhoto: 'Share Photo',
+        previousPhoto: 'Previous photo',
+        nextPhoto: 'Next photo',
       };
       return map[key] ?? key;
     },
@@ -56,11 +64,24 @@ const mockPhoto: PhotoDto = {
   capturedAt: '2025-01-01T00:00:00Z',
 };
 
+const mockPrevPhoto: PhotoDto = {
+  id: 'photo-prev',
+  code: '41',
+  capturedAt: '2025-01-01T00:00:00Z',
+};
+
+const mockNextPhoto: PhotoDto = {
+  id: 'photo-next',
+  code: '43',
+  capturedAt: '2025-01-01T00:00:00Z',
+};
+
 describe('PhotoDetailPage', () => {
   beforeEach(() => {
     mockUseParams.mockReturnValue({ code: '42' });
     mockNavigate.mockClear();
     swipeConfigSpy.mockClear();
+    capturedOnTransform = undefined;
     mockGetPhotoByCode.mockResolvedValue(mockPhoto);
     mockGetAllPhotos.mockResolvedValue([mockPhoto]);
   });
@@ -210,5 +231,86 @@ describe('PhotoDetailPage', () => {
       expect(screen.getByRole('button', { name: 'Download Photo' })).toBeInTheDocument();
     });
     expect(screen.queryByRole('button', { name: 'Share Photo' })).not.toBeInTheDocument();
+  });
+
+  it('shows loading state when clicking next arrow (goToPhoto resets state before navigation)', async () => {
+    mockGetAllPhotos.mockResolvedValue([mockPrevPhoto, mockPhoto, mockNextPhoto]);
+
+    render(<PhotoDetailPage urlPrefix="testprefix" />);
+    await waitFor(() => expect(screen.queryByText('Loading...')).not.toBeInTheDocument());
+
+    // clicking next calls goToPhoto which synchronously sets loading=true and photo=null
+    // before calling navigate (which is a spy here and won't change the route)
+    fireEvent.click(screen.getByRole('button', { name: 'Next photo' }));
+
+    // after the click, loading state should be shown because photo was cleared
+    await waitFor(() => expect(screen.getByText('Loading...')).toBeInTheDocument());
+  });
+
+  it('renders prev and next nav arrow buttons when neighbours exist', async () => {
+    mockGetAllPhotos.mockResolvedValue([mockPrevPhoto, mockPhoto, mockNextPhoto]);
+
+    render(<PhotoDetailPage urlPrefix="testprefix" />);
+    await waitFor(() => expect(screen.queryByText('Loading...')).not.toBeInTheDocument());
+
+    expect(screen.getByRole('button', { name: 'Previous photo' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Next photo' })).toBeInTheDocument();
+  });
+
+  it('clicking next arrow navigates to the next photo', async () => {
+    mockGetAllPhotos.mockResolvedValue([mockPrevPhoto, mockPhoto, mockNextPhoto]);
+
+    render(<PhotoDetailPage urlPrefix="testprefix" />);
+    await waitFor(() => expect(screen.queryByText('Loading...')).not.toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Next photo' }));
+    expect(mockNavigate).toHaveBeenCalledWith('/testprefix/photo/43');
+  });
+
+  it('clicking prev arrow navigates to the previous photo', async () => {
+    mockGetAllPhotos.mockResolvedValue([mockPrevPhoto, mockPhoto, mockNextPhoto]);
+
+    render(<PhotoDetailPage urlPrefix="testprefix" />);
+    await waitFor(() => expect(screen.queryByText('Loading...')).not.toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Previous photo' }));
+    expect(mockNavigate).toHaveBeenCalledWith('/testprefix/photo/41');
+  });
+
+  it('hides prev arrow when at the first photo', async () => {
+    mockGetAllPhotos.mockResolvedValue([mockPhoto, mockNextPhoto]);
+
+    render(<PhotoDetailPage urlPrefix="testprefix" />);
+    await waitFor(() => expect(screen.queryByText('Loading...')).not.toBeInTheDocument());
+
+    expect(screen.queryByRole('button', { name: 'Previous photo' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Next photo' })).toBeInTheDocument();
+  });
+
+  it('hides next arrow when at the last photo', async () => {
+    mockGetAllPhotos.mockResolvedValue([mockPrevPhoto, mockPhoto]);
+
+    render(<PhotoDetailPage urlPrefix="testprefix" />);
+    await waitFor(() => expect(screen.queryByText('Loading...')).not.toBeInTheDocument());
+
+    expect(screen.getByRole('button', { name: 'Previous photo' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Next photo' })).not.toBeInTheDocument();
+  });
+
+  it('hides nav arrows when zoomed', async () => {
+    mockGetAllPhotos.mockResolvedValue([mockPrevPhoto, mockPhoto, mockNextPhoto]);
+
+    render(<PhotoDetailPage urlPrefix="testprefix" />);
+    await waitFor(() => expect(screen.queryByText('Loading...')).not.toBeInTheDocument());
+
+    // arrows visible before zoom
+    expect(screen.getByRole('button', { name: 'Previous photo' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Next photo' })).toBeInTheDocument();
+
+    // trigger zoom via the onTransform callback captured by the TransformWrapper mock
+    await act(async () => { capturedOnTransform?.(null, { scale: 2 }); });
+
+    expect(screen.queryByRole('button', { name: 'Previous photo' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Next photo' })).not.toBeInTheDocument();
   });
 });

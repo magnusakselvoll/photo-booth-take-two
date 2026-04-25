@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { flushSync } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import type { ReactZoomPanPinchContentRef } from 'react-zoom-pan-pinch';
 import { getPhotoByCode, getPhotoImageUrl, getAllPhotos } from '../api/client';
 import type { PhotoDto } from '../api/types';
-import { ChevronLeftIcon, DownloadIcon, ShareIcon, DotsVerticalIcon, SpinnerIcon } from '../components/Icons';
+import { ChevronLeftIcon, ChevronRightIcon, DownloadIcon, ShareIcon, DotsVerticalIcon, SpinnerIcon } from '../components/Icons';
 import { useTranslation } from '../i18n/useTranslation';
 import { useSwipeNavigation } from '../hooks/useSwipeNavigation';
 
@@ -87,13 +88,22 @@ export function PhotoDetailPage({ urlPrefix }: PhotoDetailPageProps) {
   const prevCode = currentIndex > 0 ? allCodes[currentIndex - 1] : null;
   const nextCode = currentIndex >= 0 && currentIndex < allCodes.length - 1 ? allCodes[currentIndex + 1] : null;
 
+  const goToPhoto = useCallback((targetCode: string) => {
+    flushSync(() => {
+      setPhoto(null);
+      setLoading(true);
+      setError(null);
+    });
+    navigate(`/${urlPrefix}/photo/${targetCode}`);
+  }, [navigate, urlPrefix]);
+
   const handleSwipeLeft = useCallback(() => {
-    if (nextCode) navigate(`/${urlPrefix}/photo/${nextCode}`);
-  }, [nextCode, navigate, urlPrefix]);
+    if (nextCode) goToPhoto(nextCode);
+  }, [nextCode, goToPhoto]);
 
   const handleSwipeRight = useCallback(() => {
-    if (prevCode) navigate(`/${urlPrefix}/photo/${prevCode}`);
-  }, [prevCode, navigate, urlPrefix]);
+    if (prevCode) goToPhoto(prevCode);
+  }, [prevCode, goToPhoto]);
 
   useSwipeNavigation({ onSwipeLeft: handleSwipeLeft, onSwipeRight: handleSwipeRight, elementRef: pageRef, disabled: isZoomed });
 
@@ -176,6 +186,24 @@ export function PhotoDetailPage({ urlPrefix }: PhotoDetailPageProps) {
     <div className="photo-detail-page" ref={pageRef}>
       {navBar}
       <div className="photo-detail-content">
+        {!isZoomed && prevCode && (
+          <button
+            onClick={() => goToPhoto(prevCode)}
+            className="photo-detail-nav-arrow prev"
+            aria-label={t('previousPhoto')}
+          >
+            <ChevronLeftIcon size={28} />
+          </button>
+        )}
+        {!isZoomed && nextCode && (
+          <button
+            onClick={() => goToPhoto(nextCode)}
+            className="photo-detail-nav-arrow next"
+            aria-label={t('nextPhoto')}
+          >
+            <ChevronRightIcon size={28} />
+          </button>
+        )}
         <TransformWrapper
           ref={transformRef}
           minScale={1}
@@ -189,6 +217,7 @@ export function PhotoDetailPage({ urlPrefix }: PhotoDetailPageProps) {
             contentClass="photo-detail-zoom-content"
           >
             <img
+              key={photo.id}
               src={getPhotoImageUrl(photo.id, 1200)}
               alt={`Photo ${photo.code}`}
               className="photo-detail-image"

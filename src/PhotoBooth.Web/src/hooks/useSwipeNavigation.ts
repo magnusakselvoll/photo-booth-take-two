@@ -57,6 +57,7 @@ export function useSwipeNavigation({ onSwipeLeft, onSwipeRight, elementRef, disa
     if (!canSwipe) return;
 
     event.preventDefault();
+    event.stopPropagation();
 
     const el = elementRef.current;
     if (el) el.style.transform = `translateX(${deltaX}px)`;
@@ -92,9 +93,9 @@ export function useSwipeNavigation({ onSwipeLeft, onSwipeRight, elementRef, disa
       el.style.transition = `transform ${SLIDE_DURATION_MS}ms ease`;
       el.style.transform = `translateX(${targetOffset}px)`;
       el.addEventListener('transitionend', () => {
+        callback();
         el.style.transition = 'none';
         el.style.transform = '';
-        callback();
       }, { once: true });
     } else {
       el.style.transition = `transform ${SLIDE_DURATION_MS}ms ease`;
@@ -109,14 +110,14 @@ export function useSwipeNavigation({ onSwipeLeft, onSwipeRight, elementRef, disa
     const element = elementRef.current;
     if (!element) return;
 
-    element.addEventListener('touchstart', handleTouchStart, { passive: true });
-    element.addEventListener('touchmove', handleTouchMove, { passive: false });
-    element.addEventListener('touchend', handleTouchEnd, { passive: true });
+    element.addEventListener('touchstart', handleTouchStart, { passive: true, capture: true });
+    element.addEventListener('touchmove', handleTouchMove, { passive: false, capture: true });
+    element.addEventListener('touchend', handleTouchEnd, { passive: true, capture: true });
 
     return () => {
-      element.removeEventListener('touchstart', handleTouchStart);
-      element.removeEventListener('touchmove', handleTouchMove);
-      element.removeEventListener('touchend', handleTouchEnd);
+      element.removeEventListener('touchstart', handleTouchStart, { capture: true });
+      element.removeEventListener('touchmove', handleTouchMove, { capture: true });
+      element.removeEventListener('touchend', handleTouchEnd, { capture: true });
       element.style.transform = '';
       element.style.transition = '';
     };
