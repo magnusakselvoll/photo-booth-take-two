@@ -26,9 +26,7 @@ namespace PhotoBooth.Server.Tests;
 //   Bandwidth: not simulated in-process; see analytic ceiling in test output.
 //
 // HOW TO RUN
-//   dotnet test tests/PhotoBooth.Server.Tests \
-//     --filter "FullyQualifiedName~GuestLoadTests" \
-//     --logger "console;verbosity=detailed"
+//   dotnet test tests/PhotoBooth.Server.Tests --filter "FullyQualifiedName~GuestLoadTests" --logger "console;verbosity=detailed"
 //
 // ENVIRONMENT VARIABLES
 //   LOADTEST_TARGET_USERS  – total virtual users across all scenarios (default 50)

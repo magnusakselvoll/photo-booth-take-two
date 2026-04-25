@@ -176,9 +176,7 @@ Uses **NBomber 6.x** with an in-process TestServer (not real Kestrel — all ser
 
 **Run:**
 ```bash
-dotnet test tests/PhotoBooth.Server.Tests \
-  --filter "FullyQualifiedName~GuestLoadTests" \
-  --logger "console;verbosity=detailed"
+dotnet test tests/PhotoBooth.Server.Tests --filter "FullyQualifiedName~GuestLoadTests" --logger "console;verbosity=detailed"
 ```
 
 **Environment variables** (all optional):
