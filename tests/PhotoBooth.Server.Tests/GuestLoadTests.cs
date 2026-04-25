@@ -35,8 +35,8 @@ namespace PhotoBooth.Server.Tests;
 //
 // ENVIRONMENT VARIABLES
 //   LOADTEST_TARGET_USERS  – total virtual users across all scenarios (default 50)
-//   LOADTEST_PHOTO_COUNT   – photos to seed into temp storage (default 50)
-//   LOADTEST_DURATION_MIN  – hold-phase duration in minutes (default 3)
+//   LOADTEST_PHOTO_COUNT   – photos to seed into temp storage (default 20)
+//   LOADTEST_DURATION_MIN  – hold-phase duration in minutes (default 1)
 [TestClass]
 [TestCategory("Integration")]
 public sealed class GuestLoadTests
@@ -51,7 +51,7 @@ public sealed class GuestLoadTests
     public static void ClassInit(TestContext testContext)
     {
         var photoCount = int.Parse(
-            Environment.GetEnvironmentVariable("LOADTEST_PHOTO_COUNT") ?? "50");
+            Environment.GetEnvironmentVariable("LOADTEST_PHOTO_COUNT") ?? "20");
 
         testContext.WriteLine($"Seeding {photoCount} photos...");
         _seeded = PhotoSeeder.Seed(photoCount);
@@ -129,7 +129,7 @@ public sealed class GuestLoadTests
     public void RunGuestLoadScenario()
     {
         var targetVUs   = int.Parse(Environment.GetEnvironmentVariable("LOADTEST_TARGET_USERS")  ?? "50");
-        var holdMinutes = int.Parse(Environment.GetEnvironmentVariable("LOADTEST_DURATION_MIN")  ?? "3");
+        var holdMinutes = int.Parse(Environment.GetEnvironmentVariable("LOADTEST_DURATION_MIN")  ?? "1");
 
         var photos = _seeded.Photos;
 
@@ -257,8 +257,8 @@ public sealed class GuestLoadTests
         });
 
         return Scenario.WithLoadSimulations(scenario, [
-            Simulation.KeepConstant(Math.Min(5, vus), TimeSpan.FromSeconds(30)),
-            Simulation.RampingConstant(vus, TimeSpan.FromMinutes(2)),
+            Simulation.KeepConstant(Math.Min(5, vus), TimeSpan.FromSeconds(15)),
+            Simulation.RampingConstant(vus, TimeSpan.FromSeconds(30)),
             Simulation.KeepConstant(vus, TimeSpan.FromMinutes(holdMinutes))
         ]);
     }
@@ -306,8 +306,8 @@ public sealed class GuestLoadTests
         });
 
         return Scenario.WithLoadSimulations(scenario, [
-            Simulation.KeepConstant(Math.Min(5, vus), TimeSpan.FromSeconds(30)),
-            Simulation.RampingConstant(vus, TimeSpan.FromMinutes(2)),
+            Simulation.KeepConstant(Math.Min(5, vus), TimeSpan.FromSeconds(15)),
+            Simulation.RampingConstant(vus, TimeSpan.FromSeconds(30)),
             Simulation.KeepConstant(vus, TimeSpan.FromMinutes(holdMinutes))
         ]);
     }

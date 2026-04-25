@@ -181,8 +181,8 @@ dotnet test tests/PhotoBooth.Server.Tests --filter "FullyQualifiedName~GuestLoad
 
 **Environment variables** (all optional):
 - `LOADTEST_TARGET_USERS` — total virtual users across all scenarios (default: 50)
-- `LOADTEST_PHOTO_COUNT` — photos seeded to a temp directory (default: 50)
-- `LOADTEST_DURATION_MIN` — hold-phase duration in minutes (default: 3)
+- `LOADTEST_PHOTO_COUNT` — photos seeded to a temp directory (default: 20)
+- `LOADTEST_DURATION_MIN` — hold-phase duration in minutes (default: 1)
 
 **Find the concurrent-user limit:** increase `LOADTEST_TARGET_USERS` until the `gallery_browse` p95 latency (after subtracting the 100ms simulated RTT baseline) exceeds ~2s, or the error rate exceeds 1%. The last clean value is the answer.
 
