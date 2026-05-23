@@ -1,4 +1,10 @@
-import QRCode from 'react-qr-code';
+import _QRCodeDefault from 'react-qr-code';
+
+// react-qr-code is a legacy CJS package. Vite 8 exposes the CJS exports namespace as the
+// default import rather than exports.default, so the component lives at .QRCode on that object.
+// The ?? fallback handles the mock in tests (where default is the function directly).
+const QRCode = ((_QRCodeDefault as unknown as { QRCode: typeof _QRCodeDefault }).QRCode)
+  ?? _QRCodeDefault;
 
 interface QRCodeOverlayProps {
   code: string;
