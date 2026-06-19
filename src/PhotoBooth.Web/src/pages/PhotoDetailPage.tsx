@@ -109,6 +109,45 @@ export function PhotoDetailPage({ urlPrefix }: PhotoDetailPageProps) {
 
   useSwipeNavigation({ onSwipeLeft: handleSwipeLeft, onSwipeRight: handleSwipeRight, elementRef: pageRef, disabled: isZoomed });
 
+  // Keyboard zoom/pan controls: +/- to zoom, 0 to reset, arrows to pan while zoomed.
+  useEffect(() => {
+    if (!photo) return;
+    const PAN_STEP = 60;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const ref = transformRef.current;
+      if (!ref) return;
+      switch (e.key) {
+        case '+':
+        case '=':
+          ref.zoomIn(0.5);
+          break;
+        case '-':
+        case '_':
+          ref.zoomOut(0.5);
+          break;
+        case '0':
+          ref.resetTransform();
+          break;
+        case 'ArrowUp':
+        case 'ArrowDown':
+        case 'ArrowLeft':
+        case 'ArrowRight': {
+          const { scale, positionX, positionY } = ref.instance.state;
+          if (scale <= 1) return; // only pan when zoomed in
+          const x = e.key === 'ArrowLeft' ? positionX + PAN_STEP : e.key === 'ArrowRight' ? positionX - PAN_STEP : positionX;
+          const y = e.key === 'ArrowUp' ? positionY + PAN_STEP : e.key === 'ArrowDown' ? positionY - PAN_STEP : positionY;
+          ref.setTransform(x, y, scale);
+          break;
+        }
+        default:
+          return;
+      }
+      e.preventDefault();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [photo]);
+
   const handleToggle = async () => {
     if (photoAction === 'expanded') {
       setPhotoAction('idle');

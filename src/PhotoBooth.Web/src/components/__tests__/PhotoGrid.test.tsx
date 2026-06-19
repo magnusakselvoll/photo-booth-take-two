@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, cleanup, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { PhotoGrid } from '../PhotoGrid';
 import { getGalleryCache, setGalleryCache, __resetForTests } from '../galleryCache';
 import type { PhotoDto } from '../../api/types';
@@ -125,5 +126,40 @@ describe('PhotoGrid', () => {
     );
 
     expect(onPhotoClick).toHaveBeenCalledWith('1');
+  });
+
+  it('renders tiles as focusable buttons reachable by keyboard', async () => {
+    mockGetPhotosPage.mockResolvedValue({ photos: samplePhotos, nextCursor: null });
+
+    render(<PhotoGrid onPhotoClick={vi.fn()} />);
+
+    await waitFor(() => {
+      expect(screen.getAllByRole('img')).toHaveLength(2);
+    });
+
+    const tiles = screen.getAllByRole('button', { name: /^Photo / });
+    expect(tiles).toHaveLength(2);
+  });
+
+  it('activates a tile with the keyboard (Enter/Space)', async () => {
+    mockGetPhotosPage.mockResolvedValue({ photos: samplePhotos, nextCursor: null });
+    const onPhotoClick = vi.fn();
+    const user = userEvent.setup();
+
+    render(<PhotoGrid onPhotoClick={onPhotoClick} />);
+
+    await waitFor(() => {
+      expect(screen.getAllByRole('img')).toHaveLength(2);
+    });
+
+    const firstTile = screen.getAllByRole('button', { name: /^Photo / })[0];
+    firstTile.focus();
+    await user.keyboard('{Enter}');
+    expect(onPhotoClick).toHaveBeenCalledWith('1');
+
+    onPhotoClick.mockClear();
+    screen.getAllByRole('button', { name: /^Photo / })[1].focus();
+    await user.keyboard(' ');
+    expect(onPhotoClick).toHaveBeenCalledWith('2');
   });
 });

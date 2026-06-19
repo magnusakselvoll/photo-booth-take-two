@@ -32,9 +32,28 @@ vi.mock('../../hooks/useSwipeNavigation', () => ({
 type OnTransformFn = (ref: unknown, state: { scale: number }) => void;
 let capturedOnTransform: OnTransformFn | undefined;
 
+const { mockZoomIn, mockZoomOut, mockResetTransform, mockSetTransform, mockTransformState } = vi.hoisted(() => ({
+  mockZoomIn: vi.fn(),
+  mockZoomOut: vi.fn(),
+  mockResetTransform: vi.fn(),
+  mockSetTransform: vi.fn(),
+  mockTransformState: { scale: 1, positionX: 0, positionY: 0 },
+}));
+
+type TransformRef = ((api: unknown) => void) | { current: unknown } | null | undefined;
+
 vi.mock('react-zoom-pan-pinch', () => ({
-  TransformWrapper: ({ children, onTransform }: { children: React.ReactNode; onTransform?: OnTransformFn }) => {
+  TransformWrapper: ({ children, onTransform, ref }: { children: React.ReactNode; onTransform?: OnTransformFn; ref?: TransformRef }) => {
     capturedOnTransform = onTransform;
+    const api = {
+      zoomIn: mockZoomIn,
+      zoomOut: mockZoomOut,
+      resetTransform: mockResetTransform,
+      setTransform: mockSetTransform,
+      instance: { state: mockTransformState },
+    };
+    if (typeof ref === 'function') ref(api);
+    else if (ref) ref.current = api;
     return <>{children}</>;
   },
   TransformComponent: ({ children }: { children: React.ReactNode }) => <>{children}</>,
@@ -82,6 +101,13 @@ describe('PhotoDetailPage', () => {
     mockNavigate.mockClear();
     swipeConfigSpy.mockClear();
     capturedOnTransform = undefined;
+    mockZoomIn.mockClear();
+    mockZoomOut.mockClear();
+    mockResetTransform.mockClear();
+    mockSetTransform.mockClear();
+    mockTransformState.scale = 1;
+    mockTransformState.positionX = 0;
+    mockTransformState.positionY = 0;
     mockGetPhotoByCode.mockResolvedValue(mockPhoto);
     mockGetAllPhotos.mockResolvedValue([mockPhoto]);
   });
@@ -312,5 +338,46 @@ describe('PhotoDetailPage', () => {
 
     expect(screen.queryByRole('button', { name: 'Previous photo' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Next photo' })).not.toBeInTheDocument();
+  });
+
+  it('zooms in when the + key is pressed', async () => {
+    render(<PhotoDetailPage urlPrefix="testprefix" />);
+    await waitFor(() => expect(screen.queryByText('Loading...')).not.toBeInTheDocument());
+
+    fireEvent.keyDown(window, { key: '+' });
+    expect(mockZoomIn).toHaveBeenCalled();
+  });
+
+  it('zooms out when the - key is pressed', async () => {
+    render(<PhotoDetailPage urlPrefix="testprefix" />);
+    await waitFor(() => expect(screen.queryByText('Loading...')).not.toBeInTheDocument());
+
+    fireEvent.keyDown(window, { key: '-' });
+    expect(mockZoomOut).toHaveBeenCalled();
+  });
+
+  it('resets the transform when the 0 key is pressed', async () => {
+    render(<PhotoDetailPage urlPrefix="testprefix" />);
+    await waitFor(() => expect(screen.queryByText('Loading...')).not.toBeInTheDocument());
+
+    fireEvent.keyDown(window, { key: '0' });
+    expect(mockResetTransform).toHaveBeenCalled();
+  });
+
+  it('does not pan with arrow keys when not zoomed', async () => {
+    render(<PhotoDetailPage urlPrefix="testprefix" />);
+    await waitFor(() => expect(screen.queryByText('Loading...')).not.toBeInTheDocument());
+
+    fireEvent.keyDown(window, { key: 'ArrowRight' });
+    expect(mockSetTransform).not.toHaveBeenCalled();
+  });
+
+  it('pans with arrow keys when zoomed in', async () => {
+    mockTransformState.scale = 2;
+    render(<PhotoDetailPage urlPrefix="testprefix" />);
+    await waitFor(() => expect(screen.queryByText('Loading...')).not.toBeInTheDocument());
+
+    fireEvent.keyDown(window, { key: 'ArrowRight' });
+    expect(mockSetTransform).toHaveBeenCalledWith(-60, 0, 2);
   });
 });
