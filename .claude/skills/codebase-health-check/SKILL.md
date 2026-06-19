@@ -39,7 +39,8 @@ Spawn parallel subagents (using the `Agent` tool with `subagent_type: "Explore"`
 9. **Accessibility & i18n** — frontend a11y, EN/ES i18n coverage, guest-gallery UX correctness.
 
 For the **security** and **dependencies** dimensions, always fetch current information from the internet:
-- Search for CVEs on known packages (OpenCvSharp4, Serilog, NBomber, MessagePack, React, Vite, react-router-dom, react-qr-code, react-zoom-pan-pinch).
+- Discover current backend packages from `Directory.Packages.props` and current frontend packages from `src/PhotoBooth.Web/package.json` before searching — do not rely on a hardcoded list.
+- Search for CVEs on each discovered package.
 - Verify licenses are OSI-approved and compatible with this project (MIT/Apache-2/BSD preferred).
 - Check GitHub repository activity (last commit, open issues, stars) to assess maintenance health.
 

@@ -55,34 +55,26 @@ Detailed review questions for each of the nine dimensions. Read this file at the
 
 **Goal:** confirm every dependency is necessary, licensed acceptably, actively maintained, and still the best choice. **Use WebSearch and WebFetch throughout this dimension.**
 
-### Backend (NuGet)
+Start by reading the current package lists from the repo — do not rely on any hardcoded list:
+- **Backend**: read `Directory.Packages.props` for all NuGet packages and versions.
+- **Frontend**: read `src/PhotoBooth.Web/package.json` for all `dependencies` and `devDependencies`.
 
-For each package, search "[package name] NuGet 2026" and "[package name] CVE 2026":
+### For each backend (NuGet) package, ask:
+- Is it still used? (Check for references in source — a package in `Directory.Packages.props` with no `<PackageReference>` in any csproj is a candidate for removal.)
+- Is it a transitive pin? If so, has the direct dependency caught up so the pin is no longer needed?
+- Is the pinned version current? Any newer version with bug fixes or security patches?
+- Any known CVEs? (Search "[package name] NuGet CVE [current year]".)
+- Is the license OSI-approved and compatible?
+- Is the package actively maintained? (Check NuGet page for last publish date and download trend.)
+- Is it still the right choice — or has a better-maintained or leaner alternative emerged?
 
-| Package | Check |
-|---|---|
-| `OpenCvSharp4` + runtimes | Necessary? (used for webcam). License (Apache-2)? Latest version? Still the right wrapper for OpenCV on .NET? |
-| `Serilog.AspNetCore` | Version current? Known vulnerabilities? Any BREAKING changes in the major version? |
-| `Swashbuckle.AspNetCore` | Still maintained? (There was a period of uncertainty — verify.) Necessary for this app? Could `Microsoft.AspNetCore.OpenApi` replace it? |
-| `Microsoft.AspNetCore.OpenApi` | Both this AND Swashbuckle? Are both needed? |
-| `NBomber` | Only in test project — acceptable. License (MIT)? Version current? |
-| `MessagePack` | Security-pinned transitive dep. Still needed as a pin? |
-| `MSTest` | Version current? Any migration to newer test runner patterns warranted? |
-
-### Frontend (npm via pnpm)
-
-For each package, search "[package name] npm 2026" and "[package name] security advisory 2026":
-
-| Package | Check |
-|---|---|
-| `react` / `react-dom` | 19.x — is this still the latest stable? Any security advisories? |
-| `react-router-dom` | v7 — latest patch? Any known issues? |
-| `react-qr-code` | Necessary? Actively maintained? Could a lighter alternative serve better? |
-| `react-zoom-pan-pinch` | Necessary? Actively maintained? Last commit date? |
-| `vite` | Latest v8? Any CVEs? |
-| `typescript` | `~6.0.0` — latest patch in v6? |
-| `vitest` | Latest v4? Compatible with current TS/Vite? |
-| `eslint` + plugins | All on compatible versions? No peer-dep conflicts? |
+### For each frontend (npm) package, ask:
+- Is it still used in the source?
+- Is the pinned version current? Any newer patch available?
+- Any known security advisories? (Search "[package name] npm security [current year]".)
+- Is the license acceptable?
+- Is the package actively maintained? (Check npm page for last publish date; check GitHub for last commit and open issues.)
+- For smaller niche packages: is it still the right choice, or could a lighter/more-maintained alternative serve better?
 
 ### License acceptability checklist
 - MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause: ✅ acceptable.
@@ -178,18 +170,12 @@ For each package, search "[package name] npm 2026" and "[package name] security 
 
 ## Web Research Prompts (for Phase 1 dependency/security agents)
 
-Use these search queries during the assessment:
+Before searching, read `Directory.Packages.props` for backend packages and `src/PhotoBooth.Web/package.json` for frontend packages to get the current list and pinned versions. Then for each package run a search of the form:
 
 ```
-OpenCvSharp4 CVE security vulnerability 2026
-Serilog.AspNetCore security advisory 2026
-Swashbuckle.AspNetCore maintained 2026 Microsoft.AspNetCore.OpenApi
-NBomber 6 license 2026
-react 19 security advisory 2026
-react-router-dom 7 security 2026
-react-qr-code npm maintained 2026
-react-zoom-pan-pinch npm maintained 2026
-vite 8 CVE security 2026
+<package-name> CVE security vulnerability <current-year>
+<package-name> npm maintained <current-year>         (for frontend packages)
+<package-name> NuGet maintained <current-year>       (for backend packages)
 ```
 
 For each package also visit its NuGet/npm page to check:
