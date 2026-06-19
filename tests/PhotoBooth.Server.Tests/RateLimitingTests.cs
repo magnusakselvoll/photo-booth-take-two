@@ -63,4 +63,43 @@ public sealed class RateLimitingTests
         var limitedResponse = await _client.PostAsync("/api/photos/capture", null);
         Assert.AreEqual(HttpStatusCode.TooManyRequests, limitedResponse.StatusCode);
     }
+
+    [TestMethod]
+    public async Task CodeLookupEndpoint_Returns429AfterExceedingRateLimit()
+    {
+        // The lookup limit is 10 per window (rate limiting runs before the handler, so a
+        // missing code returns 404 but still consumes the quota).
+        for (var i = 0; i < 10; i++)
+        {
+            var response = await _client.GetAsync($"/api/photos/{i}");
+            Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode, $"Lookup {i + 1} should pass the limiter");
+        }
+
+        // The 11th lookup should be rate-limited.
+        var limitedResponse = await _client.GetAsync("/api/photos/999");
+        Assert.AreEqual(HttpStatusCode.TooManyRequests, limitedResponse.StatusCode);
+    }
+
+    [TestMethod]
+    public async Task ImageEndpoint_IsNotRateLimited()
+    {
+        // The bulk export script (scripts/download-event.sh) downloads every photo via this
+        // endpoint, so it must not be throttled. Exceed the lookup limit and assert no 429.
+        for (var i = 0; i < 15; i++)
+        {
+            var response = await _client.GetAsync($"/api/photos/{Guid.NewGuid()}/image");
+            Assert.AreNotEqual(HttpStatusCode.TooManyRequests, response.StatusCode, $"Image request {i + 1} should not be throttled");
+        }
+    }
+
+    [TestMethod]
+    public async Task ListEndpoint_IsNotRateLimited()
+    {
+        // The gallery and the export script fetch the full list; it must not be throttled.
+        for (var i = 0; i < 15; i++)
+        {
+            var response = await _client.GetAsync("/api/photos/");
+            Assert.AreNotEqual(HttpStatusCode.TooManyRequests, response.StatusCode, $"List request {i + 1} should not be throttled");
+        }
+    }
 }

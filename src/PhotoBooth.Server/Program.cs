@@ -69,6 +69,7 @@ switch (cameraProvider.ToLowerInvariant())
     case "android":
         var androidOptions = new AndroidCameraOptions();
         builder.Configuration.GetSection("Camera:Android").Bind(androidOptions);
+        androidOptions.Validate();
         builder.Services.AddSingleton<ICameraProvider>(sp =>
         {
             var adbLogger = sp.GetRequiredService<ILogger<AdbService>>();
@@ -163,6 +164,11 @@ builder.Services.AddCors(options =>
 // Add rate limiting for capture endpoints
 var rateLimitPermitLimit = builder.Configuration.GetValue<int?>("RateLimiting:PermitLimit") ?? 5;
 var rateLimitWindowSeconds = builder.Configuration.GetValue<int?>("RateLimiting:WindowSeconds") ?? 10;
+// Per-IP throttling for the public photo-code lookup, to make scripted enumeration of
+// sequential download codes (see ADR 0006) impractical without affecting the gallery,
+// the image endpoint, or the bulk export script (which fetch by list + GUID, not by code).
+var lookupPermitLimit = builder.Configuration.GetValue<int?>("RateLimiting:Lookup:PermitLimit") ?? 10;
+var lookupWindowSeconds = builder.Configuration.GetValue<int?>("RateLimiting:Lookup:WindowSeconds") ?? 10;
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -172,6 +178,15 @@ builder.Services.AddRateLimiter(options =>
         limiter.Window = TimeSpan.FromSeconds(rateLimitWindowSeconds);
         limiter.QueueLimit = 0;
     });
+    options.AddPolicy("lookup", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = lookupPermitLimit,
+                Window = TimeSpan.FromSeconds(lookupWindowSeconds),
+                QueueLimit = 0,
+            }));
 });
 
 var app = builder.Build();

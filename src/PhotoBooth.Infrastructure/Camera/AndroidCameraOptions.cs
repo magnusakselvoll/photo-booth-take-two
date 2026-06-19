@@ -1,3 +1,5 @@
+using System.Text.RegularExpressions;
+
 namespace PhotoBooth.Infrastructure.Camera;
 
 /// <summary>
@@ -91,4 +93,31 @@ public class AndroidCameraOptions
     /// Seconds to wait for the capture lock before reporting camera busy.
     /// </summary>
     public int CaptureLockTimeoutSeconds { get; set; } = 5;
+
+    /// <summary>
+    /// Validates options that are interpolated into <c>adb shell</c> commands, rejecting
+    /// values that could carry shell metacharacters. <see cref="PinCode"/> and
+    /// <see cref="CameraAction"/> are trusted config-time inputs, but validating them here
+    /// keeps an injection footgun closed if config is ever templated or operator-supplied.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">Thrown when a value is unsafe to pass to a device shell.</exception>
+    public void Validate()
+    {
+        // PIN is typed via "adb shell input text {pin}"; restrict to digits.
+        if (PinCode is not null && !Regex.IsMatch(PinCode, "^[0-9]+$"))
+        {
+            throw new InvalidOperationException(
+                "Camera:Android:PinCode must contain digits only.");
+        }
+
+        // CameraAction is interpolated into "adb shell am start -a android.media.action.{action}".
+        // Android action suffixes are letters, digits and underscores; this charset excludes
+        // shell metacharacters (spaces, ; $ ` & | etc.) that would enable command injection.
+        if (!Regex.IsMatch(CameraAction, "^[A-Za-z0-9_]+$"))
+        {
+            throw new InvalidOperationException(
+                $"Camera:Android:CameraAction '{CameraAction}' is invalid. " +
+                "It must contain only letters, digits and underscores (e.g. STILL_IMAGE_CAMERA).");
+        }
+    }
 }

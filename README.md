@@ -127,7 +127,11 @@ You can delete `appsettings.json` to restore defaults on next startup, or delete
   },
   "RateLimiting": {
     "PermitLimit": 5,
-    "WindowSeconds": 10
+    "WindowSeconds": 10,
+    "Lookup": {
+      "PermitLimit": 10,
+      "WindowSeconds": 10
+    }
   }
 }
 ```
@@ -187,8 +191,10 @@ Requires [ADB](https://developer.android.com/tools/adb) installed and an Android
 - `Event.Name`: Event name used as storage subfolder (defaults to current date)
 - `Slideshow.SwirlEffect`: Enable swirl animation effect on slideshow (default: true)
 - `Slideshow.IntervalMs`: Interval in ms between slideshow transitions (default: 30000)
-- `RateLimiting.PermitLimit`: Max requests per rate limit window (default: 5)
+- `RateLimiting.PermitLimit`: Max `/capture` and `/trigger` requests per rate limit window (default: 5)
 - `RateLimiting.WindowSeconds`: Rate limit window duration in seconds (default: 10)
+- `RateLimiting.Lookup.PermitLimit`: Max photo-code lookups (`GET /api/photos/{code}`) per window, **per client IP**, to make scripted enumeration of sequential codes impractical (default: 10). The image and list endpoints are not throttled, so the gallery and the bulk export script are unaffected.
+- `RateLimiting.Lookup.WindowSeconds`: Lookup rate limit window duration in seconds (default: 10)
 
 ## Project Structure
 

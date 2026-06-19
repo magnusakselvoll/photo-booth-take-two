@@ -149,6 +149,8 @@ All responses include security headers added by `SecurityHeadersMiddleware` (CSP
 
 `/api/photos/capture` and `/api/photos/trigger` are rate-limited (default: 5 requests per 10-second fixed window, configurable via `RateLimiting:PermitLimit` and `RateLimiting:WindowSeconds`). Returns HTTP 429 when exceeded.
 
+The public photo-code lookup `GET /api/photos/{code}` has a separate **per-IP** fixed-window limiter (`"lookup"` policy, default 10 per 10s via `RateLimiting:Lookup:PermitLimit`/`WindowSeconds`) to make scripted enumeration of sequential download codes (ADR 0006) impractical. The image (`/{id}/image`) and list (`/`) endpoints are intentionally **not** throttled, so the gallery, slideshow, and the bulk export script (`scripts/download-event.sh`, which fetches by list + GUID, never by code) are unaffected.
+
 ## CI/CD
 
 GitHub Actions workflows in `.github/workflows/`:
