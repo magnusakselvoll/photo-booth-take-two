@@ -98,6 +98,10 @@ Clean architecture with four layers:
 
 - `SequentialCodeGenerator` (default): Assigns sequential numeric codes (1, 2, 3, ...) based on photo count
 
+### Storage Assumptions
+
+`FileSystemPhotoRepository` is registered as a singleton and caches the photo list in memory. The cache is loaded once (lazily) and only appended to on save. This assumes **a single booth process owns the storage directory for the duration of one event**. Photos deleted on disk externally, or writes from a second process sharing the directory, are not reflected without restarting the process. If a multi-process or shared-directory scenario ever becomes a requirement, add a cache-invalidation strategy (TTL re-scan, `FileSystemWatcher`, or an operator-triggered refresh).
+
 ## Tech Stack
 
 - **Backend**: C# / .NET 10, ASP.NET Core minimal APIs

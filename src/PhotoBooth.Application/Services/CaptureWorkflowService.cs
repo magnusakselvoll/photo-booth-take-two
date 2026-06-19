@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using PhotoBooth.Application.DTOs;
 using PhotoBooth.Application.Events;
+using PhotoBooth.Domain.Exceptions;
 using PhotoBooth.Domain.Interfaces;
 
 namespace PhotoBooth.Application.Services;
@@ -82,7 +83,7 @@ public class CaptureWorkflowService : ICaptureWorkflowService
             }
             catch (Exception ex)
             {
-                _logger.LogDebug(ex, "Failed to broadcast timeout event");
+                _logger.LogWarning(ex, "Failed to broadcast timeout event");
             }
         }
 
@@ -127,6 +128,13 @@ public class CaptureWorkflowService : ICaptureWorkflowService
         {
             _logger.LogInformation("Capture workflow cancelled during shutdown for trigger from {Source}", triggerSource);
             throw;
+        }
+        catch (StorageException ex)
+        {
+            _logger.LogError(ex, "Capture failed: could not save photo to storage");
+            await _eventBroadcaster.BroadcastAsync(
+                new CaptureFailedEvent("Could not save photo — storage may be full or unavailable"),
+                cancellationToken);
         }
         catch (Exception ex)
         {

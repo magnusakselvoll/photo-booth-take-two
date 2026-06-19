@@ -1,4 +1,5 @@
 using PhotoBooth.Domain.Entities;
+using PhotoBooth.Domain.Exceptions;
 using PhotoBooth.Infrastructure.Storage;
 
 namespace PhotoBooth.Infrastructure.Tests;
@@ -199,5 +200,29 @@ public sealed class FileSystemPhotoRepositoryTests
         // Assert
         Assert.AreEqual(1, countAfterFirst);
         Assert.AreEqual(2, countAfterSecond);
+    }
+
+    [TestMethod]
+    public async Task SaveAsync_WhenWriteFails_ThrowsStorageException()
+    {
+        // Arrange
+        var repository = new FileSystemPhotoRepository(_testBasePath, "TestEvent");
+        var photoId = Guid.Parse("550e8400-e29b-41d4-a716-446655440000");
+        var photo = new Photo
+        {
+            Id = photoId,
+            Code = "42",
+            CapturedAt = DateTime.UtcNow
+        };
+
+        // Occupy the exact target path with a directory so the file write fails
+        // (cross-platform: writing a file where a directory exists throws IOException
+        // or UnauthorizedAccessException, both of which the repository wraps).
+        var targetPath = Path.Combine(_testBasePath, "TestEvent", $"00042-{photoId}.jpg");
+        Directory.CreateDirectory(targetPath);
+
+        // Act & Assert
+        await Assert.ThrowsExactlyAsync<StorageException>(
+            () => repository.SaveAsync(photo, new byte[] { 0xFF, 0xD8, 0xFF }));
     }
 }

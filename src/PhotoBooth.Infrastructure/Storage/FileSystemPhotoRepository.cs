@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using PhotoBooth.Domain.Entities;
+using PhotoBooth.Domain.Exceptions;
 using PhotoBooth.Domain.Interfaces;
 
 namespace PhotoBooth.Infrastructure.Storage;
@@ -9,6 +10,11 @@ public class FileSystemPhotoRepository : IPhotoRepository
     private readonly string _storagePath;
     private readonly ILogger<FileSystemPhotoRepository>? _logger;
     private readonly SemaphoreSlim _lock = new(1, 1);
+
+    // The cache assumes a single booth process owns this storage directory for the
+    // duration of one event. It is loaded once (lazily) and only appended to on save;
+    // photos deleted on disk externally, or writes from a second process sharing the
+    // directory, are not reflected without restarting the process. See CLAUDE.md.
     private List<Photo>? _photosCache;
 
     public FileSystemPhotoRepository(string basePath, string eventName, ILogger<FileSystemPhotoRepository>? logger = null)
@@ -34,7 +40,16 @@ public class FileSystemPhotoRepository : IPhotoRepository
             var fileName = $"{paddedCode}-{photo.Id}.jpg";
             var updatedPhoto = photo with { FilePath = Path.Combine(_storagePath, fileName) };
 
-            await File.WriteAllBytesAsync(updatedPhoto.FilePath, imageData, cancellationToken);
+            try
+            {
+                await File.WriteAllBytesAsync(updatedPhoto.FilePath, imageData, cancellationToken);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                throw new StorageException(
+                    $"Failed to save photo to storage — the disk may be full or the directory read-only (path: {_storagePath})",
+                    ex);
+            }
 
             // Add to cache if it exists
             _photosCache?.Add(updatedPhoto);

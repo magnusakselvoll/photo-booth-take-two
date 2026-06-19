@@ -173,4 +173,28 @@ describe('BoothPage', () => {
     act(() => { vi.advanceTimersByTime(1000); });
     expect(reloadMock).toHaveBeenCalled();
   });
+
+  it('clears a stuck countdown and shows a timeout error when no terminal event arrives', () => {
+    // Inactivity watchdog set well above the capture watchdog so it does not interfere.
+    render(<BoothPage watchdogTimeoutMs={300000} />);
+    act(() => { capturedOnEvent!(countdownEvent()); });
+    expect(screen.getByTestId('capture-overlay')).toBeInTheDocument();
+
+    // Advance past CAPTURE_WATCHDOG_MS (60000) with no photo-captured / capture-failed.
+    act(() => { vi.advanceTimersByTime(60000); });
+
+    expect(screen.queryByTestId('capture-overlay')).not.toBeInTheDocument();
+    expect(screen.getByText('Capture timed out')).toBeInTheDocument();
+  });
+
+  it('does not fire the capture watchdog when a terminal event arrives in time', () => {
+    render(<BoothPage watchdogTimeoutMs={300000} />);
+    act(() => { capturedOnEvent!(countdownEvent()); });
+    act(() => { capturedOnEvent!(photoCapturedEvent()); });
+
+    // Advancing past the watchdog window must not surface a timeout error.
+    act(() => { vi.advanceTimersByTime(60000); });
+
+    expect(screen.queryByText('Capture timed out')).not.toBeInTheDocument();
+  });
 });
