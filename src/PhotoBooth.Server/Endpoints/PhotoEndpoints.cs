@@ -32,7 +32,8 @@ public static class PhotoEndpoints
             .WithName("GetAllPhotos");
 
         group.MapGet("/{code}", GetPhotoByCode)
-            .WithName("GetPhotoByCode");
+            .WithName("GetPhotoByCode")
+            .RequireRateLimiting("lookup");
 
         group.MapGet("/{id:guid}/image", GetPhotoImage)
             .WithName("GetPhotoImage");

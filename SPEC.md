@@ -97,6 +97,8 @@ Each photo gets a unique, short, human-friendly code:
 - Displayed on photo during slideshow
 - Valid for the duration of the event
 
+The code-lookup endpoint (`GET /api/photos/{code}`) is rate-limited per client IP (default 10 per 10s) so the sequential codes cannot be cheaply enumerated. The bulk export script downloads by photo list + GUID rather than by code, so it is unaffected by this limit. See ADR 0006 for the rationale behind sequential codes and the residual exposure.
+
 ### QR Codes
 
 Optional QR code overlay on slideshow photos:
