@@ -25,6 +25,12 @@ export const translations = {
     // Not found page
     pageNotFound: 'Page not found',
     goToGallery: 'Go to Gallery',
+
+    // Booth capture errors
+    captureTimedOut: 'Capture timed out',
+    storageUnavailable: 'Could not save photo — storage may be full or unavailable',
+    captureFailed: 'Photo capture failed',
+    failedToTriggerCapture: 'Failed to trigger capture',
   },
   es: {
     // Download page
@@ -52,6 +58,12 @@ export const translations = {
     // Not found page
     pageNotFound: 'Pagina no encontrada',
     goToGallery: 'Ir a la Galeria',
+
+    // Booth capture errors
+    captureTimedOut: 'Se agotó el tiempo de captura',
+    storageUnavailable: 'No se pudo guardar la foto — el almacenamiento puede estar lleno o no disponible',
+    captureFailed: 'Error al capturar la foto',
+    failedToTriggerCapture: 'No se pudo iniciar la captura',
   },
 } as const;
 

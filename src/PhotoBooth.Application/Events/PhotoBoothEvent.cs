@@ -25,9 +25,10 @@ public record PhotoCapturedEvent(
 }
 
 public record CaptureFailedEvent(
+    string Code,
     string Error,
     DateTime Timestamp) : PhotoBoothEvent("capture-failed", Timestamp)
 {
-    public CaptureFailedEvent(string error)
-        : this(error, Now) { }
+    public CaptureFailedEvent(string code, string error)
+        : this(code, error, Now) { }
 }

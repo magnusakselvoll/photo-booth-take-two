@@ -10,6 +10,8 @@ import { useKeyboardNavigation } from '../hooks/useKeyboardNavigation';
 import { useGamepadNavigation } from '../hooks/useGamepadNavigation';
 import type { GamepadDebugEvent } from '../hooks/useGamepadNavigation';
 import type { PhotoBoothEvent, QueuedPhoto, GamepadConfig } from '../api/types';
+import { useTranslation } from '../i18n/useTranslation';
+import type { TranslationKey } from '../i18n/translations';
 
 const DEFAULT_SLIDESHOW_INTERVAL_MS = 30000;
 const DEFAULT_WATCHDOG_TIMEOUT_MS = 5 * 60 * 1000;
@@ -22,6 +24,14 @@ const GAMEPAD_DEBUG_DISPLAY_MS = 3000;
 // timeout (Capture:CountdownDurationMs + Capture:BufferTimeoutHighLatencyMs, up to ~52s
 // for Android over ADB) to avoid false positives on slow but legitimate captures.
 const CAPTURE_WATCHDOG_MS = 60000;
+
+// Maps backend CaptureFailedEvent codes to translation keys. Unknown/future
+// codes fall back to the event's English `error` string.
+const CAPTURE_ERROR_KEYS: Record<string, TranslationKey> = {
+  'capture-timed-out': 'captureTimedOut',
+  'storage-unavailable': 'storageUnavailable',
+  'capture-failed': 'captureFailed',
+};
 
 interface BoothPageProps {
   qrCodeBaseUrl?: string;
@@ -40,6 +50,8 @@ interface DisplayPhoto {
 }
 
 export function BoothPage({ qrCodeBaseUrl, urlPrefix = '', swirlEffect = true, slideshowIntervalMs = DEFAULT_SLIDESHOW_INTERVAL_MS, gamepadConfig, watchdogTimeoutMs = DEFAULT_WATCHDOG_TIMEOUT_MS }: BoothPageProps) {
+  const { t } = useTranslation();
+
   // Queue of interrupted photos waiting to be displayed
   const [photoQueue, setPhotoQueue] = useState<QueuedPhoto[]>([]);
   // Current index within the queue
@@ -248,7 +260,7 @@ export function BoothPage({ qrCodeBaseUrl, urlPrefix = '', swirlEffect = true, s
           }
           console.warn('Capture watchdog fired: no terminal event received, resetting UI');
           setActiveCountdowns(count => Math.max(0, count - 1));
-          showTransientError('Capture timed out');
+          showTransientError(t('captureTimedOut'));
         }, CAPTURE_WATCHDOG_MS);
         captureWatchdogsRef.current.push(watchdogId);
 
@@ -274,14 +286,16 @@ export function BoothPage({ qrCodeBaseUrl, urlPrefix = '', swirlEffect = true, s
         break;
       }
 
-      case 'capture-failed':
+      case 'capture-failed': {
         console.error('Capture failed:', event.error);
         clearOldestCaptureWatchdog();
         setActiveCountdowns(count => Math.max(0, count - 1));
-        showTransientError(event.error);
+        const errorKey = CAPTURE_ERROR_KEYS[event.code];
+        showTransientError(errorKey ? t(errorKey) : event.error);
         break;
+      }
     }
-  }, [handleInterruption, startShowingPhoto, showTransientError, clearOldestCaptureWatchdog]);
+  }, [handleInterruption, startShowingPhoto, showTransientError, clearOldestCaptureWatchdog, t]);
 
   useEventStream(handleEvent);
 
@@ -293,9 +307,9 @@ export function BoothPage({ qrCodeBaseUrl, urlPrefix = '', swirlEffect = true, s
       await triggerCapture(durationMs);
     } catch (err) {
       console.error('Trigger error:', err);
-      showTransientError(err instanceof Error ? err.message : 'Failed to trigger capture');
+      showTransientError(t('failedToTriggerCapture'));
     }
-  }, [resetWatchdog, showTransientError]);
+  }, [resetWatchdog, showTransientError, t]);
 
   // Clear queue and dismiss current display
   const clearQueueAndDisplay = useCallback(() => {

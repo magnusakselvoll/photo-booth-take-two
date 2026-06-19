@@ -102,6 +102,7 @@ public sealed class CaptureWorkflowServiceTests
 
         var failedEvent = _eventBroadcaster.BroadcastedEvents[1] as CaptureFailedEvent;
         Assert.IsNotNull(failedEvent);
+        Assert.AreEqual(CaptureErrorCodes.CaptureFailed, failedEvent.Code);
         Assert.AreEqual("Photo capture failed", failedEvent.Error);
     }
 
