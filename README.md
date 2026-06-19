@@ -206,6 +206,10 @@ installer/
   PhotoBooth.Installer/     # WiX MSI installer (per-user, no elevation)
 ```
 
+## Architecture Decision Records
+
+Key architectural choices are documented in [`docs/adr/`](docs/adr/). See the [ADR index](docs/adr/README.md) for the full list.
+
 ## Acknowledgments
 
 The Android camera integration is based on [android-photo-booth-camera](https://github.com/magnusakselvoll/android-photo-booth-camera).
