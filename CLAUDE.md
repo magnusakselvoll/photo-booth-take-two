@@ -198,4 +198,5 @@ dotnet test tests/PhotoBooth.Server.Tests --filter "FullyQualifiedName~GuestLoad
 ## Reference
 
 - **SPEC.md**: Functional specification - describes how the application should work. Consult this for requirements and intended behavior.
+- **docs/adr/**: Architecture Decision Records — the *why* behind key architectural choices (layer split, SSE, pnpm, installer model, security model, code generation). Add a new ADR whenever making a consequential, non-obvious decision.
 - Previous implementation for Android integration patterns: https://github.com/magnusakselvoll/android-photo-booth-camera
