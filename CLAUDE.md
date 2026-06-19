@@ -29,9 +29,14 @@ Always use GitHub Flow when working on issues:
    - Pass `--title` and `--body` as plain strings to `gh pr create` — no heredocs, no command substitution, and no backticks (backticks in strings trigger a command substitution approval prompt even when used as markdown formatting)
    - Always pass `--head <branch-name> --base main` to `gh pr create` — without these, `gh` picks up the main repo context and fails with "head branch is the same as base branch"
 
-4. **Merge** after review (squash merge preferred for clean history)
+4. **Verify CI after opening the PR** — do not consider the PR done until CI is green:
+   - Run `gh pr checks <number> --watch` to stream both the `dotnet` and `frontend` job results
+   - If either job fails, diagnose and fix it before handing back to the user
+   - A `dotnet` failure caused by a transitive NuGet vulnerability (NU1903) is still your responsibility to fix — use `CentralPackageTransitivePinningEnabled` and a `PackageVersion` pin in `Directory.Packages.props`
 
-5. **Clean up** after the user confirms a PR is merged:
+5. **Merge** after review — the user always does the merge (never merge yourself)
+
+6. **Clean up** after the user confirms a PR is merged:
    - `git fetch origin && git checkout main && git pull`
    - `git branch -d <branch-name>`
 
