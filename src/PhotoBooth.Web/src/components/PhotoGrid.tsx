@@ -112,9 +112,11 @@ export function PhotoGrid({ onPhotoClick }: PhotoGridProps) {
   return (
     <div className="photo-grid">
       {photos.map(photo => (
-        <div
+        <button
+          type="button"
           key={photo.id}
           className="photo-grid-item"
+          aria-label={`Photo ${photo.code}`}
           onClick={() => {
             setGalleryCache(photos, nextCursor, window.scrollY);
             savedViaClickRef.current = true;
@@ -126,7 +128,7 @@ export function PhotoGrid({ onPhotoClick }: PhotoGridProps) {
             alt={`Photo ${photo.code}`}
             loading="lazy"
           />
-        </div>
+        </button>
       ))}
       {nextCursor && (
         <div ref={sentinelRef} className="photo-grid-loading">

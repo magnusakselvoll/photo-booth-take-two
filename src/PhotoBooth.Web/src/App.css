@@ -47,7 +47,7 @@ body {
 .slideshow-empty,
 .slideshow-error {
   font-size: 2rem;
-  color: #666;
+  color: #8a8a8a;
 }
 
 /* Photo Display */
@@ -260,11 +260,12 @@ body {
 }
 
 .code-input::placeholder {
-  color: #666;
+  color: #8a8a8a;
 }
 
-.code-input:focus {
-  outline: none;
+.code-input:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
 }
 
 .search-button {
@@ -282,12 +283,13 @@ body {
 }
 
 .search-button:disabled {
-  color: #444;
+  color: #6e6e6e;
   cursor: not-allowed;
 }
 
-.search-button:focus {
-  outline: none;
+.search-button:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
 }
 
 .search-button:not(:disabled):active {
@@ -308,10 +310,23 @@ body {
   overflow: hidden;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  /* Reset native <button> defaults so tiles look identical to the old divs */
+  border: none;
+  padding: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  display: block;
+  width: 100%;
 }
 
 .photo-grid-item:active {
   opacity: 0.8;
+}
+
+.photo-grid-item:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: -2px;
 }
 
 .photo-grid-item img {
@@ -324,7 +339,7 @@ body {
 .photo-grid-loading,
 .photo-grid-error,
 .photo-grid-empty {
-  color: #666;
+  color: #8a8a8a;
   font-size: 1.25rem;
   text-align: center;
   padding: 2rem;
@@ -442,12 +457,13 @@ body {
   opacity: 0.6;
 }
 
-.photo-detail-nav-arrow:focus {
-  outline: none;
+.photo-detail-nav-arrow:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
 }
 
 .photo-detail-loading {
-  color: #666;
+  color: #8a8a8a;
   font-size: 1.25rem;
   flex: 1;
   display: flex;
@@ -476,9 +492,10 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
-.action-button:focus,
-.nav-back-button:focus {
-  outline: none;
+.action-button:focus-visible,
+.nav-back-button:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
 }
 
 .action-button:active {
@@ -577,7 +594,7 @@ body {
 .language-button {
   background: none;
   border: none;
-  color: #666;
+  color: #8a8a8a;
   font-size: 0.9rem;
   cursor: pointer;
   padding: 0.25rem 0.5rem;
@@ -587,6 +604,11 @@ body {
 
 .language-button:hover {
   color: #fff;
+}
+
+.language-button:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
 }
 
 .language-button.active {
@@ -612,7 +634,7 @@ body {
 .not-found-code {
   font-size: 8rem;
   font-weight: 700;
-  color: #666;
+  color: #8a8a8a;
   line-height: 1;
 }
 
@@ -635,4 +657,27 @@ body {
 
 .not-found-link:hover {
   text-decoration: underline;
+}
+
+.not-found-link:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Reduced motion: neutralize large/looping animations for motion-sensitive guests.
+   Photos still appear and transition instantly; loading states stay legible. */
+@media (prefers-reduced-motion: reduce) {
+  .photo-display.swirl,
+  .photo-display.swirl.fading-out,
+  .photo-display.fade,
+  .photo-display.fade.fading-out,
+  .photo-image.ken-burns,
+  .waiting-message,
+  .action-button.loading svg {
+    animation: none;
+  }
+
+  .speed-dial-item {
+    transition: none;
+  }
 }
