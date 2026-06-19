@@ -30,7 +30,7 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v5
         with:
-          version: 9
+          package_json_file: src/PhotoBooth.Web/package.json
 
       - name: Setup Node.js
         uses: actions/setup-node@v5
