@@ -71,3 +71,68 @@ jobs:
       - name: Build frontend
         working-directory: src/PhotoBooth.Web
         run: pnpm run build
+
+  # The MSI installer (WiX) is not part of PhotoBooth.slnx and is otherwise only
+  # built in release.yml on tag publish, so installer/WiX drift stays hidden until a
+  # release breaks. This job builds the MSI on every PR to catch that early. WiX only
+  # supports Windows, so it must run on windows-latest. It mirrors the publish + MSI
+  # steps in release.yml (keep them in sync). It validates the build and ICE validation;
+  # runtime install/upgrade behavior is still only verified at release time on Windows.
+  installer:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v5
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', '**/*.wixproj', 'Directory.Packages.props') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v5
+        with:
+          package_json_file: src/PhotoBooth.Web/package.json
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: "pnpm"
+          cache-dependency-path: src/PhotoBooth.Web/pnpm-lock.yaml
+
+      - name: Install frontend dependencies
+        working-directory: src/PhotoBooth.Web
+        run: pnpm install --frozen-lockfile
+
+      - name: Build frontend
+        working-directory: src/PhotoBooth.Web
+        run: pnpm run build
+
+      - name: Publish server for Windows x64
+        run: >
+          dotnet publish src/PhotoBooth.Server/PhotoBooth.Server.csproj
+          -c Release
+          -r win-x64
+          --self-contained true
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -o publish/win-x64
+
+      - name: Restore WiX installer
+        run: dotnet restore installer/PhotoBooth.Installer/PhotoBooth.Installer.wixproj
+
+      - name: Build MSI installer
+        run: >
+          dotnet build installer/PhotoBooth.Installer/PhotoBooth.Installer.wixproj
+          --configuration Release
+          -p:InstallerVersion=0.0.1
+          "-p:PublishDir=${{ github.workspace }}\publish\win-x64\"
