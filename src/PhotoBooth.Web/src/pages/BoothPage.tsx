@@ -16,6 +16,12 @@ const DEFAULT_WATCHDOG_TIMEOUT_MS = 5 * 60 * 1000;
 const ERROR_DISPLAY_MS = 3000;
 const FADE_DURATION_MS = 500;
 const GAMEPAD_DEBUG_DISPLAY_MS = 3000;
+// Client-side fallback: if a countdown-started never receives a terminal event
+// (photo-captured / capture-failed) — e.g. the server's failure broadcast itself
+// failed — reset the stuck UI after this long. Must exceed the server's max workflow
+// timeout (Capture:CountdownDurationMs + Capture:BufferTimeoutHighLatencyMs, up to ~52s
+// for Android over ADB) to avoid false positives on slow but legitimate captures.
+const CAPTURE_WATCHDOG_MS = 60000;
 
 interface BoothPageProps {
   qrCodeBaseUrl?: string;
@@ -55,6 +61,9 @@ export function BoothPage({ qrCodeBaseUrl, urlPrefix = '', swirlEffect = true, s
   const previewTimeoutRef = useRef<number | null>(null);
   const errorTimeoutRef = useRef<number | null>(null);
   const gamepadDebugTimeoutRef = useRef<number | null>(null);
+  // FIFO of pending capture watchdog timers, one armed per countdown-started and
+  // cancelled (oldest first) when a terminal event arrives.
+  const captureWatchdogsRef = useRef<number[]>([]);
   const photoKeyRef = useRef(0);
   // Track the current display for use in callbacks (avoid stale closure)
   const currentDisplayRef = useRef<DisplayPhoto | null>(null);
@@ -96,6 +105,15 @@ export function BoothPage({ qrCodeBaseUrl, urlPrefix = '', swirlEffect = true, s
       }
     };
   }, [resetWatchdog]);
+
+  // Cancel any pending capture watchdogs on unmount
+  useEffect(() => {
+    const watchdogs = captureWatchdogsRef.current;
+    return () => {
+      watchdogs.forEach(clearTimeout);
+      watchdogs.length = 0;
+    };
+  }, []);
 
   // Keep refs in sync with state
   useEffect(() => {
@@ -195,19 +213,53 @@ export function BoothPage({ qrCodeBaseUrl, urlPrefix = '', swirlEffect = true, s
     setCurrentDisplay(null);
   }, []);
 
+  // Show an error message that auto-dismisses after ERROR_DISPLAY_MS.
+  const showTransientError = useCallback((message: string) => {
+    setErrorMessage(message);
+    if (errorTimeoutRef.current !== null) {
+      clearTimeout(errorTimeoutRef.current);
+    }
+    errorTimeoutRef.current = window.setTimeout(() => {
+      setErrorMessage(null);
+    }, ERROR_DISPLAY_MS);
+  }, []);
+
+  // Cancel the oldest pending capture watchdog (a terminal event arrived for it).
+  const clearOldestCaptureWatchdog = useCallback(() => {
+    const timerId = captureWatchdogsRef.current.shift();
+    if (timerId !== undefined) {
+      clearTimeout(timerId);
+    }
+  }, []);
+
   const handleEvent = useCallback((event: PhotoBoothEvent) => {
     switch (event.eventType) {
-      case 'countdown-started':
+      case 'countdown-started': {
         console.log('Countdown started, duration:', event.durationMs);
         setCountdownDurationMs(event.durationMs);
         setActiveCountdowns(count => count + 1);
 
+        // Arm a watchdog so a missing terminal event can't leave the UI stuck on
+        // the countdown. On fire it releases one countdown and surfaces a timeout.
+        const watchdogId = window.setTimeout(() => {
+          const index = captureWatchdogsRef.current.indexOf(watchdogId);
+          if (index !== -1) {
+            captureWatchdogsRef.current.splice(index, 1);
+          }
+          console.warn('Capture watchdog fired: no terminal event received, resetting UI');
+          setActiveCountdowns(count => Math.max(0, count - 1));
+          showTransientError('Capture timed out');
+        }, CAPTURE_WATCHDOG_MS);
+        captureWatchdogsRef.current.push(watchdogId);
+
         // Interrupt current display if any
         handleInterruption();
         break;
+      }
 
       case 'photo-captured': {
         console.log('Photo captured:', event.code);
+        clearOldestCaptureWatchdog();
         setActiveCountdowns(count => Math.max(0, count - 1));
 
         const newPhoto: QueuedPhoto = {
@@ -224,17 +276,12 @@ export function BoothPage({ qrCodeBaseUrl, urlPrefix = '', swirlEffect = true, s
 
       case 'capture-failed':
         console.error('Capture failed:', event.error);
+        clearOldestCaptureWatchdog();
         setActiveCountdowns(count => Math.max(0, count - 1));
-        setErrorMessage(event.error);
-        if (errorTimeoutRef.current !== null) {
-          clearTimeout(errorTimeoutRef.current);
-        }
-        errorTimeoutRef.current = window.setTimeout(() => {
-          setErrorMessage(null);
-        }, ERROR_DISPLAY_MS);
+        showTransientError(event.error);
         break;
     }
-  }, [handleInterruption, startShowingPhoto]);
+  }, [handleInterruption, startShowingPhoto, showTransientError, clearOldestCaptureWatchdog]);
 
   useEventStream(handleEvent);
 
@@ -246,15 +293,9 @@ export function BoothPage({ qrCodeBaseUrl, urlPrefix = '', swirlEffect = true, s
       await triggerCapture(durationMs);
     } catch (err) {
       console.error('Trigger error:', err);
-      setErrorMessage(err instanceof Error ? err.message : 'Failed to trigger capture');
-      if (errorTimeoutRef.current !== null) {
-        clearTimeout(errorTimeoutRef.current);
-      }
-      errorTimeoutRef.current = window.setTimeout(() => {
-        setErrorMessage(null);
-      }, ERROR_DISPLAY_MS);
+      showTransientError(err instanceof Error ? err.message : 'Failed to trigger capture');
     }
-  }, [resetWatchdog]);
+  }, [resetWatchdog, showTransientError]);
 
   // Clear queue and dismiss current display
   const clearQueueAndDisplay = useCallback(() => {

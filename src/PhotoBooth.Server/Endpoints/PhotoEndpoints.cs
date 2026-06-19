@@ -77,6 +77,13 @@ public static class PhotoEndpoints
                 statusCode: StatusCodes.Status503ServiceUnavailable,
                 title: "Camera Not Available");
         }
+        catch (StorageException ex)
+        {
+            return Results.Problem(
+                detail: ex.Message,
+                statusCode: StatusCodes.Status507InsufficientStorage,
+                title: "Storage Unavailable");
+        }
     }
 
     private static async Task<IResult> GetPhotoByCode(
