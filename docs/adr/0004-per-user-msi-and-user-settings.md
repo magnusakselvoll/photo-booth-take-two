@@ -12,7 +12,7 @@ Standard ASP.NET Core practice is to ship a default `appsettings.json` that gets
 
 ## Decision
 
-**Installer scope:** The WiX v5 MSI installer (`installer/PhotoBooth.Installer/`) uses `Scope="perUser"`, installing to `%LOCALAPPDATA%\PhotoBooth`. No UAC elevation prompt is shown; no administrator rights are required.
+**Installer scope:** The WiX MSI installer (`installer/PhotoBooth.Installer/`) uses `Scope="perUser"`, installing to `%LOCALAPPDATA%\PhotoBooth`. No UAC elevation prompt is shown; no administrator rights are required.
 
 **Configuration layering:** On startup, the server loads configuration from two files in the install directory:
 1. `appsettings.json` — shipped defaults, overwritten on every upgrade.

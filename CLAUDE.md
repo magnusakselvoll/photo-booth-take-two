@@ -159,7 +159,7 @@ The public photo-code lookup `GET /api/photos/{code}` has a separate **per-IP** 
 
 GitHub Actions workflows in `.github/workflows/`:
 
-- **ci.yml**: Runs on PRs and pushes to main. Builds .NET and frontend, runs tests, and lints.
+- **ci.yml**: Runs on PRs and pushes to main. Builds .NET and frontend, runs tests, and lints. A separate `installer` job (Windows runner) also builds the MSI on every PR so WiX/installer drift is caught early instead of only at release time (it does not install/upgrade — that is still release-time only).
 - **release.yml**: Triggered when a release is published via the GitHub UI. Builds and uploads the Windows x64 standalone zip and MSI installer to the release.
 
 ### Creating a Release
@@ -170,11 +170,15 @@ GitHub Actions workflows in `.github/workflows/`:
 
 ## Installer
 
-WiX v5 MSI installer in `installer/PhotoBooth.Installer/`. Per-user install (`Scope="perUser"`, no admin/UAC) to `%LOCALAPPDATA%\PhotoBooth`. Major upgrade; installing a newer version replaces the existing one.
+WiX v7 MSI installer in `installer/PhotoBooth.Installer/`. Per-user install (`Scope="perUser"`, no admin/UAC) to `%LOCALAPPDATA%\PhotoBooth`. Major upgrade; installing a newer version replaces the existing one.
 
-Build manually (after publishing the server):
+**WiX only builds on Windows** — `dotnet build` of the wixproj fails on macOS/Linux (`wix.exe exited with code 1`, "only supports Windows"). This has always been the case (v5 and v7 alike); build the MSI on Windows or via CI/release.
+
+WiX v7 requires accepting the [Open Source Maintenance Fee EULA](https://docs.firegiant.com/wix/osmf/). Acceptance is free and handled non-interactively by `<AcceptEula>wix7</AcceptEula>` in the wixproj, so no manual step or env var is needed in CI.
+
+Build manually on Windows (after publishing the server). Pass an **absolute** `PublishDir` — under WiX v7 relative `Files` paths resolve against the `.wxs` source directory, not the working directory:
 ```bash
-dotnet build installer/PhotoBooth.Installer/PhotoBooth.Installer.wixproj --configuration Release -p:InstallerVersion=1.2.3 "-p:PublishDir=publish\win-x64\"
+dotnet build installer/PhotoBooth.Installer/PhotoBooth.Installer.wixproj --configuration Release -p:InstallerVersion=1.2.3 "-p:PublishDir=%CD%\publish\win-x64\"
 ```
 
 The version is extracted from the git tag in the release workflow (strips `v` prefix and semver prerelease/build metadata).
