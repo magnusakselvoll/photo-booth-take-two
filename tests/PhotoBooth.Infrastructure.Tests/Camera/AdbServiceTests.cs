@@ -231,8 +231,8 @@ public sealed class AdbServiceTests
         var files = await _service.ListFilesAsync("/sdcard/DCIM/Camera");
 
         Assert.HasCount(2, files);
-        Assert.IsTrue(files.ContainsKey("photo.jpg"));
-        Assert.IsTrue(files.ContainsKey("another.jpg"));
+        Assert.Contains("photo.jpg", files.Keys);
+        Assert.Contains("another.jpg", files.Keys);
     }
 
     [TestMethod]
