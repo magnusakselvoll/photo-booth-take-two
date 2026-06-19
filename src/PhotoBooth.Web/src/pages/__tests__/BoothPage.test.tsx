@@ -70,8 +70,9 @@ const photoCapturedEvent = (): PhotoBoothEvent => ({
   timestamp: '2025-01-01T00:00:00Z',
 });
 
-const captureFailedEvent = (error = 'Camera error'): PhotoBoothEvent => ({
+const captureFailedEvent = (error = 'Camera error', code = ''): PhotoBoothEvent => ({
   eventType: 'capture-failed',
+  code,
   error,
   timestamp: '2025-01-01T00:00:00Z',
 });
@@ -109,13 +110,13 @@ describe('BoothPage', () => {
     expect(mockTriggerCapture).toHaveBeenCalledOnce();
   });
 
-  it('shows error message when triggerCapture rejects', async () => {
+  it('shows a localized error message when triggerCapture rejects', async () => {
     mockTriggerCapture.mockRejectedValue(new Error('Network error'));
     const { container } = render(<BoothPage watchdogTimeoutMs={60000} />);
     await act(async () => {
       fireEvent.click(container.querySelector('.booth-page')!);
     });
-    expect(screen.getByText('Network error')).toBeInTheDocument();
+    expect(screen.getByText('Failed to trigger capture')).toBeInTheDocument();
   });
 
   it('clears error message after 3000ms', async () => {
@@ -124,10 +125,10 @@ describe('BoothPage', () => {
     await act(async () => {
       fireEvent.click(container.querySelector('.booth-page')!);
     });
-    expect(screen.getByText('Network error')).toBeInTheDocument();
+    expect(screen.getByText('Failed to trigger capture')).toBeInTheDocument();
 
     act(() => { vi.advanceTimersByTime(3000); });
-    expect(screen.queryByText('Network error')).not.toBeInTheDocument();
+    expect(screen.queryByText('Failed to trigger capture')).not.toBeInTheDocument();
   });
 
   it('shows CaptureOverlay when countdown-started event arrives', () => {
@@ -151,10 +152,17 @@ describe('BoothPage', () => {
     expect(screen.queryByTestId('capture-overlay')).not.toBeInTheDocument();
   });
 
-  it('shows error message on capture-failed event', () => {
+  it('shows the localized message for a known capture-failed code', () => {
     render(<BoothPage watchdogTimeoutMs={60000} />);
     act(() => { capturedOnEvent!(countdownEvent()); });
-    act(() => { capturedOnEvent!(captureFailedEvent('Camera error')); });
+    act(() => { capturedOnEvent!(captureFailedEvent('Photo capture failed', 'capture-failed')); });
+    expect(screen.getByText('Photo capture failed')).toBeInTheDocument();
+  });
+
+  it('falls back to the server error string for an unknown capture-failed code', () => {
+    render(<BoothPage watchdogTimeoutMs={60000} />);
+    act(() => { capturedOnEvent!(countdownEvent()); });
+    act(() => { capturedOnEvent!(captureFailedEvent('Camera error', 'some-future-code')); });
     expect(screen.getByText('Camera error')).toBeInTheDocument();
   });
 

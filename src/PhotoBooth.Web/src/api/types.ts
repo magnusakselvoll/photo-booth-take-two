@@ -42,6 +42,7 @@ export interface PhotoCapturedEvent {
 
 export interface CaptureFailedEvent {
   eventType: 'capture-failed';
+  code: string;
   error: string;
   timestamp: string;
 }

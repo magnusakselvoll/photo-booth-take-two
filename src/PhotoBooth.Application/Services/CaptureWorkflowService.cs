@@ -78,7 +78,7 @@ public class CaptureWorkflowService : ICaptureWorkflowService
             try
             {
                 await _eventBroadcaster.BroadcastAsync(
-                    new CaptureFailedEvent("Capture timed out"),
+                    new CaptureFailedEvent(CaptureErrorCodes.Timeout, "Capture timed out"),
                     cancellationToken);
             }
             catch (Exception ex)
@@ -133,14 +133,14 @@ public class CaptureWorkflowService : ICaptureWorkflowService
         {
             _logger.LogError(ex, "Capture failed: could not save photo to storage");
             await _eventBroadcaster.BroadcastAsync(
-                new CaptureFailedEvent("Could not save photo — storage may be full or unavailable"),
+                new CaptureFailedEvent(CaptureErrorCodes.StorageUnavailable, "Could not save photo — storage may be full or unavailable"),
                 cancellationToken);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Capture failed");
             await _eventBroadcaster.BroadcastAsync(
-                new CaptureFailedEvent("Photo capture failed"),
+                new CaptureFailedEvent(CaptureErrorCodes.CaptureFailed, "Photo capture failed"),
                 cancellationToken);
         }
     }
