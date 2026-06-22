@@ -157,8 +157,8 @@ public sealed class OpenCvImageResizerTests
 
         var cacheFiles = Directory.GetFiles(_cacheDirectory, $"{photoId}_*.jpg");
         Assert.HasCount(2, cacheFiles);
-        Assert.IsTrue(cacheFiles.Any(f => f.Contains("_200.jpg")), "200px thumbnail should exist");
-        Assert.IsTrue(cacheFiles.Any(f => f.Contains("_400.jpg")), "400px thumbnail should exist");
+        Assert.Contains(f => f.Contains("_200.jpg"), cacheFiles, "200px thumbnail should exist");
+        Assert.Contains(f => f.Contains("_400.jpg"), cacheFiles, "400px thumbnail should exist");
     }
 
     [TestMethod]
